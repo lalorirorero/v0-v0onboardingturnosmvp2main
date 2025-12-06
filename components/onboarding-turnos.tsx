@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react" // Added useEffect
 import { Building2 } from "lucide-react" // Import Building2 icon
 import * as XLSX from "xlsx"
+import { submitToZoho } from "@/app/actions/submit-to-zoho"
+import { ZohoPrefillHandler } from "./zoho-prefill-handler"
 
 // Pasos del flujo
 const steps = [
@@ -391,11 +393,7 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          
-          {/* Removed addGrupo button */}
-        </div>
-        
+        <div className="flex items-center justify-between">{/* Removed addGrupo button */}</div>
 
         <div className="space-y-2">{/* Removed dynamic rendering of grupos */}</div>
       </div>
@@ -1303,7 +1301,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         </div>
 
         <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full border-collapse text-[11px]">
+          <table className="min-w-full border-collapse text-xs">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-1 text-left font-medium text-slate-700">Sel.</th>
@@ -1550,6 +1548,9 @@ export default function OnboardingTurnos({}) {
     byId: {},
     global: [],
   })
+
+  const [isSubmittingToZoho, setIsSubmittingToZoho] = useState(false)
+  const [zohoSubmissionResult, setZohoSubmissionResult] = useState < any > null
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -1805,7 +1806,7 @@ export default function OnboardingTurnos({}) {
     URL.revokeObjectURL(url)
   }
 
-  const handleNext = () => {
+  const handleSubmit = async () => {
     setTrabajadoresErrors({ byId: {}, global: [] })
 
     if (currentStep === 0) {
@@ -1898,7 +1899,33 @@ export default function OnboardingTurnos({}) {
       }
     }
 
-    setCurrentStep(currentStep + 1)
+    setIsSubmittingToZoho(true)
+    setZohoSubmissionResult(null)
+
+    const allFormData = {
+      empresa,
+      admins,
+      trabajadores,
+      turnos,
+      planificaciones,
+      asignaciones,
+      timestamp: new Date().toISOString(),
+    }
+
+    console.log("[v0] Enviando datos a Zoho Flow...")
+    const result = await submitToZoho(allFormData)
+
+    setIsSubmittingToZoho(false)
+    setZohoSubmissionResult(result)
+
+    if (result.success) {
+      console.log("[v0] Datos enviados exitosamente a Zoho Flow:", result.data)
+      alert("✅ Formulario validado y enviado a Zoho Flow correctamente!")
+      setCurrentStep(currentStep + 1) // Proceed to next step only if Zoho submission is successful
+    } else {
+      console.error("[v0] Error al enviar a Zoho Flow:", result.error)
+      alert(`⚠️ Formulario validado pero hubo un error al enviar a Zoho Flow: ${result.error}`)
+    }
   }
 
   const handlePrev = () => {
@@ -1921,7 +1948,9 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100">
+      <ZohoPrefillHandler setEmpresa={setEmpresa} setAdmins={setAdmins} />
+
       <Stepper currentStep={currentStep} />
 
       {currentStep === 0 && <EmpresaStep empresa={empresa} setEmpresa={setEmpresa} />}
@@ -2003,7 +2032,7 @@ export default function OnboardingTurnos({}) {
         {currentStep < steps.length - 1 ? (
           <button
             type="button"
-            onClick={handleNext}
+            onClick={handleSubmit} // Changed to handleSubmit to include Zoho submission
             className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
           >
             Siguiente →
@@ -2018,6 +2047,36 @@ export default function OnboardingTurnos({}) {
           </button>
         )}
       </div>
+
+      {zohoSubmissionResult && (
+        <div
+          className={`fixed bottom-24 right-6 max-w-md rounded-xl border p-4 shadow-lg ${
+            zohoSubmissionResult.success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">
+                {zohoSubmissionResult.success ? "✅ Enviado a Zoho Flow" : "❌ Error al enviar"}
+              </h3>
+              <p className="text-xs text-slate-600">
+                {zohoSubmissionResult.success ? "Los datos se enviaron correctamente" : zohoSubmissionResult.error}
+              </p>
+              {zohoSubmissionResult.data && (
+                <details className="mt-2 text-xs">
+                  <summary className="cursor-pointer text-sky-600 hover:text-sky-700">Ver respuesta</summary>
+                  <pre className="mt-2 overflow-auto rounded bg-white p-2 text-[10px]">
+                    {JSON.stringify(zohoSubmissionResult.data, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </div>
+            <button onClick={() => setZohoSubmissionResult(null)} className="text-slate-400 hover:text-slate-600">
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
