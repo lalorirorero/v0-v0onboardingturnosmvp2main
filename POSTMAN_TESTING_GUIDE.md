@@ -16,25 +16,32 @@ Esta guía te muestra cómo probar la API de generación de links encriptados us
 
 **Método:** `POST`
 
-**URL:** Depende de tu entorno:
+**URL:** Usa la URL de tu aplicación en Vercel:
 
+- **Producción:** `https://v0-v0onboardingturnosmvp2main.vercel.app/api/generate-link`
+- **Tu dominio personalizado:** `https://tu-dominio.com/api/generate-link`
 - **Desarrollo local:** `http://localhost:3000/api/generate-link`
-- **Preview de v0:** Usa la URL de tu preview (ej: `https://tu-preview.v0.app/api/generate-link`)
-- **Producción:** `https://tu-dominio.com/api/generate-link`
 
-### Paso 3: Configurar Headers
+### Paso 3: Configurar Headers (MUY IMPORTANTE)
 
-En la pestaña **Headers**, agrega:
+En la pestaña **Headers**, agrega estos dos headers y asegúrate de que estén **marcados/habilitados**:
 
-\`\`\`
-Content-Type: application/json
-\`\`\`
+| Key | Value | Habilitado |
+|-----|-------|------------|
+| `Content-Type` | `application/json` | ✅ |
+| `Host` | `v0-v0onboardingturnosmvp2main.vercel.app` | ✅ |
 
-### Paso 4: Configurar el Body
+**IMPORTANTE:** 
+- Ambos headers deben estar **marcados (checkbox activado)**
+- Si usas tu propio dominio, cambia el valor de `Host` a tu dominio
+- Sin el header `Host`, Vercel rechazará la petición
+
+### Paso 4: Configurar el Body (VERIFICA CADA OPCIÓN)
 
 1. Ve a la pestaña **Body**
-2. Selecciona **raw**
-3. Selecciona **JSON** en el dropdown
+2. **IMPORTANTE:** Selecciona el radio button **raw** (NO "none", NO "form-data")
+3. En el dropdown de la derecha, selecciona **JSON** (NO "Text")
+4. Deberías ver que el editor de texto cambia a sintaxis JSON con colores
 
 **Pega el siguiente JSON de ejemplo:**
 
@@ -148,19 +155,46 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
 
 ## ⚠️ Posibles Errores y Soluciones
 
-### Error 400: "Se requieren los datos de la empresa"
+### Error 400: "El body de la solicitud está vacío"
 
-**Causa:** El campo `empresaData` no está presente en el JSON
+**Causa:** El JSON no se está enviando correctamente desde Postman
 
-**Solución:** Asegúrate de que tu JSON tenga la estructura correcta con `empresaData` como clave principal
+**Solución paso a paso:**
+1. Verifica que en la pestaña **Body** el radio button **raw** esté seleccionado (debe tener un punto negro)
+2. Verifica que el dropdown diga **JSON** (no "Text")
+3. Verifica que el JSON esté correctamente pegado en el editor de texto
+4. Verifica que el header `Content-Type: application/json` esté marcado/habilitado
+5. Intenta copiar y pegar nuevamente el JSON de ejemplo completo
+6. Cierra y vuelve a abrir Postman si el problema persiste
 
-\`\`\`json
-{
-  "empresaData": {
-    // ... datos aquí
-  }
-}
-\`\`\`
+**Checklist visual en Postman:**
+- [ ] Pestaña "Body" seleccionada
+- [ ] Radio button "raw" seleccionado (con punto negro)
+- [ ] Dropdown dice "JSON" (con color naranja/amarillo)
+- [ ] El texto en el editor tiene colores de sintaxis JSON
+- [ ] Header `Content-Type: application/json` está habilitado (checkbox marcado)
+- [ ] Header `Host` está configurado y habilitado
+
+### Error 400: "Content-Type debe ser application/json"
+
+**Causa:** El header Content-Type no está configurado o no está habilitado
+
+**Solución:**
+1. Ve a la pestaña **Headers**
+2. Verifica que existe el header `Content-Type: application/json`
+3. Asegúrate de que el **checkbox** a la izquierda esté **marcado** ✅
+4. Si el header no existe, agrégalo manualmente
+
+### Error 400: "missing required Host header"
+
+**Causa:** Postman no está enviando el header Host que Vercel requiere
+
+**Solución:**
+1. Ve a la pestaña **Headers**
+2. Agrega un nuevo header:
+   - Key: `Host`
+   - Value: `v0-v0onboardingturnosmvp2main.vercel.app` (o tu dominio)
+3. Marca el checkbox para habilitarlo ✅
 
 ### Error 500: "Error al generar el link"
 
@@ -180,13 +214,21 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
 
 ---
 
-## 🔍 Verificar la Encriptación
+## 🔍 Verificar que Todo Está Correcto
 
-Para verificar que el token está correctamente encriptado:
+Antes de hacer clic en "Send", verifica:
 
-1. Copia el valor de `"token"` de la respuesta
-2. NO deberías poder leer los datos a simple vista
-3. El token debería verse algo así: `eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0...` (muy largo)
+**En Headers:**
+\`\`\`
+✅ Content-Type: application/json (checkbox marcado)
+✅ Host: v0-v0onboardingturnosmvp2main.vercel.app (checkbox marcado)
+\`\`\`
+
+**En Body:**
+- ✅ Radio button "raw" seleccionado
+- ✅ Dropdown dice "JSON"
+- ✅ El JSON está pegado y tiene colores de sintaxis
+- ✅ El JSON comienza con `{"empresaData": {`
 
 ---
 
