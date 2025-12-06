@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react" // Added useEffect
-import { Building2 } from "lucide-react" // Import Building2 icon
+import { useState, useEffect } from "react"
+import { Building2 } from "lucide-react"
 import * as XLSX from "xlsx"
-import { submitToZoho } from "@/app/actions/submit-to-zoho"
-import { ZohoPrefillHandler } from "./zoho-prefill-handler"
+import { useSearchParams } from "next/navigation"
 
 // Pasos del flujo
 const steps = [
@@ -61,8 +60,6 @@ const isValidEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email.trim())
 }
-
-// Tipos
 
 const Stepper = ({ currentStep }) => {
   return (
@@ -254,11 +251,8 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
     setEmpresa({ ...empresa, sistema: newSistemas })
   }
 
-  // Removed entire grupos creation section - grupos only created from worker import
-
   return (
     <section className="space-y-6">
-      {/* Datos de Empresa */}
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="flex items-center gap-2 text-base font-semibold">
           <Building2 className="h-5 w-5 text-sky-600" />
@@ -393,9 +387,8 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">{/* Removed addGrupo button */}</div>
-
-        <div className="space-y-2">{/* Removed dynamic rendering of grupos */}</div>
+        <div className="flex items-center justify-between" />
+        <div className="space-y-2" />
       </div>
     </section>
   )
@@ -451,7 +444,7 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
         telefono1,
         telefono2,
         telefono3,
-        tipo: "usuario", // Mark as regular user
+        tipo: "usuario",
       }
     })
 
@@ -495,7 +488,6 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
   }
 
   const removeTrabajador = (id) => {
-    // Don't allow removing admins from this view
     const trabajador = trabajadores.find((t) => t.id === id)
     if (trabajador?.tipo === "administrador") {
       alert("No se puede eliminar un administrador desde aquí. Elimínalo desde el paso de Administradores.")
@@ -707,7 +699,7 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
                       type="email"
                       value={t.correo}
                       onChange={(e) => updateTrabajador(t.id, "correo", e.target.value)}
-                      placeholder=" correo@empresa.cl"
+                      placeholder="correo@empresa.cl"
                       disabled={isAdmin}
                     />
                     {rowErrors.correo && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.correo}</p>}
@@ -1111,7 +1103,6 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       return
     }
     if (!bulkDesde || !bulkHasta || (bulkHasta !== "permanente" && bulkHasta === "fecha")) {
-      // Corrected condition for bulkHasta
       setBulkError("Debes indicar el periodo Desde y Hasta.")
       return
     }
@@ -1236,7 +1227,6 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             />
           </div>
 
-          {/* START: CHANGE */}
           <div className="space-y-1">
             <label className="text-[11px] font-medium text-slate-700 flex items-center gap-1">
               Hasta
@@ -1272,7 +1262,6 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               )}
             </div>
           </div>
-          {/* END: CHANGE */}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-slate-200 pt-2">
@@ -1415,7 +1404,6 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     onChange={(e) => updateAsignacion(a.id, "desde", e.target.value)}
                   />
                 </td>
-                {/* START: CHANGE */}
                 <td className="px-3 py-1.5">
                   <div className="flex gap-2 items-center">
                     <select
@@ -1442,7 +1430,6 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     )}
                   </div>
                 </td>
-                {/* END: CHANGE */}
                 <td className="px-3 py-1.5 text-right">
                   <button
                     type="button"
@@ -1515,7 +1502,13 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 }
 
 export default function OnboardingTurnos({}) {
-  const [currentStep, setCurrentStep] = useState(0)
+  const searchParams = useSearchParams()
+  // Initialized currentStep to 1, added isSubmitting and isLoadingToken states
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
+  const [isLoadingToken, setIsLoadingToken] = useState(false)
+
   const [admins, setAdmins] = useState([
     {
       id: Date.now(),
@@ -1526,17 +1519,18 @@ export default function OnboardingTurnos({}) {
     },
   ])
 
+  // Modified initial state for empresa to be empty
   const [empresa, setEmpresa] = useState({
-    razonSocial: "EDALTEC LTDA",
-    nombreFantasia: "EDALTEC",
-    rut: "76201998-1",
-    giro: "Comercializadora de equipos de alta tecnología",
-    direccion: "Chiloé 5138",
-    comuna: "San Miguel",
-    emailFacturacion: "marcelo.vargas@edaltec.cl",
-    telefonoContacto: "56995925655", // Changed from telefono to telefonoContacto to match updates
-    sistema: ["3.- GeoVictoria APP"], // Updated to match new sistema options and format
-    rubro: "5.- DISTRIBUCIÓN", // Updated to match new rubro options
+    razonSocial: "",
+    nombreFantasia: "",
+    rut: "",
+    giro: "",
+    direccion: "",
+    comuna: "",
+    emailFacturacion: "",
+    telefonoContacto: "",
+    sistema: [],
+    rubro: "",
     grupos: [],
   })
   const [trabajadores, setTrabajadores] = useState([])
@@ -1549,13 +1543,9 @@ export default function OnboardingTurnos({}) {
     global: [],
   })
 
-  const [isSubmittingToZoho, setIsSubmittingToZoho] = useState(false)
-  // Fix: Add type annotation for zohoSubmissionResult
-  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<{
-    success: boolean
-    data?: any
-    error?: string
-  } | null>(null)
+  // Fixed TypeScript syntax for useState with any type
+  // Removed zohoSubmissionResult here as it's already declared above
+  // const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -1571,10 +1561,8 @@ export default function OnboardingTurnos({}) {
   }
 
   useEffect(() => {
-    // Remove old admin entries
     const nonAdmins = trabajadores.filter((t) => t.tipo !== "administrador")
 
-    // Add current admins as trabajadores
     const adminTrabajadores = admins.map((admin) => ({
       id: `admin-${admin.id}`,
       nombre: admin.nombre,
@@ -1590,10 +1578,42 @@ export default function OnboardingTurnos({}) {
     setTrabajadores([...adminTrabajadores, ...nonAdmins])
   }, [admins])
 
+  useEffect(() => {
+    const token = searchParams.get("token")
+
+    if (token) {
+      setIsLoadingToken(true)
+
+      fetch("/api/decrypt-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.empresaData) {
+            // Prellenar los datos de la empresa
+            setEmpresa((prev) => ({
+              ...prev,
+              ...data.empresaData,
+            }))
+            console.log("[v0] Datos de empresa prellenados desde token:", data.empresaData)
+          } else {
+            console.error("[v0] Error al desencriptar token:", data.error)
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] Error al procesar token:", error)
+        })
+        .finally(() => {
+          setIsLoadingToken(false)
+        })
+    }
+  }, [searchParams])
+
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new()
 
-    // Hoja 1: Datos de la empresa y the first admin
     const empresaData = [
       ["DATOS EMPRESA"],
       ["Razón Social", empresa.razonSocial],
@@ -1603,26 +1623,24 @@ export default function OnboardingTurnos({}) {
       ["Dirección", empresa.direccion],
       ["Comuna", empresa.comuna || ""],
       ["Email de facturación", empresa.emailFacturacion || ""],
-      ["Teléfono de contacto", empresa.telefonoContacto || ""], // Use telefonoContacto
-      ["Sistema", empresa.sistema.join(", ") || ""], // Join array elements for display
+      ["Teléfono de contacto", empresa.telefonoContacto || ""],
+      ["Sistema", empresa.sistema.join(", ") || ""],
       ["Rubro", empresa.rubro || ""],
       [],
       ["Datos Administrador del Sistema"],
-      ["Nombre", admins[0].nombre], // Use admins[0] instead of admin
-      ["RUT", admins[0].rut], // Use admins[0] instead of admin
-      ["Teléfono Contacto", admins[0].telefono || ""], // Use admins[0] instead of admin
-      ["Correo", admins[0].email], // Use admins[0] instead of admin
+      ["Nombre", admins[0].nombre],
+      ["RUT", admins[0].rut],
+      ["Teléfono Contacto", admins[0].telefono || ""],
+      ["Correo", admins[0].email],
     ]
 
     const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
 
-    // Aplicar estilos a los encabezados
     ws1["A1"] = { v: "DATOS EMPRESA", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
     ws1["A13"] = { v: "Datos Administrador del Sistema", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
 
     XLSX.utils.book_append_sheet(workbook, ws1, "Datos Empresa")
 
-    // Hoja 2: Trabajadores y planificaciones
     const headers = [
       "Rut Completo",
       "Correo Personal",
@@ -1687,7 +1705,6 @@ export default function OnboardingTurnos({}) {
 
     const trabajadoresData = [headers, subHeaders]
 
-    // Agregar datos de trabajadores con sus asignaciones
     trabajadores.forEach((trabajador) => {
       const asignacion = asignaciones.find((a) => a.trabajadorId === trabajador.id)
       let planificacion = null
@@ -1699,7 +1716,6 @@ export default function OnboardingTurnos({}) {
         fechaFin = asignacion.hasta === "permanente" ? "PERMANENTE" : asignacion.hasta
 
         if (planificacion) {
-          // Obtener los turnos para cada día de la semana
           planificacion.diasTurnos.forEach((turnoId, dayIndex) => {
             if (turnoId) {
               const turno = turnos.find((t) => t.id === turnoId)
@@ -1726,38 +1742,28 @@ export default function OnboardingTurnos({}) {
         trabajador.nombre.split(" ").slice(1).join(" ") || "",
         grupoNombre,
         fechaFin,
-        // Lunes
         turnosPorDia[0].entrada,
         turnosPorDia[0].colacion,
         turnosPorDia[0].salida,
-        // Martes
         turnosPorDia[1].entrada,
         turnosPorDia[1].colacion,
         turnosPorDia[1].salida,
-        // Miércoles
         turnosPorDia[2].entrada,
         turnosPorDia[2].colacion,
         turnosPorDia[2].salida,
-        // Jueves
         turnosPorDia[3].entrada,
         turnosPorDia[3].colacion,
         turnosPorDia[3].salida,
-        // Viernes
         turnosPorDia[4].entrada,
         turnosPorDia[4].colacion,
         turnosPorDia[4].salida,
-        // Sábado
         turnosPorDia[5].entrada,
         turnosPorDia[5].colacion,
         turnosPorDia[5].salida,
-        // Domingo
         turnosPorDia[6].entrada,
         turnosPorDia[6].colacion,
         turnosPorDia[6].salida,
-        // Teléfonos
-        [trabajador.telefono1, trabajador.telefono2, trabajador.telefono3]
-          .filter(Boolean)
-          .join(" | "),
+        [trabajador.telefono1, trabajador.telefono2, trabajador.telefono3].filter(Boolean).join(" | "),
       ]
 
       trabajadoresData.push(row)
@@ -1765,7 +1771,6 @@ export default function OnboardingTurnos({}) {
 
     const ws2 = XLSX.utils.aoa_to_sheet(trabajadoresData)
 
-    // Ajustar anchos de columna
     ws2["!cols"] = [
       { wch: 15 },
       { wch: 30 },
@@ -1811,125 +1816,45 @@ export default function OnboardingTurnos({}) {
     URL.revokeObjectURL(url)
   }
 
-  const handleSubmit = async () => {
-    setTrabajadoresErrors({ byId: {}, global: [] })
-
-    if (currentStep === 0) {
-      if (!empresa.razonSocial.trim()) {
-        alert("Completa la razón social de la empresa")
-        return
-      }
-      if (!empresa.rut.trim()) {
-        alert("Completa el RUT de la empresa")
-        return
-      }
-      // Validation for telefonoContacto
-      if (!empresa.telefonoContacto.trim()) {
-        alert("Completa el teléfono de contacto de la empresa")
-        return
-      }
-      // Validation for sistema
-      if (!empresa.sistema || empresa.sistema.length === 0) {
-        alert("Selecciona al menos un sistema")
-        return
-      }
-    }
-    // Added validation for admin step
-    if (currentStep === 1) {
-      const invalidAdmin = admins.find((admin) => !admin.nombre || !admin.email)
-      if (invalidAdmin) {
-        alert("Completa todos los campos requeridos de los administradores")
-        return
-      }
-      // Validate email format for all admins
-      const invalidEmail = admins.some((admin) => admin.email && !isValidEmail(admin.email))
-      if (invalidEmail) {
-        alert("Uno o más correos de administrador son inválidos")
-        return
-      }
-    }
-    // </CHANGE>
-    if (currentStep === 2) {
-      if (trabajadores.length === 0) {
-        alert("Debes cargar al menos 1 trabajador")
-        return
-      }
-
-      const errores = { byId: {}, global: [] }
-
-      trabajadores.forEach((t) => {
-        const rowErrors = {}
-
-        if (!t.nombre.trim()) {
-          rowErrors["nombre"] = "Nombre requerido"
-        }
-        if (!t.rut.trim()) {
-          rowErrors["rut"] = "RUT requerido"
-        } else if (!isValidRut(t.rut)) {
-          rowErrors["rut"] = "RUT inválido"
-        }
-        if (t.correo.trim() && !isValidEmail(t.correo)) {
-          rowErrors["correo"] = "Correo inválido"
-        }
-
-        if (Object.keys(rowErrors).length > 0) {
-          errores.byId[t.id] = rowErrors
-        }
-      })
-
-      if (Object.keys(errores.byId).length > 0) {
-        setTrabajadoresErrors(errores)
-        alert("Hay errores en la tabla de trabajadores")
-        return
-      }
-    } else if (currentStep === 3) {
-      if (turnos.length === 0) {
-        alert("Debes crear al menos 1 turno")
-        return
-      }
-      const turnoSinNombre = turnos.find((t) => !t.nombre.trim())
-      if (turnoSinNombre) {
-        alert("Todos los turnos deben tener un nombre")
-        return
-      }
-    } else if (currentStep === 4) {
-      if (planificaciones.length === 0) {
-        alert("Debes crear al menos 1 planificación")
-        return
-      }
-      const planificacionSinNombre = planificaciones.find((p) => !p.nombre.trim())
-      if (planificacionSinNombre) {
-        alert("Todas las planificaciones deben tener un nombre")
-        return
-      }
-    }
-
-    setIsSubmittingToZoho(true)
+  // Renamed handleSubmit to handleFinalizar and modified its logic
+  const handleFinalizar = async () => {
+    setIsSubmitting(true)
     setZohoSubmissionResult(null)
 
-    const allFormData = {
-      empresa,
-      admins,
-      trabajadores,
-      turnos,
-      planificaciones,
-      asignaciones,
-      timestamp: new Date().toISOString(),
-    }
+    try {
+      // Preparar todos los datos del formulario
+      const formData = {
+        empresa,
+        trabajadores,
+        step: currentStep,
+        completedAt: new Date().toISOString(),
+      }
 
-    console.log("[v0] Enviando datos a Zoho Flow...")
-    const result = await submitToZoho(allFormData)
+      // Enviar a Zoho Flow
+      const response = await fetch("/api/submit-to-zoho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-    setIsSubmittingToZoho(false)
-    setZohoSubmissionResult(result)
+      const result = await response.json()
+      setZohoSubmissionResult(result)
 
-    if (result.success) {
-      console.log("[v0] Datos enviados exitosamente a Zoho Flow:", result.data)
-      alert("✅ Formulario validado y enviado a Zoho Flow correctamente!")
-      setCurrentStep(currentStep + 1) // Proceed to next step only if Zoho submission is successful
-    } else {
-      console.error("[v0] Error al enviar a Zoho Flow:", result.error)
-      alert(`⚠️ Formulario validado pero hubo un error al enviar a Zoho Flow: ${result.error}`)
+      if (result.success) {
+        console.log("[v0] Datos enviados exitosamente a Zoho Flow")
+        // Avanzar al siguiente paso después de envío exitoso
+        setCurrentStep(currentStep + 1)
+      } else {
+        console.error("[v0] Error al enviar datos a Zoho Flow:", result.error)
+      }
+    } catch (error) {
+      console.error("[v0] Error al finalizar:", error)
+      setZohoSubmissionResult({
+        success: false,
+        error: "Error de conexión al enviar datos",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -1937,24 +1862,37 @@ export default function OnboardingTurnos({}) {
     setCurrentStep(Math.max(0, currentStep - 1))
   }
 
-  const handleFinal = () => {
-    const resumen = {
-      admin: admins, // Use admins array
-      empresa,
-      trabajadores,
-      turnos,
-      planificaciones,
-      asignaciones,
-    }
-    console.log("Resumen final:", resumen)
-    alert(
-      `Onboarding completado.\n\nAdmin: ${admins[0].nombre}\nEmpresa: ${empresa.nombreFantasia}\nTrabajadores: ${trabajadores.length}\nTurnos: ${turnos.length}\nPlanificaciones: ${planificaciones.length}\nAsignaciones: ${asignaciones.length}`,
+  // Removed the old handleFinal function as it's replaced by handleFinalizar
+  // const handleFinal = () => {
+  //   const resumen = {
+  //     admin: admins,
+  //     empresa,
+  //     trabajadores,
+  //     turnos,
+  //     planificaciones,
+  //     asignaciones,
+  //   }
+  //   console.log("Resumen final:", resumen)
+  //   alert(
+  //     `Onboarding completado.\n\nAdmin: ${admins[0].nombre}\nEmpresa: ${empresa.nombreFantasia}\nTrabajadores: ${trabajadores.length}\nTurnos: ${turnos.length}\nPlanificaciones: ${planificaciones.length}\nAsignaciones: ${asignaciones.length}`,
+  //   )
+  // }
+
+  if (isLoadingToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-600 border-r-transparent"></div>
+          <p className="text-slate-600">Cargando información...</p>
+        </div>
+      </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100">
-      <ZohoPrefillHandler setEmpresa={setEmpresa} setAdmins={setAdmins} />
+      {/* Removed the ZohoPrefillHandler component as its functionality is now handled by the useEffect hook */}
+      {/* <ZohoPrefillHandler setEmpresa={setEmpresa} setAdmins={setAdmins} /> */}
 
       <Stepper currentStep={currentStep} />
 
@@ -2027,28 +1965,31 @@ export default function OnboardingTurnos({}) {
           className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           disabled={currentStep === 0}
         >
-          ←Atrás
+          ← Atrás
         </button>
 
         <span className="text-sm text-slate-600">
           Paso {currentStep + 1} de {steps.length}
         </span>
 
+        {/* Modified the button logic for the final step */}
         {currentStep < steps.length - 1 ? (
           <button
             type="button"
-            onClick={handleSubmit} // Changed to handleSubmit to include Zoho submission
+            onClick={handleFinalizar} // Changed from handleSubmit to handleFinalizar
             className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
+            disabled={isSubmitting} // Added disabled state
           >
-            Siguiente →
+            {isSubmitting ? "Enviando..." : "Siguiente →"}
           </button>
         ) : (
           <button
             type="button"
-            onClick={handleFinal}
+            onClick={handleFinalizar} // Changed from handleFinal to handleFinalizar
             className="inline-flex items-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+            disabled={isSubmitting} // Added disabled state
           >
-            Completar
+            {isSubmitting ? "Enviando..." : "Completar"}
           </button>
         )}
       </div>
@@ -2061,23 +2002,26 @@ export default function OnboardingTurnos({}) {
         >
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <h3 className="font-semibold text-sm mb-1">
-                {zohoSubmissionResult.success ? "✅ Enviado a Zoho Flow" : "❌ Error al enviar"}
-              </h3>
-              <p className="text-xs text-slate-600">
-                {zohoSubmissionResult.success ? "Los datos se enviaron correctamente" : zohoSubmissionResult.error}
+              <h3 className="font-semibold text-sm">{zohoSubmissionResult.success ? "¡Éxito!" : "Error"}</h3>
+              <p className="text-xs">
+                {zohoSubmissionResult.success
+                  ? "Los datos se enviaron a Zoho Flow correctamente."
+                  : `Ocurrió un error: ${zohoSubmissionResult.error}`}
               </p>
-              {zohoSubmissionResult.data && (
-                <details className="mt-2 text-xs">
-                  <summary className="cursor-pointer text-sky-600 hover:text-sky-700">Ver respuesta</summary>
-                  <pre className="mt-2 overflow-auto rounded bg-white p-2 text-[10px]">
-                    {JSON.stringify(zohoSubmissionResult.data, null, 2)}
-                  </pre>
-                </details>
-              )}
             </div>
-            <button onClick={() => setZohoSubmissionResult(null)} className="text-slate-400 hover:text-slate-600">
-              ✕
+            <button
+              type="button"
+              onClick={() => setZohoSubmissionResult(null)}
+              className="rounded-full p-1 hover:bg-slate-100"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4 text-slate-500"
+              >
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
             </button>
           </div>
         </div>
