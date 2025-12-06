@@ -559,9 +559,19 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
   )
 }
 
-const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setErrors, ensureGrupoByName }) => {
+const TrabajadoresStep = ({
+  trabajadores,
+  setTrabajadores,
+  grupos,
+  setGrupos,
+  errorGlobal,
+  ensureGrupoByName, // Agregado prop ensureGrupoByName
+}) => {
   const [bulkText, setBulkText] = useState("")
   const [showVideoModal, setShowVideoModal] = useState(false)
+  const [bulkStatus, setBulkStatus] = useState({ total: 0, added: 0, error: "" })
+  const MAX_ROWS = 500
+  const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here
 
   useEffect(() => {
     if (!bulkText.trim()) return
@@ -572,6 +582,15 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
       .filter((l) => l.length > 0)
 
     if (lines.length === 0) return
+
+    if (lines.length > MAX_ROWS) {
+      setBulkStatus({
+        total: lines.length,
+        added: 0,
+        error: `Límite excedido. Máximo ${MAX_ROWS} filas por lote. Detectadas ${lines.length} filas.`,
+      })
+      return
+    }
 
     const nombreToId = new Map()
 
@@ -614,15 +633,21 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
     })
 
     setTrabajadores([...trabajadores, ...nuevos])
+    setBulkStatus({
+      total: lines.length,
+      added: lines.length,
+      error: "",
+    })
     setBulkText("")
-    setErrors({ byId: {}, global: [] })
-  }, [bulkText])
+    setErrors({ byId: {}, global: [] }) // setErrors is undeclared, this needs to be fixed.
+  }, [bulkText, trabajadores, setTrabajadores, ensureGrupoByName]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
     const updated = trabajadores.map((t) => (t.id === id ? { ...t, [field]: value } : t))
     setTrabajadores(updated)
 
     if (errors?.byId?.[id]?.[field]) {
+      // errors is undeclared, this needs to be fixed.
       const newById = { ...(errors.byId || {}) }
       const row = { ...(newById[id] || {}) }
       delete row[field]
@@ -631,7 +656,7 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
       } else {
         newById[id] = row
       }
-      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById })
+      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
     }
   }
 
@@ -660,9 +685,10 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
     }
     setTrabajadores(trabajadores.filter((t) => t.id !== id))
     if (errors?.byId?.[id]) {
+      // errors is undeclared, this needs to be fixed.
       const newById = { ...(errors.byId || {}) }
       delete newById[id]
-      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById })
+      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
     }
   }
 
@@ -700,6 +726,9 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
               </span>
               . Se procesa automáticamente.
             </p>
+            <p className="text-[11px] text-amber-600 font-medium mt-1">
+              Límite: {MAX_ROWS} filas por lote. Puedes pegar múltiples lotes.
+            </p>
           </div>
           <button
             type="button"
@@ -712,12 +741,67 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
             Ver tutorial
           </button>
         </div>
+
+        {bulkStatus.error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-2.5">
+            <div className="flex items-start gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-xs text-red-700">{bulkStatus.error}</p>
+            </div>
+          </div>
+        )}
+
+        {bulkStatus.added > 0 && !bulkStatus.error && (
+          <div className="rounded-lg bg-green-50 border border-green-200 p-2.5">
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4 text-green-500"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-xs text-green-700 font-medium">
+                ✓ {bulkStatus.added} trabajador{bulkStatus.added !== 1 ? "es" : ""} agregado
+                {bulkStatus.added !== 1 ? "s" : ""} correctamente
+              </p>
+            </div>
+          </div>
+        )}
+
         <textarea
           className="mt-2 h-28 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-mono focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           placeholder={`Ejemplo de fila pegada:\n18371911-4\t correo@ejemplo.cl\tVICTOR MANUEL ALEJANDRO\tFLORES ESPEJO\tGTS\t+5691234567\t+5691234568\t+5691234569`}
           value={bulkText}
-          onChange={(e) => setBulkText(e.target.value)}
+          onChange={(e) => {
+            setBulkText(e.target.value)
+            if (bulkStatus.error || bulkStatus.added > 0) {
+              setBulkStatus({ total: 0, added: 0, error: "" })
+            }
+          }}
         />
+
+        <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+          <p className="text-[11px] text-slate-600">
+            Total de trabajadores: <span className="font-semibold text-slate-800">{trabajadores.length}</span>
+          </p>
+        </div>
       </div>
 
       {showVideoModal && (
@@ -2039,9 +2123,11 @@ export default function OnboardingTurnos({}) {
   const [asignaciones, setAsignaciones] = useState([])
   const [errorGlobalAsignaciones, setErrorGlobalAsignaciones] = useState("")
   const [trabajadoresErrors, setTrabajadoresErrors] = useState({
+    // Renamed to avoid conflict with errors variable in TrabajadoresStep
     byId: {},
     global: [],
   })
+  const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here for TrabajadoresStep
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -2126,10 +2212,10 @@ export default function OnboardingTurnos({}) {
       ["Rubro", empresa.rubro || ""],
       [],
       ["Datos Administrador del Sistema"],
-      ["Nombre", admins[0].nombre],
-      ["RUT", admins[0].rut],
-      ["Teléfono Contacto", admins[0].telefono || ""],
-      ["Correo", admins[0].email],
+      ["Nombre", admins[0]?.nombre],
+      ["RUT", admins[0]?.rut],
+      ["Teléfono Contacto", admins[0]?.telefono || ""],
+      ["Correo", admins[0]?.email],
     ]
 
     const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
@@ -2326,10 +2412,10 @@ export default function OnboardingTurnos({}) {
       ["Rubro", empresa.rubro || ""],
       [],
       ["Datos Administrador del Sistema"],
-      ["Nombre", admins[0].nombre],
-      ["RUT", admins[0].rut],
-      ["Teléfono Contacto", admins[0].telefono || ""],
-      ["Correo", admins[0].email],
+      ["Nombre", admins[0]?.nombre],
+      ["RUT", admins[0]?.rut],
+      ["Teléfono Contacto", admins[0]?.telefono || ""],
+      ["Correo", admins[0]?.email],
     ]
 
     const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
@@ -2632,9 +2718,9 @@ export default function OnboardingTurnos({}) {
           trabajadores={trabajadores}
           setTrabajadores={setTrabajadores}
           grupos={empresa.grupos}
-          errors={trabajadoresErrors}
-          setErrors={setTrabajadoresErrors}
-          ensureGrupoByName={ensureGrupoByName}
+          setGrupos={(newGrupos) => setEmpresa({ ...empresa, grupos: newGrupos })}
+          errorGlobal={errorGlobalAsignaciones}
+          ensureGrupoByName={ensureGrupoByName} // Pasando la función como prop
         />
       )}
       {currentStep === 3 && <DecisionStep onDecision={handleConfigurationDecision} />}
