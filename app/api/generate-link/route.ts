@@ -4,19 +4,65 @@ import { encryptData } from "@/lib/crypto"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    success: true,
+    message: "API de generación de links funcionando",
+    usage: "Envía un POST con { empresaData: { ... } } en el body",
+    example: {
+      empresaData: {
+        razonSocial: "EMPRESA EJEMPLO LTDA",
+        nombreFantasia: "Ejemplo",
+        rut: "12345678-9",
+        giro: "Servicios",
+        direccion: "Calle 123",
+        comuna: "Santiago",
+        emailFacturacion: "email@ejemplo.cl",
+        telefonoContacto: "56912345678",
+        sistema: ["1.- GeoVictoria BOX"],
+        rubro: "1.- SERVICIOS"
+      }
+    }
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] === INICIO DE REQUEST ===")
     console.log("[v0] Method:", request.method)
     console.log("[v0] URL:", request.url)
+    console.log("[v0] Content-Type:", request.headers.get("content-type"))
+    console.log("[v0] Content-Length:", request.headers.get("content-length"))
 
-    // Log de headers importantes
-    const contentType = request.headers.get("content-type")
-    console.log("[v0] Content-Type:", contentType)
+    let bodyText = ""
+    let body = null
 
-    const bodyText = await request.text()
-    console.log("[v0] Body recibido (length):", bodyText.length)
-    console.log("[v0] Body content:", bodyText)
+    try {
+      // Método 1: request.text()
+      bodyText = await request.text()
+      console.log("[v0] Método request.text() exitoso - Length:", bodyText.length)
+    } catch (e) {
+      console.log("[v0] request.text() falló, intentando método alternativo")
+      
+      try {
+        // Método 2: request.json() directo
+        body = await request.json()
+        console.log("[v0] Método request.json() exitoso")
+        bodyText = JSON.stringify(body)
+      } catch (e2) {
+        console.error("[v0] Todos los métodos de lectura fallaron")
+        return NextResponse.json(
+          {
+            success: false,
+            error: "No se pudo leer el body de la solicitud",
+            hint: "Verifica la configuración de Postman: Body → raw → JSON",
+          },
+          { status: 400 },
+        )
+      }
+    }
+
+    console.log("[v0] Body recibido:", bodyText.substring(0, 200))
 
     // Validar que el body no esté vacío
     if (!bodyText || bodyText.trim().length === 0) {
@@ -26,27 +72,34 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "El body de la solicitud está vacío",
           hint: "En Postman: 1) Selecciona 'Body' tab, 2) Marca 'raw', 3) Selecciona 'JSON' en el dropdown, 4) Pega el JSON",
+          debug: {
+            contentType: request.headers.get("content-type"),
+            contentLength: request.headers.get("content-length"),
+            hasBody: !!bodyText
+          }
         },
         { status: 400 },
       )
     }
 
-    let body
-    try {
-      body = JSON.parse(bodyText)
-      console.log("[v0] Body parseado exitosamente:", JSON.stringify(body, null, 2))
-    } catch (parseError) {
-      console.error("[v0] Error parseando JSON:", parseError)
-      return NextResponse.json(
-        {
-          success: false,
-          error: "JSON inválido",
-          details: parseError instanceof Error ? parseError.message : "Error al parsear JSON",
-          receivedText: bodyText.substring(0, 200),
-          hint: "Verifica que el JSON esté bien formado (usa comillas dobles, no simples)",
-        },
-        { status: 400 },
-      )
+    // Parsear JSON si aún no lo hemos hecho
+    if (!body) {
+      try {
+        body = JSON.parse(bodyText)
+        console.log("[v0] Body parseado exitosamente")
+      } catch (parseError) {
+        console.error("[v0] Error parseando JSON:", parseError)
+        return NextResponse.json(
+          {
+            success: false,
+            error: "JSON inválido",
+            details: parseError instanceof Error ? parseError.message : "Error al parsear JSON",
+            receivedText: bodyText.substring(0, 200),
+            hint: "Verifica que el JSON esté bien formado (usa comillas dobles)",
+          },
+          { status: 400 },
+        )
+      }
     }
 
     // Validar estructura de los datos
