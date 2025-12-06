@@ -1550,7 +1550,12 @@ export default function OnboardingTurnos({}) {
   })
 
   const [isSubmittingToZoho, setIsSubmittingToZoho] = useState(false)
-  const [zohoSubmissionResult, setZohoSubmissionResult] = useState < any > null
+  // Fix: Add type annotation for zohoSubmissionResult
+  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<{
+    success: boolean
+    data?: any
+    error?: string
+  } | null>(null)
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
