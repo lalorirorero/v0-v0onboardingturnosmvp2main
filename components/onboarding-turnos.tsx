@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import { Building2 } from "lucide-react"
 import * as XLSX from "xlsx"
@@ -10,10 +12,11 @@ const steps = [
   { id: 0, label: "Empresa y grupos", description: "Datos base de la empresa" },
   { id: 1, label: "Admin", description: "Responsable de la cuenta" },
   { id: 2, label: "Trabajadores", description: "Listado inicial" },
-  { id: 3, label: "Turnos", description: "Definición de turnos" },
-  { id: 4, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 5, label: "Asignación", description: "Quién trabaja qué planificación" },
-  { id: 6, label: "Resumen", description: "Revisión final" },
+  { id: 3, label: "Configuración", description: "Decidir qué configurar" },
+  { id: 4, label: "Turnos", description: "Definición de turnos" },
+  { id: 5, label: "Planificaciones", description: "Tipos de planificación semanal" },
+  { id: 6, label: "Asignación", description: "Quién trabaja qué planificación" },
+  { id: 7, label: "Resumen", description: "Revisión final" },
 ]
 
 // Días de la semana
@@ -96,31 +99,62 @@ const Stepper = ({ currentStep }) => {
   )
 }
 
-const AdminStep = ({ admins, setAdmins }) => {
-  const handleChange = (id, field, value) => {
-    setAdmins(admins.map((admin) => (admin.id === id ? { ...admin, [field]: value } : admin)))
+const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
+  const [formData, setFormData] = useState({
+    nombre: "",
+    rut: "",
+    email: "",
+    telefono: "",
+    grupo: "",
+  })
+
+  const handleFormChange = (field, value) => {
+    setFormData({ ...formData, [field]: value })
   }
 
   const addAdmin = () => {
+    // Validar que al menos el nombre esté completo
+    if (!formData.nombre.trim()) {
+      alert("Por favor ingresa el nombre del administrador")
+      return
+    }
+
+    // Crear el grupo si es nuevo
+    let grupoId = ""
+    if (formData.grupo.trim()) {
+      grupoId = ensureGrupoByName(formData.grupo.trim())
+    }
+
+    // Agregar el administrador
     setAdmins([
       ...admins,
       {
         id: Date.now(),
-        nombre: "",
-        rut: "",
-        email: "",
-        telefono: "",
+        nombre: formData.nombre,
+        rut: formData.rut,
+        email: formData.email,
+        telefono: formData.telefono,
+        grupoId: grupoId,
+        grupoNombre: formData.grupo,
       },
     ])
+
+    // Limpiar el formulario
+    setFormData({
+      nombre: "",
+      rut: "",
+      email: "",
+      telefono: "",
+      grupo: "",
+    })
   }
 
   const removeAdmin = (id) => {
-    if (admins.length === 1) return
     setAdmins(admins.filter((admin) => admin.id !== id))
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Administradores</h2>
         <p className="text-xs text-slate-500">
@@ -128,74 +162,205 @@ const AdminStep = ({ admins, setAdmins }) => {
         </p>
       </header>
 
-      <div className="space-y-4">
-        {admins.map((admin, index) => (
-          <div key={admin.id} className="rounded-xl border border-slate-200 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-slate-700">Administrador {index + 1}</h3>
-              {admins.length > 1 && (
+      {/* Formulario único */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Administrador</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Nombre completo</label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => handleFormChange("nombre", e.target.value)}
+              placeholder="Ej: Juan Pérez"
+            />
+          </div>
+          <div className="space-y-1 text-sm">
+            <label className="font-medium inline-flex items-center gap-1">
+              RUT
+              <span className="group relative">
+                <svg
+                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
+                  Sin puntos y con guión. Ejemplo: 12345678-9
+                </span>
+              </span>
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formData.rut}
+              onChange={(e) => handleFormChange("rut", e.target.value)}
+              placeholder="12345678-9"
+            />
+          </div>
+          <div className="space-y-1 text-sm">
+            <label className="font-medium inline-flex items-center gap-1">
+              Correo
+              <span className="group relative">
+                <svg
+                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
+                  Formato: usuario@dominio.com
+                </span>
+              </span>
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleFormChange("email", e.target.value)}
+              placeholder="admin@empresa.com"
+            />
+          </div>
+          <div className="space-y-1 text-sm">
+            <label className="font-medium inline-flex items-center gap-1">
+              Teléfono
+              <span className="group relative">
+                <svg
+                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
+                  Formato: +56 9 1234 5678 (con código país)
+                </span>
+              </span>
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="tel"
+              value={formData.telefono}
+              onChange={(e) => handleFormChange("telefono", e.target.value)}
+              placeholder="+56 9 1234 5678"
+            />
+          </div>
+          <div className="space-y-1 text-sm md:col-span-2">
+            <label className="font-medium inline-flex items-center gap-1">
+              Grupo
+              <span className="group relative">
+                <svg
+                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-56 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
+                  Los grupos permiten organizar trabajadores por equipos, sucursales o departamentos. Ejemplo: Ventas,
+                  Bodega, Sucursal Centro
+                </span>
+              </span>
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formData.grupo}
+              onChange={(e) => handleFormChange("grupo", e.target.value)}
+              placeholder="Ej: Gerencia, Administración, etc."
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={addAdmin}
+          className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+        >
+          + Agregar administrador
+        </button>
+      </div>
+
+      {/* Listado de administradores */}
+      {admins.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-slate-700">Administradores agregados ({admins.length})</h3>
+          <div className="space-y-2">
+            {admins.map((admin, index) => (
+              <div
+                key={admin.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-900">{admin.nombre}</span>
+                    {admin.grupoNombre && (
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                        {admin.grupoNombre}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                    {admin.rut && <span>RUT: {admin.rut}</span>}
+                    {admin.email && <span>{admin.email}</span>}
+                    {admin.telefono && <span>{admin.telefono}</span>}
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => removeAdmin(admin.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="ml-2 text-xs text-red-500 hover:text-red-700 focus:outline-none"
+                  title="Eliminar administrador"
                 >
-                  Eliminar
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
                 </button>
-              )}
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Nombre completo</label>
-                <input
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="text"
-                  value={admin.nombre}
-                  onChange={(e) => handleChange(admin.id, "nombre", e.target.value)}
-                  placeholder="Ej: Juan Pérez"
-                />
               </div>
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">RUT</label>
-                <input
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="text"
-                  value={admin.rut}
-                  onChange={(e) => handleChange(admin.id, "rut", e.target.value)}
-                  placeholder="12345678-9"
-                />
-              </div>
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Correo</label>
-                <input
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="email"
-                  value={admin.email}
-                  onChange={(e) => handleChange(admin.id, "email", e.target.value)}
-                  placeholder="admin@empresa.com"
-                />
-              </div>
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Teléfono</label>
-                <input
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="tel"
-                  value={admin.telefono}
-                  onChange={(e) => handleChange(admin.id, "telefono", e.target.value)}
-                  placeholder="+56 9 1234 5678"
-                />
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={addAdmin}
-        className="rounded-xl border-2 border-dashed border-sky-300 px-4 py-2 text-sm font-medium text-sky-600 hover:border-sky-400 hover:bg-sky-50"
-      >
-        + Agregar administrador
-      </button>
+      {admins.length === 0 && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+          <p className="text-sm text-slate-500">No hay administradores agregados aún</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Completa el formulario arriba para agregar el primer administrador
+          </p>
+        </div>
+      )}
     </section>
   )
 }
@@ -792,26 +957,41 @@ const TrabajadoresStep = ({ trabajadores, setTrabajadores, grupos, errors, setEr
 }
 
 const TurnosStep = ({ turnos, setTurnos }) => {
-  const updateTurno = (id, field, value) => {
-    const updated = turnos.map((t) => (t.id === id ? { ...t, [field]: value } : t))
-    setTurnos(updated)
-  }
+  const [formTurno, setFormTurno] = React.useState({
+    nombre: "",
+    horaInicio: "",
+    horaFin: "",
+    colacionMinutos: 0,
+    tooltip: "",
+  })
 
-  const addTurno = () => {
+  const handleAddTurno = () => {
+    // Validación básica
+    if (!formTurno.nombre.trim()) {
+      alert("Por favor ingresa el nombre del turno")
+      return
+    }
+
+    // Agregar el nuevo turno
     setTurnos([
       ...turnos,
       {
         id: Date.now(),
-        nombre: "",
-        horaInicio: "",
-        horaFin: "",
-        colacionMinutos: 0,
+        ...formTurno,
       },
     ])
+
+    // Limpiar el formulario
+    setFormTurno({
+      nombre: "",
+      horaInicio: "",
+      horaFin: "",
+      colacionMinutos: 0,
+      tooltip: "",
+    })
   }
 
   const removeTurno = (id) => {
-    if (turnos.length === 1) return
     setTurnos(turnos.filter((t) => t.id !== id))
   }
 
@@ -833,115 +1013,299 @@ const TurnosStep = ({ turnos, setTurnos }) => {
         </div>
       </header>
 
-      <div className="space-y-3">
-        {turnos.map((turno) => (
-          <div key={turno.id} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="grid gap-2 md:grid-cols-3">
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Nombre del turno</label>
-                <input
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="text"
-                  value={turno.nombre}
-                  onChange={(e) => updateTurno(turno.id, "nombre", e.target.value)}
-                  placeholder="Ej: Turno Oficina, Turno Noche"
-                />
-              </div>
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Hora inicio</label>
-                <input
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="time"
-                  value={turno.horaInicio}
-                  onChange={(e) => updateTurno(turno.id, "horaInicio", e.target.value)}
-                />
-              </div>
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Hora fin</label>
-                <input
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="time"
-                  value={turno.horaFin}
-                  onChange={(e) => updateTurno(turno.id, "horaFin", e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-1 text-sm">
-              <label className="font-medium">Tiempo de colación (minutos)</label>
-              <input
-                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                type="number"
-                value={turno.colacionMinutos}
-                onChange={(e) => updateTurno(turno.id, "colacionMinutos", Number.parseInt(e.target.value) || 0)}
-                placeholder="Ej: 30, 60"
-                min="0"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => removeTurno(turno.id)}
-              className="text-xs text-slate-500 hover:text-red-500"
-            >
-              Eliminar turno
-            </button>
+      <div className="space-y-3 rounded-xl border-2 border-sky-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Agregar nuevo turno</h3>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Nombre del turno</label>
+            <input
+              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formTurno.nombre}
+              onChange={(e) => setFormTurno({ ...formTurno, nombre: e.target.value })}
+              placeholder="Ej: Turno Oficina, Turno Noche"
+            />
           </div>
-        ))}
+
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Hora inicio</label>
+            <input
+              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="time"
+              value={formTurno.horaInicio}
+              onChange={(e) => setFormTurno({ ...formTurno, horaInicio: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Hora fin</label>
+            <input
+              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="time"
+              value={formTurno.horaFin}
+              onChange={(e) => setFormTurno({ ...formTurno, horaFin: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1 text-sm">
+          <label className="font-medium">Tiempo de colación (minutos)</label>
+          <input
+            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            type="number"
+            value={formTurno.colacionMinutos}
+            onChange={(e) => setFormTurno({ ...formTurno, colacionMinutos: Number.parseInt(e.target.value) || 0 })}
+            placeholder="Ej: 30, 60"
+            min="0"
+          />
+        </div>
+
+        <div className="space-y-1 text-sm">
+          <label className="font-medium">Descripción (opcional)</label>
+          <input
+            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            type="text"
+            value={formTurno.tooltip}
+            onChange={(e) => setFormTurno({ ...formTurno, tooltip: e.target.value })}
+            placeholder="Ej: Fin de Semana o Feriado"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAddTurno}
+          className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
+        >
+          Agregar turno
+        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={addTurno}
-        className="mt-2 inline-flex items-center rounded-full border border-sky-500 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
-      >
-        + Agregar turno
-      </button>
+      {turnos.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-900">Turnos creados ({turnos.length})</h3>
+          <div className="space-y-2">
+            {turnos.map((turno) => (
+              <div
+                key={turno.id}
+                className="flex items-start justify-between rounded-lg border border-slate-200 bg-slate-50 p-3"
+              >
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-slate-900">{turno.nombre}</h4>
+                    {turno.tooltip && <span className="text-xs text-slate-500">({turno.tooltip})</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+                    {turno.horaInicio && turno.horaFin && (
+                      <span>
+                        <strong>Horario:</strong> {turno.horaInicio} - {turno.horaFin}
+                      </span>
+                    )}
+                    {turno.colacionMinutos > 0 && (
+                      <span>
+                        <strong>Colación:</strong> {turno.colacionMinutos} min
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeTurno(turno.id)}
+                  className="text-xs text-slate-500 hover:text-red-500"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+const GruposStep = ({ grupos, setGrupos }) => {
+  const [formData, setFormData] = useState({
+    nombre: "",
+    descripcion: "",
+  })
+
+  const handleFormChange = (field, value) => {
+    setFormData({ ...formData, [field]: value })
+  }
+
+  const addGrupo = () => {
+    if (!formData.nombre.trim()) {
+      alert("Por favor ingresa el nombre del grupo")
+      return
+    }
+
+    setGrupos([
+      ...grupos,
+      {
+        id: Date.now(),
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+      },
+    ])
+
+    // Limpiar el formulario
+    setFormData({
+      nombre: "",
+      descripcion: "",
+    })
+  }
+
+  const removeGrupo = (id) => {
+    setGrupos(grupos.filter((g) => g.id !== id))
+  }
+
+  return (
+    <section className="space-y-6">
+      <header>
+        <h2 className="text-lg font-semibold text-slate-900">Grupos</h2>
+        <p className="text-xs text-slate-500">
+          Organiza a tus trabajadores en grupos por equipos, sucursales o departamentos.
+        </p>
+      </header>
+
+      {/* Formulario único */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Grupo</h3>
+        <div className="space-y-3">
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Nombre del grupo</label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => handleFormChange("nombre", e.target.value)}
+              placeholder="Ej: Ventas, Bodega, Sucursal Centro"
+            />
+          </div>
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Descripción (opcional)</label>
+            <textarea
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              value={formData.descripcion}
+              onChange={(e) => handleFormChange("descripcion", e.target.value)}
+              placeholder="Ej: Equipo de ventas de la región metropolitana"
+              rows={2}
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={addGrupo}
+          className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+        >
+          + Agregar grupo
+        </button>
+      </div>
+
+      {/* Listado de grupos */}
+      {grupos.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-slate-700">Grupos creados ({grupos.length})</h3>
+          <div className="space-y-2">
+            {grupos.map((grupo) => (
+              <div
+                key={grupo.id}
+                className="flex items-start justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
+              >
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-slate-900">{grupo.nombre}</div>
+                  {grupo.descripcion && <div className="mt-1 text-xs text-slate-500">{grupo.descripcion}</div>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeGrupo(grupo.id)}
+                  className="ml-2 text-xs text-red-500 hover:text-red-700 focus:outline-none"
+                  title="Eliminar grupo"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {grupos.length === 0 && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+          <p className="text-sm text-slate-500">No hay grupos creados aún</p>
+          <p className="text-xs text-slate-400 mt-1">Completa el formulario arriba para agregar el primer grupo</p>
+        </div>
+      )}
     </section>
   )
 }
 
 const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) => {
-  const updatePlanificacion = (id, field, value) => {
-    const updated = planificaciones.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    setPlanificaciones(updated)
+  const [formData, setFormData] = useState({
+    nombre: "",
+    diasTurnos: Array(7).fill(null),
+  })
+
+  const handleFormChange = (field, value) => {
+    setFormData({ ...formData, [field]: value })
   }
 
-  const updateDiaTurno = (planId, dayIndex, turnoId) => {
-    const updated = planificaciones.map((p) => {
-      if (p.id === planId) {
-        const nuevosDias = [...p.diasTurnos]
-        nuevosDias[dayIndex] = turnoId
-        return { ...p, diasTurnos: nuevosDias }
-      }
-      return p
-    })
-    setPlanificaciones(updated)
+  const updateDiaTurno = (dayIndex, turnoId) => {
+    const nuevosDias = [...formData.diasTurnos]
+    nuevosDias[dayIndex] = turnoId
+    setFormData({ ...formData, diasTurnos: nuevosDias })
   }
 
   const addPlanificacion = () => {
-    const turnoLibre = turnos.find((t) => t.nombre.toLowerCase() === "libre")
-    const turnoLibreId = turnoLibre ? turnoLibre.id : null
+    if (!formData.nombre.trim()) {
+      alert("Por favor ingresa el nombre de la planificación")
+      return
+    }
+
+    const esCompleta = formData.diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
+    if (!esCompleta) {
+      alert("Por favor asigna un turno a todos los días de la semana")
+      return
+    }
 
     setPlanificaciones([
       ...planificaciones,
       {
         id: Date.now(),
-        nombre: "",
-        diasTurnos: Array(7).fill(turnoLibreId),
+        nombre: formData.nombre,
+        diasTurnos: formData.diasTurnos,
       },
     ])
+
+    // Limpiar el formulario
+    const defaultTurno =
+      turnos.find((t) => t.nombre.toLowerCase() === "libre" || t.nombre.toLowerCase() === "descanso") || turnos[0]
+    const defaultTurnoId = defaultTurno ? defaultTurno.id : null
+
+    setFormData({
+      nombre: "",
+      diasTurnos: Array(7).fill(defaultTurnoId),
+    })
   }
 
   const removePlanificacion = (id) => {
-    if (planificaciones.length === 1) return
     setPlanificaciones(planificaciones.filter((p) => p.id !== id))
   }
 
-  const verificarPlanificacionCompleta = (plan) => {
-    return plan.diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
+  const verificarPlanificacionCompleta = (diasTurnos) => {
+    return diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Planificaciones</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-purple-200 bg-purple-50 p-3">
@@ -969,79 +1333,129 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
         </div>
       )}
 
-      <div className="space-y-3">
-        {planificaciones.map((plan) => {
-          const esCompleta = verificarPlanificacionCompleta(plan)
-          return (
-            <div key={plan.id} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div className="space-y-1 text-sm">
-                <label className="font-medium">Nombre de la planificación</label>
-                <input
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  type="text"
-                  value={plan.nombre}
-                  onChange={(e) => updatePlanificacion(plan.id, "nombre", e.target.value)}
-                  placeholder="Ej: Lunes a Viernes Oficina, Fin de semana Libre"
-                />
-              </div>
+      {/* Formulario único */}
+      {turnos.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Planificación</h3>
+          <div className="space-y-3">
+            <div className="space-y-1 text-sm">
+              <label className="font-medium">Nombre de la planificación</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                type="text"
+                value={formData.nombre}
+                onChange={(e) => handleFormChange("nombre", e.target.value)}
+                placeholder="Ej: Lunes a Viernes Oficina, Fin de semana Libre"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Asignación semanal (L, M, X, J, V, S, D)</p>
-                <div className="grid gap-2 sm:grid-cols-7">
-                  {DIAS.map((dia, dayIndex) => {
-                    const turnoAsignado = plan.diasTurnos[dayIndex]
-                    return (
-                      <div key={dayIndex} className="space-y-1">
-                        <label className="text-xs font-medium text-slate-600">{dia}</label>
-                        <select
-                          className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                          value={turnoAsignado ?? ""}
-                          onChange={(e) =>
-                            updateDiaTurno(plan.id, dayIndex, e.target.value ? Number(e.target.value) : null)
-                          }
-                        >
-                          <option value="">Seleccionar</option>
-                          {turnos.map((turno) => (
-                            <option key={turno.id} value={turno.id}>
-                              {turno.nombre || "Sin nombre"}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-                <div className="text-xs">
-                  {esCompleta ? (
-                    <span className="text-emerald-700 font-medium">✓ Planificación completa</span>
-                  ) : (
-                    <span className="text-red-700 font-medium">⚠ Todos los días deben tener un turno</span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removePlanificacion(plan.id)}
-                  className="text-xs text-slate-500 hover:text-red-500"
-                >
-                  Eliminar
-                </button>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-700">Asignación semanal (L, M, X, J, V, S, D)</p>
+              <div className="grid gap-2 sm:grid-cols-7">
+                {DIAS.map((dia, dayIndex) => {
+                  const turnoAsignado = formData.diasTurnos[dayIndex]
+                  return (
+                    <div key={dayIndex} className="space-y-1">
+                      <label className="text-xs font-medium text-slate-600">{dia}</label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        value={turnoAsignado ?? ""}
+                        onChange={(e) => updateDiaTurno(dayIndex, e.target.value ? Number(e.target.value) : null)}
+                      >
+                        <option value="">Seleccionar</option>
+                        {turnos.map((turno) => (
+                          <option key={turno.id} value={turno.id}>
+                            {turno.nombre || "Sin nombre"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          )
-        })}
-      </div>
 
-      <button
-        type="button"
-        onClick={addPlanificacion}
-        disabled={turnos.length === 0}
-        className="mt-2 inline-flex items-center rounded-full border border-sky-500 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50 disabled:border-slate-300 disabled:text-slate-500 disabled:hover:bg-white"
-      >
-        + Agregar planificación
-      </button>
+            <div className="text-xs">
+              {verificarPlanificacionCompleta(formData.diasTurnos) ? (
+                <span className="text-emerald-700 font-medium">✓ Planificación completa</span>
+              ) : (
+                <span className="text-amber-700 font-medium">⚠ Todos los días deben tener un turno asignado</span>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={addPlanificacion}
+            className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+          >
+            + Agregar planificación
+          </button>
+        </div>
+      )}
+
+      {/* Listado de planificaciones */}
+      {planificaciones.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-slate-700">Planificaciones creadas ({planificaciones.length})</h3>
+          <div className="space-y-3">
+            {planificaciones.map((plan) => {
+              const esCompleta = verificarPlanificacionCompleta(plan.diasTurnos)
+              return (
+                <div key={plan.id} className="rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-slate-900">{plan.nombre}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {esCompleta ? (
+                          <span className="text-emerald-700 font-medium">✓ Completa</span>
+                        ) : (
+                          <span className="text-amber-700 font-medium">⚠ Incompleta</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePlanificacion(plan.id)}
+                      className="text-xs text-red-500 hover:text-red-700 focus:outline-none"
+                      title="Eliminar planificación"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-[10px]">
+                    {DIAS.map((dia, dayIndex) => {
+                      const turnoId = plan.diasTurnos[dayIndex]
+                      const turno = turnos.find((t) => t.id === turnoId)
+                      return (
+                        <div key={dayIndex} className="text-center">
+                          <div className="font-medium text-slate-600 mb-0.5">{dia}</div>
+                          <div className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{turno?.nombre || "-"}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {planificaciones.length === 0 && turnos.length > 0 && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+          <p className="text-sm text-slate-500">No hay planificaciones creadas aún</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Completa el formulario arriba para agregar la primera planificación
+          </p>
+        </div>
+      )}
     </section>
   )
 }
@@ -1501,6 +1915,72 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
   )
 }
 
+const DecisionStep = ({ onDecision }) => {
+  return (
+    <section className="space-y-6">
+      <header className="text-center">
+        <h2 className="text-2xl font-semibold text-slate-900">¿Deseas configurar turnos y planificaciones ahora?</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Puedes configurar los turnos, planificaciones y asignaciones ahora, o verlo más tarde durante la capacitación
+          de la plataforma.
+        </p>
+      </header>
+
+      <div className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onDecision("now")}
+          className="group relative overflow-hidden rounded-2xl border-2 border-sky-300 bg-white p-6 text-left transition-all hover:border-sky-500 hover:shadow-lg"
+        >
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-500 group-hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Configurar ahora</h3>
+          <p className="text-sm text-slate-600">
+            Continúa configurando turnos, planificaciones y asignaciones en los siguientes pasos.
+          </p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDecision("later")}
+          className="group relative overflow-hidden rounded-2xl border-2 border-emerald-300 bg-white p-6 text-left transition-all hover:border-emerald-500 hover:shadow-lg"
+        >
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"
+              />
+            </svg>
+          </div>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Ver en capacitación</h3>
+          <p className="text-sm text-slate-600">
+            Omite esta configuración y completa el onboarding. Lo verás durante la capacitación de la plataforma.
+          </p>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams()
   // Initialized currentStep to 1, added isSubmitting and isLoadingToken states
@@ -1509,15 +1989,10 @@ export default function OnboardingTurnos({}) {
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
 
-  const [admins, setAdmins] = useState([
-    {
-      id: Date.now(),
-      nombre: "Carlos López",
-      rut: "12345678-9",
-      email: "carlos@empresa.com",
-      telefono: "+56912345678",
-    },
-  ])
+  // Renamed skipConfiguration to configureNow for clarity and consistency with the update
+  const [configureNow, setConfigureNow] = useState(true) // Default to true
+
+  const [admins, setAdmins] = useState([])
 
   // Modified initial state for empresa to be empty
   const [empresa, setEmpresa] = useState({
@@ -1531,10 +2006,35 @@ export default function OnboardingTurnos({}) {
     telefonoContacto: "",
     sistema: [],
     rubro: "",
-    grupos: [],
+    grupos: [], // Ensure grupos is initialized as an array
   })
   const [trabajadores, setTrabajadores] = useState([])
-  const [turnos, setTurnos] = useState([])
+  const [turnos, setTurnos] = useState([
+    {
+      id: 1,
+      nombre: "Descanso",
+      horaInicio: "",
+      horaFin: "",
+      colacionMinutos: 0,
+      tooltip: "Fin de Semana o Feriado",
+    },
+    {
+      id: 2,
+      nombre: "Libre",
+      horaInicio: "",
+      horaFin: "",
+      colacionMinutos: 0,
+      tooltip: "No marca o Artículo 22",
+    },
+    {
+      id: 3,
+      nombre: "Presencial",
+      horaInicio: "",
+      horaFin: "",
+      colacionMinutos: 0,
+      tooltip: "Sin planificación",
+    },
+  ])
   const [planificaciones, setPlanificaciones] = useState([])
   const [asignaciones, setAsignaciones] = useState([])
   const [errorGlobalAsignaciones, setErrorGlobalAsignaciones] = useState("")
@@ -1542,10 +2042,6 @@ export default function OnboardingTurnos({}) {
     byId: {},
     global: [],
   })
-
-  // Fixed TypeScript syntax for useState with any type
-  // Removed zohoSubmissionResult here as it's already declared above
-  // const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -1568,7 +2064,7 @@ export default function OnboardingTurnos({}) {
       nombre: admin.nombre,
       rut: admin.rut,
       correo: admin.email,
-      grupoId: "",
+      grupoId: admin.grupoId,
       telefono1: admin.telefono,
       telefono2: "",
       telefono3: "",
@@ -1596,6 +2092,8 @@ export default function OnboardingTurnos({}) {
             setEmpresa((prev) => ({
               ...prev,
               ...data.empresaData,
+              // Ensure groups is an array and merge if necessary
+              grupos: Array.isArray(data.empresaData.grupos) ? data.empresaData.grupos : [],
             }))
             console.log("[v0] Datos de empresa prellenados desde token:", data.empresaData)
           } else {
@@ -1610,6 +2108,206 @@ export default function OnboardingTurnos({}) {
         })
     }
   }, [searchParams])
+
+  const generateExcelAsBase64 = () => {
+    const workbook = XLSX.utils.book_new()
+
+    const empresaData = [
+      ["DATOS EMPRESA"],
+      ["Razón Social", empresa.razonSocial],
+      ["Nombre de fantasía", empresa.nombreFantasia || ""],
+      ["RUT", empresa.rut],
+      ["Giro", empresa.giro || ""],
+      ["Dirección", empresa.direccion],
+      ["Comuna", empresa.comuna || ""],
+      ["Email de facturación", empresa.emailFacturacion || ""],
+      ["Teléfono de contacto", empresa.telefonoContacto || ""],
+      ["Sistema", empresa.sistema.join(", ") || ""],
+      ["Rubro", empresa.rubro || ""],
+      [],
+      ["Datos Administrador del Sistema"],
+      ["Nombre", admins[0].nombre],
+      ["RUT", admins[0].rut],
+      ["Teléfono Contacto", admins[0].telefono || ""],
+      ["Correo", admins[0].email],
+    ]
+
+    const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
+    ws1["A1"] = { v: "DATOS EMPRESA", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
+    ws1["A13"] = { v: "Datos Administrador del Sistema", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
+    XLSX.utils.book_append_sheet(workbook, ws1, "Datos Empresa")
+
+    const headers = [
+      "Rut Completo",
+      "Correo Personal",
+      "Nombres",
+      "Apellidos",
+      "Grupo",
+      "Período a planificar: turnos",
+      "Lunes",
+      "",
+      "",
+      "Martes",
+      "",
+      "",
+      "Miércoles",
+      "",
+      "",
+      "Jueves",
+      "",
+      "",
+      "Viernes",
+      "",
+      "",
+      "Sábado",
+      "",
+      "",
+      "Domingo",
+      "",
+      "",
+      "TELÉFONOS MARCAJE POR VICTORIA CALL",
+    ]
+
+    const subHeaders = [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Fecha Fin Planificación",
+      "Entrada",
+      "Col (minutos)",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "Entrada",
+      "Col",
+      "Salida",
+      "",
+    ]
+
+    const trabajadoresData = [headers, subHeaders]
+
+    trabajadores.forEach((trabajador) => {
+      const asignacion = asignaciones.find((a) => a.trabajadorId === trabajador.id)
+      let planificacion = null
+      let fechaFin = ""
+      const turnosPorDia = Array(7).fill({ entrada: "", colacion: "", salida: "" })
+
+      if (asignacion) {
+        planificacion = planificaciones.find((p) => p.id === asignacion.planificacionId)
+        fechaFin = asignacion.hasta === "permanente" ? "PERMANENTE" : asignacion.hasta
+
+        if (planificacion) {
+          planificacion.diasTurnos.forEach((turnoId, dayIndex) => {
+            if (turnoId) {
+              const turno = turnos.find((t) => t.id === turnoId)
+              if (turno) {
+                turnosPorDia[dayIndex] = {
+                  entrada: turno.horaInicio || "",
+                  colacion: turno.colacionMinutos || "",
+                  salida: turno.horaFin || "",
+                }
+              }
+            }
+          })
+        }
+      }
+
+      const grupoNombre = trabajador.grupoId
+        ? empresa.grupos?.find((g) => g.id === trabajador.grupoId)?.nombre || ""
+        : ""
+
+      const row = [
+        trabajador.rut,
+        trabajador.correo,
+        trabajador.nombre.split(" ")[0] || "",
+        trabajador.nombre.split(" ").slice(1).join(" ") || "",
+        grupoNombre,
+        fechaFin,
+        turnosPorDia[0].entrada,
+        turnosPorDia[0].colacion,
+        turnosPorDia[0].salida,
+        turnosPorDia[1].entrada,
+        turnosPorDia[1].colacion,
+        turnosPorDia[1].salida,
+        turnosPorDia[2].entrada,
+        turnosPorDia[2].colacion,
+        turnosPorDia[2].salida,
+        turnosPorDia[3].entrada,
+        turnosPorDia[3].colacion,
+        turnosPorDia[3].salida,
+        turnosPorDia[4].entrada,
+        turnosPorDia[4].colacion,
+        turnosPorDia[4].salida,
+        turnosPorDia[5].entrada,
+        turnosPorDia[5].colacion,
+        turnosPorDia[5].salida,
+        turnosPorDia[6].entrada,
+        turnosPorDia[6].colacion,
+        turnosPorDia[6].salida,
+        [trabajador.telefono1, trabajador.telefono2, trabajador.telefono3].filter(Boolean).join(" | "),
+      ]
+
+      trabajadoresData.push(row)
+    })
+
+    const ws2 = XLSX.utils.aoa_to_sheet(trabajadoresData)
+    ws2["!cols"] = [
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 25 },
+    ]
+
+    XLSX.utils.book_append_sheet(workbook, ws2, "Planificación")
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "base64" })
+    const fileName = `Onboarding_${empresa.nombreFantasia || "Empresa"}_${new Date().toISOString().split("T")[0]}.xlsx`
+
+    return {
+      fileName,
+      fileBase64: wbout,
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+  }
 
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new()
@@ -1816,18 +2514,33 @@ export default function OnboardingTurnos({}) {
     URL.revokeObjectURL(url)
   }
 
-  // Renamed handleSubmit to handleFinalizar and modified its logic
   const handleFinalizar = async () => {
+    // Only send webhook if we're on the final step (Resumen)
+    if (currentStep !== steps.length - 1) {
+      return
+    }
+
     setIsSubmitting(true)
     setZohoSubmissionResult(null)
 
     try {
-      // Preparar todos los datos del formulario
+      const excelFile = generateExcelAsBase64()
+
       const formData = {
         empresa,
+        admins,
         trabajadores,
-        step: currentStep,
+        ...(configureNow && {
+          turnos,
+          planificaciones,
+          asignaciones,
+        }),
         completedAt: new Date().toISOString(),
+        archivo: {
+          nombre: excelFile.fileName,
+          contenido: excelFile.fileBase64,
+          tipo: excelFile.mimeType,
+        },
       }
 
       // Enviar a Zoho Flow
@@ -1846,37 +2559,46 @@ export default function OnboardingTurnos({}) {
         setCurrentStep(currentStep + 1)
       } else {
         console.error("[v0] Error al enviar datos a Zoho Flow:", result.error)
+        // Se actualiza el estado de ZohoSubmissionResult con un mensaje más detallado
+        setZohoSubmissionResult({
+          success: false,
+          message: result.message || "Ocurrió un error desconocido.",
+          error: result.error || "No se pudo procesar la solicitud.",
+        })
       }
     } catch (error) {
-      console.error("[v0] Error al finalizar:", error)
+      console.error("Error al enviar datos:", error)
       setZohoSubmissionResult({
         success: false,
-        error: "Error de conexión al enviar datos",
+        message: "Error al enviar los datos. Por favor, intenta nuevamente.",
+        error: error instanceof Error ? error.message : "Error desconocido",
       })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handlePrev = () => {
-    setCurrentStep(Math.max(0, currentStep - 1))
+  const handleNext = () => {
+    setCurrentStep(currentStep + 1)
   }
 
-  // Removed the old handleFinal function as it's replaced by handleFinalizar
-  // const handleFinal = () => {
-  //   const resumen = {
-  //     admin: admins,
-  //     empresa,
-  //     trabajadores,
-  //     turnos,
-  //     planificaciones,
-  //     asignaciones,
-  //   }
-  //   console.log("Resumen final:", resumen)
-  //   alert(
-  //     `Onboarding completado.\n\nAdmin: ${admins[0].nombre}\nEmpresa: ${empresa.nombreFantasia}\nTrabajadores: ${trabajadores.length}\nTurnos: ${turnos.length}\nPlanificaciones: ${planificaciones.length}\nAsignaciones: ${asignaciones.length}`,
-  //   )
-  // }
+  const handlePrev = () => {
+    if (currentStep === steps.length - 1 && !configureNow) {
+      setCurrentStep(3) // Go back to decision step
+    } else {
+      setCurrentStep(Math.max(0, currentStep - 1))
+    }
+  }
+
+  const handleConfigurationDecision = (decision) => {
+    if (decision === "now") {
+      setConfigureNow(true)
+      setCurrentStep(4) // Go to Turnos step
+    } else {
+      setConfigureNow(false)
+      setCurrentStep(7) // Skip to Resumen step
+    }
+  }
 
   if (isLoadingToken) {
     return (
@@ -1897,7 +2619,14 @@ export default function OnboardingTurnos({}) {
       <Stepper currentStep={currentStep} />
 
       {currentStep === 0 && <EmpresaStep empresa={empresa} setEmpresa={setEmpresa} />}
-      {currentStep === 1 && <AdminStep admins={admins} setAdmins={setAdmins} />}
+      {currentStep === 1 && (
+        <AdminStep
+          admins={admins}
+          setAdmins={setAdmins}
+          grupos={empresa.grupos}
+          ensureGrupoByName={ensureGrupoByName}
+        />
+      )}
       {currentStep === 2 && (
         <TrabajadoresStep
           trabajadores={trabajadores}
@@ -1908,15 +2637,16 @@ export default function OnboardingTurnos({}) {
           ensureGrupoByName={ensureGrupoByName}
         />
       )}
-      {currentStep === 3 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
-      {currentStep === 4 && (
+      {currentStep === 3 && <DecisionStep onDecision={handleConfigurationDecision} />}
+      {currentStep === 4 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
+      {currentStep === 5 && (
         <PlanificacionesStep
           planificaciones={planificaciones}
           setPlanificaciones={setPlanificaciones}
           turnos={turnos}
         />
       )}
-      {currentStep === 5 && (
+      {currentStep === 6 && (
         <AsignacionStep
           asignaciones={asignaciones}
           setAsignaciones={setAsignaciones}
@@ -1926,13 +2656,41 @@ export default function OnboardingTurnos({}) {
           errorGlobal={errorGlobalAsignaciones}
         />
       )}
-      {currentStep === 6 && (
+      {currentStep === 7 && (
         <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
-          <h2 className="text-lg font-semibold text-emerald-900">Onboarding completado</h2>
-          <p className="text-sm text-emerald-800">
-            Todos los datos han sido registrados correctamente. Ahora se crearán los turnos, planificaciones y
-            asignaciones en el sistema.
-          </p>
+          <h2 className="text-lg font-semibold text-emerald-900">Resumen del Onboarding</h2>
+          <div className="space-y-3 text-sm text-emerald-800">
+            <div className="rounded-lg bg-white p-3">
+              <p className="font-medium">Empresa: {empresa.nombreFantasia || empresa.razonSocial}</p>
+              <p className="text-xs text-slate-600">RUT: {empresa.rut}</p>
+            </div>
+            <div className="rounded-lg bg-white p-3">
+              <p className="font-medium">Administradores: {admins.length}</p>
+              <p className="text-xs text-slate-600">{admins.map((a) => a.nombre).join(", ")}</p>
+            </div>
+            <div className="rounded-lg bg-white p-3">
+              <p className="font-medium">Trabajadores registrados: {trabajadores.length}</p>
+            </div>
+            {!configureNow && ( // Changed from skipConfiguration to configureNow
+              <>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="font-medium">Turnos configurados: {turnos.length}</p>
+                </div>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="font-medium">Planificaciones creadas: {planificaciones.length}</p>
+                </div>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="font-medium">Asignaciones realizadas: {asignaciones.length}</p>
+                </div>
+              </>
+            )}
+            {!configureNow && ( // Changed from skipConfiguration to configureNow
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                <p className="font-medium text-amber-900">⏭️ Configuración de turnos y planificaciones omitida</p>
+                <p className="text-xs text-amber-700">Se configurará durante la capacitación</p>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={exportToExcel}
@@ -1972,24 +2730,23 @@ export default function OnboardingTurnos({}) {
           Paso {currentStep + 1} de {steps.length}
         </span>
 
-        {/* Modified the button logic for the final step */}
-        {currentStep < steps.length - 1 ? (
+        {currentStep === steps.length - 1 ? (
           <button
             type="button"
-            onClick={handleFinalizar} // Changed from handleSubmit to handleFinalizar
-            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
-            disabled={isSubmitting} // Added disabled state
+            onClick={handleFinalizar}
+            className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
           >
-            {isSubmitting ? "Enviando..." : "Siguiente →"}
+            {isSubmitting ? "Enviando..." : "Completar y enviar"}
           </button>
-        ) : (
+        ) : currentStep === 3 ? // Don't show next button on decision step - handled by DecisionStep component
+        null : (
           <button
             type="button"
-            onClick={handleFinalizar} // Changed from handleFinal to handleFinalizar
-            className="inline-flex items-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
-            disabled={isSubmitting} // Added disabled state
+            onClick={handleNext}
+            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
           >
-            {isSubmitting ? "Enviando..." : "Completar"}
+            Siguiente →
           </button>
         )}
       </div>
@@ -2005,8 +2762,9 @@ export default function OnboardingTurnos({}) {
               <h3 className="font-semibold text-sm">{zohoSubmissionResult.success ? "¡Éxito!" : "Error"}</h3>
               <p className="text-xs">
                 {zohoSubmissionResult.success
-                  ? "Los datos se enviaron a Zoho Flow correctamente."
-                  : `Ocurrió un error: ${zohoSubmissionResult.error}`}
+                  ? zohoSubmissionResult.message || "Los datos se enviaron a Zoho Flow correctamente."
+                  : zohoSubmissionResult.message ||
+                    `Ocurrió un error: ${zohoSubmissionResult.error || "Detalles no disponibles."}`}
               </p>
             </div>
             <button
