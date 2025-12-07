@@ -23,6 +23,7 @@ Esta guía explica cómo implementar encriptación compatible entre Zoho CRM (us
 \`\`\`env
 ENCRYPTION_SECRET=tu-clave-secreta-de-32-caracteres-minimo
 NEXT_PUBLIC_BASE_URL=https://tu-app.vercel.app
+ZOHO_FLOW_TEST_URL=https://flows.zoho.com/do/dev/your-flow-id
 \`\`\`
 
 ### En Zoho CRM
@@ -369,6 +370,29 @@ info "Datos desencriptados: " + decrypted;
 7. **Cliente hace clic en "Completar y enviar"** → Webhook a Zoho Flow
 8. **Zoho Flow procesa datos** → Actualiza Deal, crea contactos, adjunta Excel
 9. **Vendedor recibe notificación** → "Onboarding completado para Cliente X"
+
+---
+
+## Headers para Llamadas API desde Zoho
+
+Cuando llames a la API desde Zoho CRM o Zoho Flow, solo necesitas el siguiente header:
+
+\`\`\`
+Content-Type: application/json
+\`\`\`
+
+**NO necesitas** el header `Host` - Zoho lo maneja automáticamente como parámetro del sistema.
+
+### Ejemplo de llamada desde Zoho Deluge:
+\`\`\`javascript
+// Llamar a la API para generar link
+response = invokeurl [
+  url: "https://tu-app.vercel.app/api/generate-link"
+  type: POST
+  headers: {"Content-Type": "application/json"}
+  parameters: jsonBody
+];
+\`\`\`
 
 ---
 

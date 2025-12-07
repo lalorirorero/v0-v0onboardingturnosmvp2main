@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, Host",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Custom-Host",
   "Access-Control-Max-Age": "86400",
 }
 

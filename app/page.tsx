@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import OnboardingTurnos from "@/components/onboarding-turnos"
-import { ZohoTestButton } from "@/components/zoho-test-button"
 
 export default function Home() {
   return (
@@ -16,7 +15,6 @@ export default function Home() {
           <OnboardingTurnos />
         </Suspense>
       </div>
-      <ZohoTestButton />
     </main>
   )
 }
