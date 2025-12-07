@@ -69,36 +69,39 @@ const isValidEmail = (email) => {
 
 const Stepper = ({ currentStep }) => {
   return (
-    <ol className="grid grid-cols-7 gap-2">
-      {steps.map((step, index) => {
-        const status = index < currentStep ? "completed" : index === currentStep ? "current" : "pending"
+    <div className="overflow-x-auto pb-2">
+      <ol className="flex gap-2 min-w-max">
+        {steps.map((step, index) => {
+          const status = index < currentStep ? "completed" : index === currentStep ? "current" : "pending"
 
-        const base = "flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs bg-white"
-        const stateClass =
-          status === "current"
-            ? "border-sky-500 bg-sky-50"
-            : status === "completed"
-              ? "border-emerald-500 bg-emerald-50"
-              : "border-slate-200"
+          const base = "flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs bg-white flex-shrink-0"
+          const stateClass =
+            status === "current"
+              ? "border-sky-500 bg-sky-50"
+              : status === "completed"
+                ? "border-emerald-500 bg-emerald-50"
+                : "border-slate-200"
 
-        return (
-          <li key={step.id} className={`${base} ${stateClass}`}>
-            <div
-              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0
+          return (
+            <li key={step.id} className={`${base} ${stateClass}`}>
+              <div
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0
               ${status === "current" ? "bg-sky-500 text-white" : ""}
               ${status === "completed" ? "bg-emerald-500 text-white" : ""}
               ${status === "pending" ? "bg-slate-200 text-slate-700" : ""}`}
-            >
-              {status === "completed" ? "✓" : index + 1}
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="font-semibold text-slate-800 text-[11px] truncate">{step.label}</div>
-              <div className="text-[9px] text-slate-500 leading-tight truncate">{step.description}</div>
-            </div>
-          </li>
-        )
-      })}
-    </ol>
+              >
+                {status === "completed" ? "✓" : index + 1}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="font-semibold text-slate-800 text-[11px] truncate">{step.label}</div>
+                <div className="text-[9px] text-slate-500 leading-tight truncate">{step.description}</div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+    // </CHANGE>
   )
 }
 
