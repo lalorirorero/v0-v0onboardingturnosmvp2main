@@ -2165,6 +2165,7 @@ export default function OnboardingTurnos({}) {
 
     if (token) {
       setIsLoadingToken(true)
+      setCurrentStep(1)
 
       fetch("/api/decrypt-token", {
         method: "POST",
