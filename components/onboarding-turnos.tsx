@@ -19,6 +19,9 @@ const steps = [
   { id: 7, label: "Resumen", description: "Revisión final" },
 ]
 
+// Si se agregan pasos al inicio, cambiar este valor
+const PRIMER_PASO = 0
+
 // Días de la semana
 const DIAS = ["L", "M", "X", "J", "V", "S", "D"]
 
@@ -574,8 +577,6 @@ const TrabajadoresStep = ({
   const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here
 
   useEffect(() => {
-    if (!bulkText.trim()) return
-
     const lines = bulkText
       .split(/\r?\n/)
       .map((l) => l.trim())
@@ -2067,8 +2068,8 @@ const DecisionStep = ({ onDecision }) => {
 
 export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams()
-  // Initialized currentStep to 1, added isSubmitting and isLoadingToken states
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(0)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
@@ -2143,34 +2144,17 @@ export default function OnboardingTurnos({}) {
   }
 
   useEffect(() => {
-    const nonAdmins = trabajadores.filter((t) => t.tipo !== "administrador")
-
-    const adminTrabajadores = admins.map((admin) => ({
-      id: `admin-${admin.id}`,
-      nombre: admin.nombre,
-      rut: admin.rut,
-      correo: admin.email,
-      grupoId: admin.grupoId,
-      telefono1: admin.telefono,
-      telefono2: "",
-      telefono3: "",
-      tipo: "administrador",
-    }))
-
-    setTrabajadores([...adminTrabajadores, ...nonAdmins])
-  }, [admins])
-
-  useEffect(() => {
     const token = searchParams.get("token")
 
     if (token) {
       setIsLoadingToken(true)
-      setCurrentStep(1)
+      // independientemente de cambios futuros en el orden de los pasos
+      setCurrentStep(PRIMER_PASO)
 
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -2195,6 +2179,24 @@ export default function OnboardingTurnos({}) {
         })
     }
   }, [searchParams])
+
+  useEffect(() => {
+    const nonAdmins = trabajadores.filter((t) => t.tipo !== "administrador")
+
+    const adminTrabajadores = admins.map((admin) => ({
+      id: `admin-${admin.id}`,
+      nombre: admin.nombre,
+      rut: admin.rut,
+      correo: admin.email,
+      grupoId: admin.grupoId,
+      telefono1: admin.telefono,
+      telefono2: "",
+      telefono3: "",
+      tipo: "administrador",
+    }))
+
+    setTrabajadores([...adminTrabajadores, ...nonAdmins])
+  }, [admins])
 
   const generateExcelAsBase64 = () => {
     const workbook = XLSX.utils.book_new()
