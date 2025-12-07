@@ -2154,7 +2154,7 @@ export default function OnboardingTurnos({}) {
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify({ token }),
+        body: JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
