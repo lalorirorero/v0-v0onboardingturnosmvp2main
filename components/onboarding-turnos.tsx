@@ -9,7 +9,7 @@ import { useSearchParams } from "next/navigation"
 
 // Pasos del flujo
 const steps = [
-  { id: 0, label: "Empresa y grupos", description: "Datos base de la empresa" },
+  { id: 0, label: "Empresa", description: "Datos base de la empresa" },
   { id: 1, label: "Admin", description: "Responsable de la cuenta" },
   { id: 2, label: "Trabajadores", description: "Listado inicial" },
   { id: 3, label: "Configuración", description: "Decidir qué configurar" },
