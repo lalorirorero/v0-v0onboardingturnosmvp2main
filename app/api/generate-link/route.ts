@@ -4,26 +4,40 @@ import { encryptData } from "@/lib/crypto"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, Host",
+  "Access-Control-Max-Age": "86400",
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function GET(request: NextRequest) {
-  return NextResponse.json({
-    success: true,
-    message: "API de generación de links funcionando",
-    usage: "Envía un POST con { empresaData: { ... } } en el body",
-    example: {
-      empresaData: {
-        razonSocial: "EMPRESA EJEMPLO LTDA",
-        nombreFantasia: "Ejemplo",
-        rut: "12345678-9",
-        giro: "Servicios",
-        direccion: "Calle 123",
-        comuna: "Santiago",
-        emailFacturacion: "email@ejemplo.cl",
-        telefonoContacto: "56912345678",
-        sistema: ["1.- GeoVictoria BOX"],
-        rubro: "1.- SERVICIOS"
-      }
-    }
-  })
+  return NextResponse.json(
+    {
+      success: true,
+      message: "API de generación de links funcionando",
+      usage: "Envía un POST con { empresaData: { ... } } en el body",
+      example: {
+        empresaData: {
+          razonSocial: "EMPRESA EJEMPLO LTDA",
+          nombreFantasia: "Ejemplo",
+          rut: "12345678-9",
+          giro: "Servicios",
+          direccion: "Calle 123",
+          comuna: "Santiago",
+          emailFacturacion: "email@ejemplo.cl",
+          telefonoContacto: "56912345678",
+          sistema: ["1.- GeoVictoria BOX"],
+          rubro: "1.- SERVICIOS",
+        },
+      },
+    },
+    { headers: corsHeaders },
+  ) // Agregando headers CORS
 }
 
 export async function POST(request: NextRequest) {
@@ -34,6 +48,11 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Content-Type:", request.headers.get("content-type"))
     console.log("[v0] Content-Length:", request.headers.get("content-length"))
 
+    console.log("[v0] Todos los headers:")
+    request.headers.forEach((value, key) => {
+      console.log(`[v0]   ${key}: ${value}`)
+    })
+
     let bodyText = ""
     let body = null
 
@@ -41,9 +60,10 @@ export async function POST(request: NextRequest) {
       // Método 1: request.text()
       bodyText = await request.text()
       console.log("[v0] Método request.text() exitoso - Length:", bodyText.length)
+      console.log("[v0] Body preview:", bodyText.substring(0, 100))
     } catch (e) {
       console.log("[v0] request.text() falló, intentando método alternativo")
-      
+
       try {
         // Método 2: request.json() directo
         body = await request.json()
@@ -57,12 +77,10 @@ export async function POST(request: NextRequest) {
             error: "No se pudo leer el body de la solicitud",
             hint: "Verifica la configuración de Postman: Body → raw → JSON",
           },
-          { status: 400 },
+          { status: 400, headers: corsHeaders }, // Agregando headers CORS
         )
       }
     }
-
-    console.log("[v0] Body recibido:", bodyText.substring(0, 200))
 
     // Validar que el body no esté vacío
     if (!bodyText || bodyText.trim().length === 0) {
@@ -75,10 +93,10 @@ export async function POST(request: NextRequest) {
           debug: {
             contentType: request.headers.get("content-type"),
             contentLength: request.headers.get("content-length"),
-            hasBody: !!bodyText
-          }
+            hasBody: !!bodyText,
+          },
         },
-        { status: 400 },
+        { status: 400, headers: corsHeaders }, // Agregando headers CORS
       )
     }
 
@@ -97,7 +115,7 @@ export async function POST(request: NextRequest) {
             receivedText: bodyText.substring(0, 200),
             hint: "Verifica que el JSON esté bien formado (usa comillas dobles)",
           },
-          { status: 400 },
+          { status: 400, headers: corsHeaders }, // Agregando headers CORS
         )
       }
     }
@@ -112,7 +130,7 @@ export async function POST(request: NextRequest) {
           hint: 'El body debe tener: { "empresaData": { "razonSocial": "...", ... } }',
           receivedBody: body,
         },
-        { status: 400 },
+        { status: 400, headers: corsHeaders }, // Agregando headers CORS
       )
     }
 
@@ -130,12 +148,15 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Link generado exitosamente")
     console.log("[v0] === FIN REQUEST (SUCCESS) ===")
 
-    return NextResponse.json({
-      success: true,
-      link: link,
-      token: token,
-      message: "Link generado exitosamente. Copia este link para prellenar el formulario.",
-    })
+    return NextResponse.json(
+      {
+        success: true,
+        link: link,
+        token: token,
+        message: "Link generado exitosamente. Copia este link para prellenar el formulario.",
+      },
+      { headers: corsHeaders },
+    ) // Agregando headers CORS
   } catch (error) {
     console.error("[v0] === ERROR FATAL ===")
     console.error("[v0] Error:", error)
@@ -147,7 +168,7 @@ export async function POST(request: NextRequest) {
         error: "Error interno del servidor",
         details: error instanceof Error ? error.message : "Error desconocido",
       },
-      { status: 500 },
+      { status: 500, headers: corsHeaders }, // Agregando headers CORS
     )
   }
 }
