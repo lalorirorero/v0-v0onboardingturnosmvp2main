@@ -3,7 +3,7 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
-import { Building2, Edit2, AlertCircle } from "lucide-react"
+import { Building2, Edit2, AlertCircle, CheckCircle2, Clock, Users, Calendar, Shield, Rocket } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
@@ -11,14 +11,15 @@ import { useSearchParams } from "next/navigation"
 
 // Pasos del flujo
 const steps = [
-  { id: 0, label: "Empresa", description: "Datos base de la empresa" },
-  { id: 1, label: "Admin", description: "Responsable de la cuenta" },
-  { id: 2, label: "Trabajadores", description: "Listado inicial" },
-  { id: 3, label: "Configuración", description: "Decidir qué configurar" },
-  { id: 4, label: "Turnos", description: "Definición de turnos" },
-  { id: 5, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 6, label: "Asignación", description: "Quién trabaja qué planificación" },
-  { id: 7, label: "Resumen", description: "Revisión final" },
+  { id: 0, label: "Bienvenida", description: "Información inicial" },
+  { id: 1, label: "Empresa", description: "Datos base de la empresa" },
+  { id: 2, label: "Admin", description: "Responsable de la cuenta" },
+  { id: 3, label: "Trabajadores", description: "Listado inicial" },
+  { id: 4, label: "Configuración", description: "Decidir qué configurar" },
+  { id: 5, label: "Turnos", description: "Definición de turnos" },
+  { id: 6, label: "Planificaciones", description: "Tipos de planificación semanal" },
+  { id: 7, label: "Asignación", description: "Quién trabaja qué planificación" },
+  { id: 8, label: "Resumen", description: "Revisión final" },
 ]
 
 // Si se agregan pasos al inicio, cambiar este valor
@@ -2125,6 +2126,134 @@ const DecisionStep = ({ onDecision }) => {
   )
 }
 
+const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
+  return (
+    <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-6 md:p-8">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-2">
+          <Rocket className="w-8 h-6 text-sky-600" />
+        </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+          Bienvenido a tu implementación con GeoVictoria
+        </h1>
+        <p className="text-slate-600 max-w-2xl mx-auto">
+          Estás iniciando el proceso para dejar lista tu plataforma de control de asistencia y gestión de equipos. En
+          pocos pasos tendrás todo configurado.
+        </p>
+      </div>
+
+      {/* Qué haremos */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          ¿Qué haremos en este proceso?
+        </h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+            <Building2 className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-slate-700 text-sm">Datos de tu empresa</p>
+              <p className="text-xs text-slate-500">Confirmar información básica de facturación y contacto</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+            <Users className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-slate-700 text-sm">Cargar trabajadores</p>
+              <p className="text-xs text-slate-500">Registrar a tu equipo (puedes pegar desde Excel)</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+            <Clock className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-slate-700 text-sm">Configurar turnos</p>
+              <p className="text-xs text-slate-500">Definir los horarios de trabajo de tu empresa</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+            <Calendar className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-slate-700 text-sm">Crear planificaciones</p>
+              <p className="text-xs text-slate-500">Asignar turnos semanales a cada trabajador</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Qué tener a mano */}
+      <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 space-y-3">
+        <h2 className="font-semibold text-amber-800 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-600" />
+          ¿Qué es útil tener a mano?
+        </h2>
+        <ul className="space-y-2 text-sm text-amber-700">
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Datos básicos de la empresa (RUT, dirección, email de facturación)
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Listado de trabajadores (nombre, RUT, email) - puede ser en borrador
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Información general de turnos y horarios
+          </li>
+        </ul>
+      </div>
+
+      {/* Mensaje tranquilizador */}
+      <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5 space-y-2">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
+            <p className="text-sm text-emerald-700 mt-1">
+              Puedes avanzar con la información que tengas disponible. Al final podrás revisar todo antes de confirmar,
+              y siempre podrás hacer ajustes más adelante. Tus datos están protegidos y seguros.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Valor GeoVictoria */}
+      <div className="text-center space-y-3 py-4 border-t border-slate-200">
+        <p className="text-sm text-slate-600">
+          <span className="font-semibold text-slate-700">GeoVictoria</span> es utilizada por miles de empresas en
+          Latinoamérica para tener visibilidad de asistencia en tiempo real, reducir errores administrativos y mejorar
+          la gestión de sus equipos.
+        </p>
+      </div>
+
+      {/* Botón principal */}
+      <div className="flex justify-center pt-2">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
+        >
+          Comenzar implementación
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams()
 
@@ -2134,7 +2263,7 @@ export default function OnboardingTurnos({}) {
   const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
-  const [configureNow, setConfigureNow] = useState(true)
+  const [configureNow, setConfigureNow] = useState(true) // Renamed from skipConfiguration
 
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
@@ -2196,7 +2325,7 @@ export default function OnboardingTurnos({}) {
 
     if (token) {
       setIsLoadingToken(true)
-      setCurrentStep(PRIMER_PASO)
+      setCurrentStep(PRIMER_PASO) // Start at the first step (Bienvenida)
 
       fetch("/api/decrypt-token", {
         method: "POST",
@@ -2278,7 +2407,7 @@ export default function OnboardingTurnos({}) {
     const fieldName = fieldKey.replace("empresa.", "")
     const originalValue = prefilledData[fieldName]
 
-    // Solo trackear si el valor realmente cambió
+    // Only track if the value has actually changed
     if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
       setEditedFields((prev) => ({
         ...prev,
@@ -2288,7 +2417,7 @@ export default function OnboardingTurnos({}) {
         },
       }))
     } else {
-      // Si volvió al valor original, remover del tracking
+      // If it reverted to the original value, remove it from tracking
       setEditedFields((prev) => {
         const updated = { ...prev }
         delete updated[fieldKey]
@@ -2329,7 +2458,7 @@ export default function OnboardingTurnos({}) {
   }
 
   const trackProgress = async (stepLabel: string) => {
-    if (!prefilledData) return // Solo trackear si hay datos prellenados (viene de Zoho)
+    if (!prefilledData) return // Only track if there's prefilled data (coming from Zoho)
 
     try {
       await fetch("/api/submit-to-zoho", {
@@ -2349,7 +2478,7 @@ export default function OnboardingTurnos({}) {
         }),
       })
     } catch (error) {
-      // Silently fail - no bloquear el flujo por errores de tracking
+      // Silently fail - do not block flow for tracking errors
       console.error("Error tracking progress:", error)
     }
   }
@@ -2578,18 +2707,19 @@ export default function OnboardingTurnos({}) {
   }
 
   const handleNext = () => {
-    // Marcar el paso actual como completado
+    // Mark current step as completed
     completeStep(currentStep)
 
-    // Enviar evento de progreso a Zoho
-    trackProgress(steps[currentStep]?.label || `Paso ${currentStep}`)
+    // Send progress event to Zoho
+    trackProgress(steps[currentStep]?.label || `Step ${currentStep}`)
 
-    // Lógica existente de navegación
-    if (currentStep === 3) {
+    // Existing navigation logic
+    if (currentStep === 4) {
+      // Decision step index
       if (configureNow) {
-        setCurrentStep(4)
+        setCurrentStep(5) // Go to Turnos step
       } else {
-        setCurrentStep(7)
+        setCurrentStep(8) // Skip to Resumen step
       }
     } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
@@ -2610,7 +2740,7 @@ export default function OnboardingTurnos({}) {
       configureNow, // Include configureNow in the data
     }
 
-    // Preparar datos con metadata de cambios
+    // Prepare data with changes metadata
     const submissionData = prepareFinalSubmission(formData)
 
     try {
@@ -2634,8 +2764,8 @@ export default function OnboardingTurnos({}) {
       console.error("Error sending data:", error)
       setZohoSubmissionResult({
         success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-        message: "Error al enviar los datos. Por favor, intenta nuevamente.",
+        error: error instanceof Error ? error.message : "Unknown error",
+        message: "Failed to send data. Please try again.",
       })
     } finally {
       setIsSubmitting(false)
@@ -2643,10 +2773,12 @@ export default function OnboardingTurnos({}) {
   }
 
   const handlePrev = () => {
-    if (currentStep === 3 && !configureNow) {
-      setCurrentStep(3) // Stay on decision step if configuration was skipped
-    } else if (currentStep === 7 && !configureNow) {
-      setCurrentStep(3) // Go back to decision step if on summary and config was skipped
+    if (currentStep === 4 && !configureNow) {
+      // If on Decision step and skipped config
+      setCurrentStep(4) // Stay on decision step
+    } else if (currentStep === 8 && !configureNow) {
+      // If on Summary and skipped config
+      setCurrentStep(4) // Go back to Decision step
     } else {
       setCurrentStep(Math.max(0, currentStep - 1))
     }
@@ -2655,10 +2787,10 @@ export default function OnboardingTurnos({}) {
   const handleConfigurationDecision = (decision) => {
     if (decision === "now") {
       setConfigureNow(true)
-      setCurrentStep(4) // Go to Turnos step
+      setCurrentStep(5) // Go to Turnos step
     } else {
       setConfigureNow(false)
-      setCurrentStep(7) // Skip to Resumen step
+      setCurrentStep(8) // Skip to Resumen step
     }
   }
 
@@ -2668,7 +2800,7 @@ export default function OnboardingTurnos({}) {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-600 border-r-transparent"></div>
-          <p className="text-slate-600">Cargando información...</p>
+          <p className="text-slate-600">Loading information...</p>
         </div>
       </div>
     )
@@ -2678,7 +2810,10 @@ export default function OnboardingTurnos({}) {
     <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
 
-      {!isLoadingToken && currentStep === 0 && (
+      {currentStep === 0 && ( // Render BienvenidaStep at step 0
+        <BienvenidaStep onContinue={handleNext} />
+      )}
+      {currentStep === 1 && (
         <EmpresaStep
           empresa={empresa}
           setEmpresa={setEmpresa}
@@ -2688,7 +2823,7 @@ export default function OnboardingTurnos({}) {
           trackFieldChange={trackFieldChange}
         />
       )}
-      {currentStep === 1 && (
+      {currentStep === 2 && (
         <AdminStep
           admins={admins}
           setAdmins={setAdmins}
@@ -2696,7 +2831,7 @@ export default function OnboardingTurnos({}) {
           ensureGrupoByName={ensureGrupoByName}
         />
       )}
-      {currentStep === 2 && (
+      {currentStep === 3 && (
         <TrabajadoresStep
           trabajadores={trabajadores}
           setTrabajadores={setTrabajadores}
@@ -2706,16 +2841,16 @@ export default function OnboardingTurnos({}) {
           ensureGrupoByName={ensureGrupoByName} // Pasando la función como prop
         />
       )}
-      {currentStep === 3 && <DecisionStep onDecision={handleConfigurationDecision} />}
-      {currentStep === 4 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
-      {currentStep === 5 && (
+      {currentStep === 4 && <DecisionStep onDecision={handleConfigurationDecision} />}
+      {currentStep === 5 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
+      {currentStep === 6 && (
         <PlanificacionesStep
           planificaciones={planificaciones}
           setPlanificaciones={setPlanificaciones}
           turnos={turnos}
         />
       )}
-      {currentStep === 6 && (
+      {currentStep === 7 && (
         <AsignacionStep
           asignaciones={asignaciones}
           setAsignaciones={setAsignaciones}
@@ -2725,7 +2860,7 @@ export default function OnboardingTurnos({}) {
           errorGlobal={errorGlobalAsignaciones}
         />
       )}
-      {currentStep === 7 && (
+      {currentStep === 8 && (
         <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
           <h2 className="text-lg font-semibold text-emerald-900">Resumen del Onboarding</h2>
           <div className="space-y-3 text-sm text-emerald-800">
@@ -2808,7 +2943,7 @@ export default function OnboardingTurnos({}) {
           >
             {isSubmitting ? "Enviando..." : "Completar y enviar"}
           </button>
-        ) : currentStep === 3 ? // Don't show next button on decision step - handled by DecisionStep component
+        ) : currentStep === 4 ? // Don't show next button on decision step - handled by DecisionStep component
         null : (
           <button
             type="button"
