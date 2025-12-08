@@ -627,7 +627,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
 
   return (
     <section className="space-y-6">
-      {prefilledFields && prefilledFields.size > 0 && (
+      {prefilledFields.size > 0 && (
         <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
@@ -2199,6 +2199,9 @@ export default function OnboardingTurnos({}) {
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [configureNow, setConfigureNow] = useState(true)
 
+  const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+
   // Estado empresa
   const [empresa, setEmpresa] = useState({
     razonSocial: "",
@@ -2285,7 +2288,13 @@ export default function OnboardingTurnos({}) {
     }
   }, [searchParams])
 
-  const prefilledFields = prefilledData ? new Set(Object.keys(prefilledData).map((k) => `empresa.${k}`)) : new Set()
+  const prefilledFields = prefilledData
+    ? new Set(
+        Object.entries(prefilledData)
+          .filter(([_, value]) => value !== null && value !== undefined && value !== "")
+          .map(([k]) => `empresa.${k}`),
+      )
+    : new Set()
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -2318,242 +2327,115 @@ export default function OnboardingTurnos({}) {
     setTrabajadores([...adminTrabajadores, ...nonAdmins])
   }, [admins])
 
-  // Dummy implementations for removed hooks
-  const trackProgress = (stepLabel: string) => console.log("Tracking progress:", stepLabel)
-  const sendCompleteData = async (data: any) => {
-    console.log("Sending complete data:", data)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return { success: true, message: "Data simulated successfully." }
+  const isFieldPrefilled = (fieldKey: string): boolean => {
+    return prefilledFields.has(fieldKey)
   }
-  const isPersistenceLoading = false
 
-  const isFieldPrefilled = (fieldKey: string) => {
-    // Dummy implementation
-    return false
+  const isFieldEdited = (fieldKey: string): boolean => {
+    return fieldKey in editedFields
   }
-  const isFieldEdited = (fieldKey: string) => {
-    // Dummy implementation
-    return false
+
+  const trackFieldChange = (fieldKey: string, newValue: any) => {
+    if (!prefilledData) return
+
+    const fieldName = fieldKey.replace("empresa.", "")
+    const originalValue = prefilledData[fieldName]
+
+    // Solo trackear si el valor realmente cambió
+    if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
+      setEditedFields((prev) => ({
+        ...prev,
+        [fieldKey]: {
+          originalValue,
+          currentValue: newValue,
+        },
+      }))
+    } else {
+      // Si volvió al valor original, remover del tracking
+      setEditedFields((prev) => {
+        const updated = { ...prev }
+        delete updated[fieldKey]
+        return updated
+      })
+    }
   }
-  const trackFieldChange = (fieldKey: string, value: any) => {
-    console.log("Tracking field change:", fieldKey, value)
-  }
+
   const completeStep = (stepIndex: number) => {
-    console.log("Completing step:", stepIndex)
+    setCompletedSteps((prev) => new Set(prev).add(stepIndex))
   }
-  const isStepCompleted = (stepIndex: number) => {
-    // Dummy implementation
-    return false
+
+  const isStepCompleted = (stepIndex: number): boolean => {
+    return completedSteps.has(stepIndex)
   }
+
   const getChangesSummary = () => {
-    // Dummy implementation
-    return { totalChanges: 0, editedFields: [] }
-  }
-  const prepareFinalSubmission = (formData: any) => {
-    console.log("Preparing final submission:", formData)
-    // Dummy implementation
-    return { formData, changesSummary: { totalChanges: 0, editedFields: [] } }
-  }
-
-  const generateExcelAsBase64 = () => {
-    const workbook = XLSX.utils.book_new()
-
-    const empresaData = [
-      ["DATOS EMPRESA"],
-      ["Razón Social", empresa.razonSocial],
-      ["Nombre de fantasía", empresa.nombreFantasia || ""],
-      ["RUT", empresa.rut],
-      ["Giro", empresa.giro || ""],
-      ["Dirección", empresa.direccion],
-      ["Comuna", empresa.comuna || ""],
-      ["Email de facturación", empresa.emailFacturacion || ""],
-      ["Teléfono de contacto", empresa.telefonoContacto || ""],
-      ["Sistema", empresa.sistema.join(", ") || ""],
-      ["Rubro", empresa.rubro || ""],
-      [],
-      ["Datos Administrador del Sistema"],
-      ["Nombre", admins[0]?.nombre],
-      ["RUT", admins[0]?.rut],
-      ["Teléfono Contacto", admins[0]?.telefono || ""],
-      ["Correo", admins[0]?.email],
-    ]
-
-    const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
-    ws1["A1"] = { v: "DATOS EMPRESA", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
-    ws1["A13"] = { v: "Datos Administrador del Sistema", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
-    XLSX.utils.book_append_sheet(workbook, ws1, "Datos Empresa")
-
-    const headers = [
-      "Rut Completo",
-      "Correo Personal",
-      "Nombres",
-      "Apellidos",
-      "Grupo",
-      "Período a planificar: turnos",
-      "Lunes",
-      "",
-      "",
-      "Martes",
-      "",
-      "",
-      "Miércoles",
-      "",
-      "",
-      "Jueves",
-      "",
-      "",
-      "Viernes",
-      "",
-      "",
-      "Sábado",
-      "",
-      "",
-      "Domingo",
-      "",
-      "",
-      "TELÉFONOS MARCAJE POR VICTORIA CALL",
-    ]
-
-    const subHeaders = [
-      "",
-      "",
-      "",
-      "",
-      "",
-      "Fecha Fin Planificación",
-      "Entrada",
-      "Col (minutos)",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "Entrada",
-      "Col",
-      "Salida",
-      "",
-    ]
-
-    const trabajadoresData = [headers, subHeaders]
-
-    trabajadores.forEach((trabajador) => {
-      const asignacion = asignaciones.find((a) => a.trabajadorId === trabajador.id)
-      let planificacion = null
-      let fechaFin = ""
-      const turnosPorDia = Array(7).fill({ entrada: "", colacion: "", salida: "" })
-
-      if (asignacion) {
-        planificacion = planificaciones.find((p) => p.id === asignacion.planificacionId)
-        fechaFin = asignacion.hasta === "permanente" ? "PERMANENTE" : asignacion.hasta
-
-        if (planificacion) {
-          planificacion.diasTurnos.forEach((turnoId, dayIndex) => {
-            if (turnoId) {
-              const turno = turnos.find((t) => t.id === turnoId)
-              if (turno) {
-                turnosPorDia[dayIndex] = {
-                  entrada: turno.horaInicio || "",
-                  colacion: turno.colacionMinutos || "",
-                  salida: turno.horaFin || "",
-                }
-              }
-            }
-          })
-        }
-      }
-
-      const grupoNombre = trabajador.grupoId
-        ? empresa.grupos?.find((g) => g.id === trabajador.grupoId)?.nombre || ""
-        : ""
-
-      const row = [
-        trabajador.rut,
-        trabajador.correo,
-        trabajador.nombre.split(" ")[0] || "",
-        trabajador.nombre.split(" ").slice(1).join(" ") || "",
-        grupoNombre,
-        fechaFin,
-        turnosPorDia[0].entrada,
-        turnosPorDia[0].colacion,
-        turnosPorDia[0].salida,
-        turnosPorDia[1].entrada,
-        turnosPorDia[1].colacion,
-        turnosPorDia[1].salida,
-        turnosPorDia[2].entrada,
-        turnosPorDia[2].colacion,
-        turnosPorDia[2].salida,
-        turnosPorDia[3].entrada,
-        turnosPorDia[3].colacion,
-        turnosPorDia[3].salida,
-        turnosPorDia[4].entrada,
-        turnosPorDia[4].colacion,
-        turnosPorDia[4].salida,
-        turnosPorDia[5].entrada,
-        turnosPorDia[5].colacion,
-        turnosPorDia[5].salida,
-        turnosPorDia[6].entrada,
-        turnosPorDia[6].colacion,
-        turnosPorDia[6].salida,
-        [trabajador.telefono1, trabajador.telefono2, trabajador.telefono3].filter(Boolean).join(" | "),
-      ]
-
-      trabajadoresData.push(row)
-    })
-
-    const ws2 = XLSX.utils.aoa_to_sheet(trabajadoresData)
-    ws2["!cols"] = [
-      { wch: 15 },
-      { wch: 30 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 20 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 25 },
-    ]
-
-    XLSX.utils.book_append_sheet(workbook, ws2, "Planificación")
-
-    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "base64" })
-    const fileName = `Onboarding_${empresa.nombreFantasia || "Empresa"}_${new Date().toISOString().split("T")[0]}.xlsx`
+    const editedFieldsList = Object.entries(editedFields).map(([fieldKey, values]) => ({
+      field: fieldKey,
+      originalValue: values.originalValue,
+      currentValue: values.currentValue,
+    }))
 
     return {
-      fileName,
-      fileBase64: wbout,
-      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      totalChanges: editedFieldsList.length,
+      editedFields: editedFieldsList,
+      hadPrefilledData: prefilledData !== null,
     }
+  }
+
+  const prepareFinalSubmission = (formData: any) => {
+    const changesSummary = getChangesSummary()
+    return {
+      formData,
+      changesSummary,
+      accion: prefilledData ? "actualizar" : "crear",
+    }
+  }
+
+  const trackProgress = async (stepLabel: string) => {
+    if (!prefilledData) return // Solo trackear si hay datos prellenados (viene de Zoho)
+
+    try {
+      await fetch("/api/submit-to-zoho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accion: "actualizar",
+          eventType: "progress",
+          metadata: {
+            pasoActual: currentStep,
+            pasoNombre: stepLabel,
+            totalPasos: steps.length,
+            porcentajeProgreso: Math.round((currentStep / (steps.length - 1)) * 100),
+            empresaRut: empresa.rut,
+            empresaNombre: empresa.razonSocial,
+          },
+        }),
+      })
+    } catch (error) {
+      // Silently fail - no bloquear el flujo por errores de tracking
+      console.error("Error tracking progress:", error)
+    }
+  }
+
+  const sendCompleteData = async (data: any) => {
+    const response = await fetch("/api/submit-to-zoho", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accion: prefilledData ? "actualizar" : "crear",
+        eventType: "complete",
+        formData: data,
+        metadata: {
+          empresaRut: empresa.rut,
+          empresaNombre: empresa.razonSocial,
+          totalCambios: data._metadata?.totalChanges || 0,
+          camposEditados: data._metadata?.editedFields || [],
+        },
+      }),
+    })
+
+    const result = await response.json()
+    return result
   }
 
   const exportToExcel = () => {
@@ -2580,10 +2462,8 @@ export default function OnboardingTurnos({}) {
     ]
 
     const ws1 = XLSX.utils.aoa_to_sheet(empresaData)
-
     ws1["A1"] = { v: "DATOS EMPRESA", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
     ws1["A13"] = { v: "Datos Administrador del Sistema", t: "s", s: { fill: { fgColor: { rgb: "00B0F0" } } } }
-
     XLSX.utils.book_append_sheet(workbook, ws1, "Datos Empresa")
 
     const headers = [
@@ -2715,7 +2595,6 @@ export default function OnboardingTurnos({}) {
     })
 
     const ws2 = XLSX.utils.aoa_to_sheet(trabajadoresData)
-
     ws2["!cols"] = [
       { wch: 15 },
       { wch: 30 },
