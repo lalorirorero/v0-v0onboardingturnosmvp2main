@@ -2190,23 +2190,11 @@ const DecisionStep = ({ onDecision }) => {
 }
 
 export default function OnboardingTurnos({}) {
-  console.log("[v0] OnboardingTurnos mounting...")
-
-  if (typeof window !== "undefined") {
-    console.log("[v0] window.location.search:", window.location.search)
-    console.log("[v0] window.location.href:", window.location.href)
-  }
-
-  const searchParams = useSearchParams()
-  console.log("[v0] searchParams:", searchParams?.toString())
-  console.log("[v0] token from searchParams:", searchParams?.get("token"))
-
+  // </CHANGE> Removiendo logs de debug y useSearchParams, usando window.location directamente
   // Estados principales
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
   const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
-
-  console.log("[v0] Initial states set")
 
   // Estado empresa
   const [empresa, setEmpresa] = useState({
@@ -2223,7 +2211,50 @@ export default function OnboardingTurnos({}) {
     grupos: [] as { id: number; nombre: string; descripcion: string }[],
   })
 
-  console.log("[v0] Empresa state set")
+  const searchParams = useSearchParams() // <-- ADDED THIS LINE
+
+  useEffect(() => {
+    // Solo ejecutar en el cliente
+    if (typeof window === "undefined") return
+
+    // Leer el token desde la URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get("token")
+
+    if (token) {
+      setIsLoadingToken(true)
+      // Comenzar en el primer paso siempre que hay token
+      setCurrentStep(PRIMER_PASO)
+
+      fetch("/api/decrypt-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.empresaData) {
+            setPrefilledData(data.empresaData)
+
+            // Prellenar los datos de la empresa
+            setEmpresa((prev) => ({
+              ...prev,
+              ...data.empresaData,
+              grupos: Array.isArray(data.empresaData.grupos) ? data.empresaData.grupos : [],
+            }))
+          } else {
+            console.error("Error al desencriptar token:", data.error)
+          }
+        })
+        .catch((error) => {
+          console.error("Error al procesar token:", error)
+        })
+        .finally(() => {
+          setIsLoadingToken(false)
+        })
+    }
+  }, []) // Solo ejecutar una vez al montar
+  // </CHANGE>
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
@@ -2338,7 +2369,7 @@ export default function OnboardingTurnos({}) {
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
