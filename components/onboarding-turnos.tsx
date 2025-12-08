@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { Building2 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
+import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 
 // Pasos del flujo
 const steps = [
@@ -372,13 +373,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
 }
 
 const EmpresaStep = ({ empresa, setEmpresa }) => {
-  const SISTEMAS = [
-    "GeoVictoria BOX",
-    "GeoVictoria CALL",
-    "GeoVictoria APP",
-    "GeoVictoria USB",
-    "GeoVictoria WEB",
-  ]
+  const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
   const RUBROS = [
     "SALUD",
@@ -2133,6 +2128,16 @@ export default function OnboardingTurnos({}) {
   })
   const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here for TrabajadoresStep
 
+  const {
+    trackProgress,
+    sendCompleteData,
+    isLoading: isPersistenceLoading,
+  } = useOnboardingPersistence({
+    empresa,
+    currentStep,
+    totalSteps: steps.length,
+  })
+
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
     if (existing) return existing.id
@@ -2635,14 +2640,8 @@ export default function OnboardingTurnos({}) {
         },
       }
 
-      // Enviar a Zoho Flow
-      const response = await fetch("/api/submit-to-zoho", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-
-      const result = await response.json()
+      // Enviar datos completos usando el sistema de tracking
+      const result = await sendCompleteData(formData)
       setZohoSubmissionResult(result)
 
       if (result.success) {
@@ -2671,7 +2670,13 @@ export default function OnboardingTurnos({}) {
   }
 
   const handleNext = () => {
-    setCurrentStep(currentStep + 1)
+    const nextStep = currentStep + 1
+    const stepName = steps[nextStep]?.label || `Paso ${nextStep}`
+
+    // Enviar tracking de progreso a Zoho (fire and forget)
+    trackProgress(stepName)
+
+    setCurrentStep(nextStep)
   }
 
   const handlePrev = () => {
@@ -2692,7 +2697,7 @@ export default function OnboardingTurnos({}) {
     }
   }
 
-  if (isLoadingToken) {
+  if (isLoadingToken || isPersistenceLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
