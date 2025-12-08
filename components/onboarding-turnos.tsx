@@ -3,7 +3,20 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
-import { Building2, Edit2, AlertCircle, CheckCircle2, Clock, Users, Calendar, Shield, Rocket } from "lucide-react"
+import {
+  Building2,
+  Edit2,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Users,
+  Calendar,
+  Shield,
+  Rocket,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
@@ -797,7 +810,7 @@ const TrabajadoresStep = ({
             className="flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z" />
             </svg>
             Ver tutorial
           </button>
@@ -2126,13 +2139,76 @@ const DecisionStep = ({ onDecision }) => {
   )
 }
 
+const casosDeExitoVideos = [
+  {
+    empresa: "Starbucks",
+    industria: "Alimentación",
+    videoId: "Je6-Ka-1Fjo",
+  },
+  {
+    empresa: "Huawei Chile",
+    industria: "Telecomunicaciones",
+    videoId: "wg8iLbheAzg",
+  },
+  {
+    empresa: "Virgin Mobile",
+    industria: "Telecomunicaciones",
+    videoId: "BHXid-4Rlrg",
+  },
+  {
+    empresa: "Bureau Veritas",
+    industria: "Certificación",
+    videoId: "Ofzj8SsgdDs",
+  },
+  {
+    empresa: "Toshiba",
+    industria: "Tecnología",
+    videoId: "P-SDGVuoquM",
+  },
+  {
+    empresa: "Energy Fitness",
+    industria: "Fitness",
+    videoId: "9Ix6xiSH9SY",
+  },
+  {
+    empresa: "Block Constructora",
+    industria: "Construcción",
+    videoId: "E30DdXJhTaI",
+  },
+  {
+    empresa: "ECR Group",
+    industria: "Servicios",
+    videoId: "6s4fGDVpits",
+  },
+  {
+    empresa: "Cygnus",
+    industria: "Tecnología",
+    videoId: "8aG9Edk4NQE",
+  },
+  {
+    empresa: "Grupo Eulen México",
+    industria: "Servicios",
+    videoId: "Gu6CiM0Rlpo",
+  },
+]
+
 const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
+  const [currentSlide, setCurrentSlide] = useState(0)
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
+  }
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + casosDeExitoVideos.length) % casosDeExitoVideos.length)
+  }
+
   return (
     <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-6 md:p-8">
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-2">
-          <Rocket className="w-8 h-6 text-sky-600" />
+          <Rocket className="w-8 h-8 text-sky-600" />
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
           Bienvenido a tu implementación con GeoVictoria
@@ -2141,6 +2217,83 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
           Estás iniciando el proceso para dejar lista tu plataforma de control de asistencia y gestión de equipos. En
           pocos pasos tendrás todo configurado.
         </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2 text-center justify-center">
+          <Star className="w-5 h-5 text-amber-500" />
+          Casos de éxito de empresas que confían en GeoVictoria
+        </h2>
+
+        <div className="relative">
+          {/* Carrusel de videos */}
+          <div className="overflow-hidden rounded-xl">
+            <div
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {casosDeExitoVideos.map((caso, index) => (
+                <div key={index} className="w-full flex-shrink-0 px-2">
+                  <div className="space-y-3">
+                    {/* Info de la empresa */}
+                    <div className="flex items-center justify-center gap-2">
+                      <Building2 className="w-4 h-4 text-sky-500" />
+                      <span className="font-semibold text-slate-800">{caso.empresa}</span>
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {caso.industria}
+                      </span>
+                    </div>
+                    {/* Video de YouTube */}
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
+                        title={`Caso de éxito: ${caso.empresa}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="absolute inset-0 w-full h-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Botones de navegación */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+            aria-label="Video anterior"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+            aria-label="Video siguiente"
+          >
+            <ChevronRight className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Indicadores y contador */}
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <div className="flex justify-center gap-1.5">
+            {casosDeExitoVideos.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
+                }`}
+                aria-label={`Ir a video ${index + 1}`}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-slate-500">
+            {currentSlide + 1} de {casosDeExitoVideos.length} videos
+          </span>
+        </div>
       </div>
 
       {/* Qué haremos */}
@@ -2920,72 +3073,39 @@ export default function OnboardingTurnos({}) {
         </section>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={handlePrev}
-          className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-          disabled={currentStep === 0}
-        >
-          ← Atrás
-        </button>
-
-        <span className="text-sm text-slate-600">
-          Paso {currentStep + 1} de {steps.length}
-        </span>
-
-        {currentStep === steps.length - 1 ? (
+      {currentStep !== 0 && (
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={handleFinalizar}
-            className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            onClick={handlePrev}
+            className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            disabled={currentStep === 1}
           >
-            {isSubmitting ? "Enviando..." : "Completar y enviar"}
+            ← Atrás
           </button>
-        ) : currentStep === 4 ? // Don't show next button on decision step - handled by DecisionStep component
-        null : (
-          <button
-            type="button"
-            onClick={handleNext}
-            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
-          >
-            Siguiente →
-          </button>
-        )}
-      </div>
 
-      {zohoSubmissionResult && (
-        <div
-          className={`fixed bottom-24 right-6 max-w-md rounded-xl border p-4 shadow-lg ${
-            zohoSubmissionResult.success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{zohoSubmissionResult.success ? "¡Éxito!" : "Error"}</h3>
-              <p className="text-xs">
-                {zohoSubmissionResult.success
-                  ? zohoSubmissionResult.message || "Los datos se enviaron a Zoho Flow correctamente."
-                  : zohoSubmissionResult.message ||
-                    `Ocurrió un error: ${zohoSubmissionResult.error || "Detalles no disponibles."}`}
-              </p>
-            </div>
+          <span className="text-sm text-slate-600">
+            Paso {currentStep} de {steps.length - 1}
+          </span>
+
+          {currentStep === steps.length - 1 ? (
             <button
               type="button"
-              onClick={() => setZohoSubmissionResult(null)}
-              className="rounded-full p-1 hover:bg-slate-100"
+              onClick={handleFinalizar}
+              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 text-slate-500"
-              >
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-              </svg>
+              {isSubmitting ? "Enviando..." : "Completar y enviar"}
             </button>
-          </div>
+          ) : currentStep === 4 ? null : (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="inline-flex items-center rounded-full bg-cyan-500 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-600"
+            >
+              Siguiente →
+            </button>
+          )}
         </div>
       )}
     </div>
