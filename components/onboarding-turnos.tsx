@@ -3,7 +3,7 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
-import { Building2, Lock, Edit2, AlertCircle } from "lucide-react"
+import { Building2, Edit2, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
@@ -402,16 +402,12 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "CONSTRUCCIÓN",
   ]
 
-  const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set())
-
-  const handleUnlock = (fieldName: string) => {
-    setUnlockedFields((prev) => new Set(prev).add(fieldName))
-  }
+  const [isEditing, setIsEditing] = useState(false)
+  const hasPrefilled = prefilledFields.size > 0
 
   const handleEmpresaChange = (e) => {
     const { name, value } = e.target
     setEmpresa({ ...empresa, [name]: value })
-    // Trackear el cambio si el campo era prellenado
     if (isFieldPrefilled(`empresa.${name}`)) {
       trackFieldChange(`empresa.${name}`, value)
     }
@@ -445,39 +441,9 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const fieldKey = `empresa.${name}`
     const isPrefilled = isFieldPrefilled(fieldKey)
     const wasEdited = isFieldEdited(fieldKey)
-    const isUnlocked = unlockedFields.has(name)
     const value = empresa[name] || ""
+    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
-    // Campo prellenado y NO desbloqueado: mostrar en modo bloqueado
-    if (isPrefilled && !isUnlocked && !wasEdited) {
-      return (
-        <div className="space-y-1 text-sm">
-          <label className="font-medium flex items-center gap-2">
-            {label}
-            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <Lock className="h-3 w-3" />
-              Dato de Zoho
-            </span>
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
-              {value || <span className="text-slate-400 italic">Sin valor</span>}
-            </div>
-            <button
-              type="button"
-              onClick={() => handleUnlock(name)}
-              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
-              title="Editar este campo"
-            >
-              <Edit2 className="h-4 w-4" />
-              Editar
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    // Campo editable (no prellenado, desbloqueado, o ya editado)
     return (
       <div className="space-y-1 text-sm">
         <label className="font-medium flex items-center gap-2">
@@ -486,14 +452,20 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
-        <input
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-          type={type}
-          name={name}
-          value={value}
-          onChange={handleEmpresaChange}
-          placeholder={placeholder}
-        />
+        {isLocked ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+            {value || <span className="text-slate-400 italic">Sin valor</span>}
+          </div>
+        ) : (
+          <input
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            type={type}
+            name={name}
+            value={value}
+            onChange={handleEmpresaChange}
+            placeholder={placeholder}
+          />
+        )}
       </div>
     )
   }
@@ -502,36 +474,8 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const fieldKey = "empresa.rubro"
     const isPrefilled = isFieldPrefilled(fieldKey)
     const wasEdited = isFieldEdited(fieldKey)
-    const isUnlocked = unlockedFields.has("rubro")
     const value = empresa.rubro || ""
-
-    if (isPrefilled && !isUnlocked && !wasEdited) {
-      return (
-        <div className="space-y-1 text-sm">
-          <label className="font-medium flex items-center gap-2">
-            Rubro
-            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <Lock className="h-3 w-3" />
-              Dato de Zoho
-            </span>
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
-              {value || <span className="text-slate-400 italic">Sin valor</span>}
-            </div>
-            <button
-              type="button"
-              onClick={() => handleUnlock("rubro")}
-              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
-              title="Editar este campo"
-            >
-              <Edit2 className="h-4 w-4" />
-              Editar
-            </button>
-          </div>
-        </div>
-      )
-    }
+    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
     return (
       <div className="space-y-1 text-sm">
@@ -541,19 +485,25 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
-        <select
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-          name="rubro"
-          value={value}
-          onChange={handleEmpresaChange}
-        >
-          <option value="">Seleccionar rubro...</option>
-          {RUBROS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+        {isLocked ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+            {value || <span className="text-slate-400 italic">Sin valor</span>}
+          </div>
+        ) : (
+          <select
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            name="rubro"
+            value={value}
+            onChange={handleEmpresaChange}
+          >
+            <option value="">Seleccionar rubro...</option>
+            {RUBROS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
     )
   }
@@ -562,40 +512,8 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const fieldKey = "empresa.sistema"
     const isPrefilled = isFieldPrefilled(fieldKey)
     const wasEdited = isFieldEdited(fieldKey)
-    const isUnlocked = unlockedFields.has("sistema")
     const selectedSistemas = empresa.sistema || []
-
-    if (isPrefilled && !isUnlocked && !wasEdited) {
-      return (
-        <div className="space-y-1 text-sm">
-          <label className="font-medium flex items-center gap-2">
-            Sistema
-            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <Lock className="h-3 w-3" />
-              Dato de Zoho
-            </span>
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
-              {selectedSistemas.length > 0 ? (
-                selectedSistemas.join(", ")
-              ) : (
-                <span className="text-slate-400 italic">Sin sistemas seleccionados</span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => handleUnlock("sistema")}
-              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
-              title="Editar este campo"
-            >
-              <Edit2 className="h-4 w-4" />
-              Editar
-            </button>
-          </div>
-        </div>
-      )
-    }
+    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
     return (
       <div className="space-y-1 text-sm">
@@ -605,43 +523,62 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
-        <div className="space-y-2 rounded-xl border border-slate-200 p-3">
-          {SISTEMAS.map((s) => (
-            <label
-              key={s}
-              className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={selectedSistemas.includes(s)}
-                onChange={() => handleSistemaChange(s)}
-                className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-              />
-              <span className="text-sm">{s}</span>
-            </label>
-          ))}
-        </div>
+        {isLocked ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+            {selectedSistemas.length > 0 ? (
+              selectedSistemas.join(", ")
+            ) : (
+              <span className="text-slate-400 italic">Sin sistemas seleccionados</span>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+            {SISTEMAS.map((s) => (
+              <label
+                key={s}
+                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSistemas.includes(s)}
+                  onChange={() => handleSistemaChange(s)}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                />
+                <span className="text-sm">{s}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
 
   return (
     <section className="space-y-6">
-      {prefilledFields.size > 0 && (
+      {hasPrefilled && (
         <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-sky-900">Datos prellenados desde Zoho CRM</h4>
-              <p className="text-sm text-sky-700 mt-1">
-                Los campos marcados con{" "}
-                <span className="inline-flex items-center gap-1 bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-xs">
-                  <Lock className="h-3 w-3" />
-                  Dato de Zoho
-                </span>{" "}
-                fueron prellenados. Puedes editarlos si es necesario haciendo clic en "Editar".
-              </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-sky-900">Datos de su empresa</h4>
+                <p className="text-sm text-sky-700 mt-1">
+                  {isEditing
+                    ? "Puede modificar los campos que necesite. Los cambios quedarán registrados."
+                    : 'Verifique que la información sea correcta. Si necesita hacer cambios, haga clic en "Editar datos".'}
+                </p>
+              </div>
             </div>
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-sky-300 bg-white hover:bg-sky-100 text-sky-700 text-sm font-medium transition-colors flex-shrink-0"
+              >
+                <Edit2 className="h-4 w-4" />
+                Editar datos
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -2429,7 +2366,7 @@ export default function OnboardingTurnos({}) {
           empresaRut: empresa.rut,
           empresaNombre: empresa.razonSocial,
           totalCambios: data._metadata?.totalChanges || 0,
-          camposEditados: data._metadata?.editedFields || [],
+          editedFields: data._metadata?.editedFields || [],
         },
       }),
     })
