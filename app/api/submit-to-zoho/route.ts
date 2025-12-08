@@ -1,16 +1,14 @@
-import { NextResponse } from "next/server"
-import { submitToZoho } from "@/app/actions/submit-to-zoho"
+import { type NextRequest, NextResponse } from "next/server"
+import { sendToZohoFlow } from "@/lib/backend"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const result = await submitToZoho(body)
+    const result = await sendToZohoFlow(body)
 
-    if (result.success) {
-      return NextResponse.json(result, { status: 200 })
-    } else {
-      return NextResponse.json(result, { status: 500 })
-    }
+    return NextResponse.json(result, {
+      status: result.success ? 200 : 500,
+    })
   } catch (error) {
     return NextResponse.json(
       {

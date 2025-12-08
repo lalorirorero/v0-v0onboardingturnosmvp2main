@@ -1,0 +1,186 @@
+/**
+ * BACKEND UNIFICADO - ARQUITECTURA SIMPLE
+ * =======================================
+ *
+ * Este módulo centraliza toda la lógica del backend en un solo lugar.
+ *
+ * FUNCIONALIDADES:
+ * 1. Generación y desencriptación de tokens para prellenar formularios
+ * 2. Envío de datos a Zoho Flow con el parámetro "accion"
+ * 3. Tracking de progreso (opcional, fire-and-forget)
+ *
+ * NO incluye:
+ * - Persistencia en localStorage (se maneja en el componente)
+ * - Protección de datos compleja (se simplifica en el componente)
+ * - Hooks complejos con múltiples dependencias
+ */
+
+// ============================================================================
+// TIPOS
+// ============================================================================
+
+export interface EmpresaData {
+  razonSocial: string
+  nombreFantasia: string
+  rut: string
+  giro: string
+  direccion: string
+  comuna: string
+  emailFacturacion: string
+  telefonoContacto: string
+  sistema: string[]
+  rubro: string
+}
+
+export interface FormData {
+  empresa: EmpresaData
+  admins: any[]
+  trabajadores: any[]
+  turnos: any[]
+  planificaciones: any[]
+  asignaciones: any[]
+  configureNow: boolean
+}
+
+// ============================================================================
+// ENCRIPTACIÓN/DESENCRIPTACIÓN
+// ============================================================================
+
+export async function encryptToken(empresaData: EmpresaData): Promise<string> {
+  const jsonString = JSON.stringify(empresaData)
+  const encoder = new TextEncoder()
+  const dataBuffer = encoder.encode(jsonString)
+
+  const secret = process.env.ENCRYPTION_SECRET || "default-secret-key"
+  const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "PBKDF2" }, false, [
+    "deriveBits",
+    "deriveKey",
+  ])
+
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"],
+  )
+
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const encryptedBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, dataBuffer)
+
+  const resultBuffer = new Uint8Array(salt.length + iv.length + encryptedBuffer.byteLength)
+  resultBuffer.set(salt, 0)
+  resultBuffer.set(iv, salt.length)
+  resultBuffer.set(new Uint8Array(encryptedBuffer), salt.length + iv.length)
+
+  return Buffer.from(resultBuffer).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+}
+
+export async function decryptToken(token: string): Promise<EmpresaData | null> {
+  try {
+    const base64 = token.replace(/-/g, "+").replace(/_/g, "/")
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4)
+    const buffer = Buffer.from(base64 + padding, "base64")
+
+    const salt = buffer.slice(0, 16)
+    const iv = buffer.slice(16, 28)
+    const encryptedData = buffer.slice(28)
+
+    const secret = process.env.ENCRYPTION_SECRET || "default-secret-key"
+    const encoder = new TextEncoder()
+    const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "PBKDF2" }, false, [
+      "deriveBits",
+      "deriveKey",
+    ])
+
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"],
+    )
+
+    const decryptedBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, encryptedData)
+
+    const decoder = new TextDecoder()
+    const jsonString = decoder.decode(decryptedBuffer)
+    return JSON.parse(jsonString)
+  } catch (error) {
+    console.error("Error decrypting token:", error)
+    return null
+  }
+}
+
+// ============================================================================
+// ZOHO FLOW
+// ============================================================================
+
+export interface ZohoPayload {
+  accion: "crear" | "actualizar"
+  timestamp: string
+  eventType: "started" | "progress" | "complete"
+  // Solo para eventos complete
+  formData?: FormData
+  // Para todos los eventos
+  metadata: {
+    empresaRut: string
+    empresaNombre: string
+    pasoActual?: number
+    totalPasos?: number
+    porcentajeProgreso?: number
+  }
+}
+
+export async function sendToZohoFlow(payload: ZohoPayload): Promise<{
+  success: boolean
+  error?: string
+  data?: any
+}> {
+  const url = process.env.ZOHO_FLOW_TEST_URL
+
+  if (!url) {
+    return {
+      success: false,
+      error: "ZOHO_FLOW_TEST_URL no configurado",
+    }
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Error ${response.status}: ${response.statusText}`,
+      }
+    }
+
+    const data = await response.json().catch(() => response.text())
+
+    return {
+      success: true,
+      data,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error desconocido",
+    }
+  }
+}
