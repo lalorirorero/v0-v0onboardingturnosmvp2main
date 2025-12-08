@@ -2192,8 +2192,14 @@ const DecisionStep = ({ onDecision }) => {
 export default function OnboardingTurnos({}) {
   console.log("[v0] OnboardingTurnos mounting...")
 
+  if (typeof window !== "undefined") {
+    console.log("[v0] window.location.search:", window.location.search)
+    console.log("[v0] window.location.href:", window.location.href)
+  }
+
   const searchParams = useSearchParams()
   console.log("[v0] searchParams:", searchParams?.toString())
+  console.log("[v0] token from searchParams:", searchParams?.get("token"))
 
   // Estados principales
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
