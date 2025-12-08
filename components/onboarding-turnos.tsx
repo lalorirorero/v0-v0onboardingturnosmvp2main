@@ -2190,19 +2190,19 @@ const DecisionStep = ({ onDecision }) => {
 }
 
 export default function OnboardingTurnos({}) {
+  console.log("[v0] OnboardingTurnos mounting...")
+
   const searchParams = useSearchParams()
+  console.log("[v0] searchParams:", searchParams?.toString())
+
+  // Estados principales
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
+  const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
 
-  // Renamed skipConfiguration to configureNow for clarity and consistency with the update
-  const [configureNow, setConfigureNow] = useState(true) // Default to true
+  console.log("[v0] Initial states set")
 
-  const [admins, setAdmins] = useState([])
-
-  // Modified initial state for empresa to be empty
+  // Estado empresa
   const [empresa, setEmpresa] = useState({
     razonSocial: "",
     nombreFantasia: "",
@@ -2212,12 +2212,38 @@ export default function OnboardingTurnos({}) {
     comuna: "",
     emailFacturacion: "",
     telefonoContacto: "",
-    sistema: [],
+    sistema: [] as string[],
     rubro: "",
-    grupos: [], // Ensure grupos is initialized as an array
+    grupos: [] as { id: number; nombre: string; descripcion: string }[],
   })
 
-  const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
+  console.log("[v0] Empresa state set")
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
+  // const [isLoadingToken, setIsLoadingToken] = useState(false) // Already defined above
+
+  // Renamed skipConfiguration to configureNow for clarity and consistency with the update
+  const [configureNow, setConfigureNow] = useState(true) // Default to true
+
+  const [admins, setAdmins] = useState([])
+
+  // Modified initial state for empresa to be empty
+  // const [empresa, setEmpresa] = useState({ // Already defined above
+  //   razonSocial: "",
+  //   nombreFantasia: "",
+  //   rut: "",
+  //   giro: "",
+  //   direccion: "",
+  //   comuna: "",
+  //   emailFacturacion: "",
+  //   telefonoContacto: "",
+  //   sistema: [],
+  //   rubro: "",
+  //   grupos: [], // Ensure grupos is initialized as an array
+  // })
+
+  // const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null) // Already defined above
 
   const [trabajadores, setTrabajadores] = useState([])
   const [turnos, setTurnos] = useState([
@@ -2306,7 +2332,7 @@ export default function OnboardingTurnos({}) {
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify({ token }),
+        body: JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
