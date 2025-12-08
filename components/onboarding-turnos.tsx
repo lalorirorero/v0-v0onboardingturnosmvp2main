@@ -2214,16 +2214,10 @@ export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams() // <-- ADDED THIS LINE
 
   useEffect(() => {
-    // Solo ejecutar en el cliente
-    if (typeof window === "undefined") return
-
-    // Leer el token desde la URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const token = urlParams.get("token")
+    const token = searchParams.get("token")
 
     if (token) {
       setIsLoadingToken(true)
-      // Comenzar en el primer paso siempre que hay token
       setCurrentStep(PRIMER_PASO)
 
       fetch("/api/decrypt-token", {
@@ -2236,7 +2230,6 @@ export default function OnboardingTurnos({}) {
           if (data.success && data.empresaData) {
             setPrefilledData(data.empresaData)
 
-            // Prellenar los datos de la empresa
             setEmpresa((prev) => ({
               ...prev,
               ...data.empresaData,
@@ -2253,13 +2246,11 @@ export default function OnboardingTurnos({}) {
           setIsLoadingToken(false)
         })
     }
-  }, []) // Solo ejecutar una vez al montar
+  }, [searchParams])
   // </CHANGE>
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
-  // const [isLoadingToken, setIsLoadingToken] = useState(false) // Already defined above
-
   // Renamed skipConfiguration to configureNow for clarity and consistency with the update
   const [configureNow, setConfigureNow] = useState(true) // Default to true
 
