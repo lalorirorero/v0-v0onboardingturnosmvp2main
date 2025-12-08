@@ -1,6 +1,20 @@
 "use server"
 
-export async function submitToZoho(formData: any) {
+interface ZohoPayload {
+  accion: "crear" | "actualizar"
+  timestamp: string
+  eventType: string
+  formData?: any
+  metadata?: {
+    rut?: string
+    nombreEmpresa?: string
+    pasoActual?: number
+    totalPasos?: number
+    porcentajeProgreso?: number
+  }
+}
+
+export async function submitToZoho(payload: ZohoPayload | any) {
   const zohoFlowUrl = process.env.ZOHO_FLOW_TEST_URL
 
   if (!zohoFlowUrl) {
@@ -11,15 +25,20 @@ export async function submitToZoho(formData: any) {
   }
 
   try {
+    const dataToSend = {
+      accion: payload.accion || "actualizar",
+      timestamp: payload.timestamp || new Date().toISOString(),
+      eventType: payload.eventType || "unknown",
+      ...(payload.formData && { formData: payload.formData }),
+      ...(payload.metadata && { metadata: payload.metadata }),
+    }
+
     const response = await fetch(zohoFlowUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        formData: formData,
-      }),
+      body: JSON.stringify(dataToSend),
     })
 
     const responseText = await response.text()
