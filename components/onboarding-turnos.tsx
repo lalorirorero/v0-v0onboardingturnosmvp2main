@@ -3,10 +3,11 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
-import { Building2 } from "lucide-react"
+import { Building2, Lock, Edit2, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
+import { useDataProtection } from "@/hooks/use-data-protection"
 
 // Pasos del flujo
 const steps = [
@@ -372,7 +373,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
   )
 }
 
-const EmpresaStep = ({ empresa, setEmpresa }) => {
+const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
   const RUBROS = [
@@ -402,8 +403,19 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
     "CONSTRUCCIÓN",
   ]
 
+  const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set())
+
+  const handleUnlock = (fieldName: string) => {
+    setUnlockedFields((prev) => new Set(prev).add(fieldName))
+  }
+
   const handleEmpresaChange = (e) => {
-    setEmpresa({ ...empresa, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setEmpresa({ ...empresa, [name]: value })
+    // Trackear el cambio si el campo era prellenado
+    if (isFieldPrefilled(`empresa.${name}`)) {
+      trackFieldChange(`empresa.${name}`, value)
+    }
   }
 
   const handleSistemaChange = (sistemaValue) => {
@@ -415,10 +427,226 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
       : [...currentSistemas, sistemaValue]
 
     setEmpresa({ ...empresa, sistema: newSistemas })
+    if (isFieldPrefilled("empresa.sistema")) {
+      trackFieldChange("empresa.sistema", newSistemas)
+    }
+  }
+
+  const ProtectedInput = ({
+    name,
+    label,
+    type = "text",
+    placeholder,
+  }: {
+    name: string
+    label: string
+    type?: string
+    placeholder?: string
+  }) => {
+    const fieldKey = `empresa.${name}`
+    const isPrefilled = isFieldPrefilled(fieldKey)
+    const wasEdited = isFieldEdited(fieldKey)
+    const isUnlocked = unlockedFields.has(name)
+    const value = empresa[name] || ""
+
+    // Campo prellenado y NO desbloqueado: mostrar en modo bloqueado
+    if (isPrefilled && !isUnlocked && !wasEdited) {
+      return (
+        <div className="space-y-1 text-sm">
+          <label className="font-medium flex items-center gap-2">
+            {label}
+            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              Dato de Zoho
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+              {value || <span className="text-slate-400 italic">Sin valor</span>}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUnlock(name)}
+              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
+              title="Editar este campo"
+            >
+              <Edit2 className="h-4 w-4" />
+              Editar
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    // Campo editable (no prellenado, desbloqueado, o ya editado)
+    return (
+      <div className="space-y-1 text-sm">
+        <label className="font-medium flex items-center gap-2">
+          {label}
+          {isPrefilled && wasEdited && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+          )}
+        </label>
+        <input
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          type={type}
+          name={name}
+          value={value}
+          onChange={handleEmpresaChange}
+          placeholder={placeholder}
+        />
+      </div>
+    )
+  }
+
+  const ProtectedRubroSelect = () => {
+    const fieldKey = "empresa.rubro"
+    const isPrefilled = isFieldPrefilled(fieldKey)
+    const wasEdited = isFieldEdited(fieldKey)
+    const isUnlocked = unlockedFields.has("rubro")
+    const value = empresa.rubro || ""
+
+    if (isPrefilled && !isUnlocked && !wasEdited) {
+      return (
+        <div className="space-y-1 text-sm">
+          <label className="font-medium flex items-center gap-2">
+            Rubro
+            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              Dato de Zoho
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+              {value || <span className="text-slate-400 italic">Sin valor</span>}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUnlock("rubro")}
+              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
+              title="Editar este campo"
+            >
+              <Edit2 className="h-4 w-4" />
+              Editar
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-1 text-sm">
+        <label className="font-medium flex items-center gap-2">
+          Rubro
+          {isPrefilled && wasEdited && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+          )}
+        </label>
+        <select
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          name="rubro"
+          value={value}
+          onChange={handleEmpresaChange}
+        >
+          <option value="">Seleccionar rubro...</option>
+          {RUBROS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  const ProtectedSistemas = () => {
+    const fieldKey = "empresa.sistema"
+    const isPrefilled = isFieldPrefilled(fieldKey)
+    const wasEdited = isFieldEdited(fieldKey)
+    const isUnlocked = unlockedFields.has("sistema")
+    const selectedSistemas = empresa.sistema || []
+
+    if (isPrefilled && !isUnlocked && !wasEdited) {
+      return (
+        <div className="space-y-1 text-sm">
+          <label className="font-medium flex items-center gap-2">
+            Sistema
+            <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              Dato de Zoho
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+              {selectedSistemas.length > 0 ? (
+                selectedSistemas.join(", ")
+              ) : (
+                <span className="text-slate-400 italic">Sin sistemas seleccionados</span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUnlock("sistema")}
+              className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center gap-1 text-sm transition-colors"
+              title="Editar este campo"
+            >
+              <Edit2 className="h-4 w-4" />
+              Editar
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-1 text-sm">
+        <label className="font-medium flex items-center gap-2">
+          Sistema
+          {isPrefilled && wasEdited && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+          )}
+        </label>
+        <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+          {SISTEMAS.map((s) => (
+            <label
+              key={s}
+              className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={selectedSistemas.includes(s)}
+                onChange={() => handleSistemaChange(s)}
+                className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+              />
+              <span className="text-sm">{s}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <section className="space-y-6">
+      {prefilledFields && prefilledFields.size > 0 && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-sky-900">Datos prellenados desde Zoho CRM</h4>
+              <p className="text-sm text-sky-700 mt-1">
+                Los campos marcados con{" "}
+                <span className="inline-flex items-center gap-1 bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-xs">
+                  <Lock className="h-3 w-3" />
+                  Dato de Zoho
+                </span>{" "}
+                fueron prellenados. Puedes editarlos si es necesario haciendo clic en "Editar".
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="flex items-center gap-2 text-base font-semibold">
           <Building2 className="h-5 w-5 text-sky-600" />
@@ -426,129 +654,26 @@ const EmpresaStep = ({ empresa, setEmpresa }) => {
         </h3>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Razón Social</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="razonSocial"
-              value={empresa.razonSocial || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: EDALTEC LTDA"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Nombre de fantasía</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="nombreFantasia"
-              value={empresa.nombreFantasia || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: EDALTEC"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">RUT</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="rut"
-              value={empresa.rut || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: 76.201.998-1"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Giro</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="giro"
-              value={empresa.giro || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: Comercializadora de equipos"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Dirección</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="direccion"
-              value={empresa.direccion || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: Chiloé 5138"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Comuna</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              name="comuna"
-              value={empresa.comuna || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: San Miguel"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Email de facturación</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="email"
-              name="emailFacturacion"
-              value={empresa.emailFacturacion || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: marcelo.vargas@edaltec.cl"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Teléfono de contacto</label>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="tel"
-              name="telefonoContacto"
-              value={empresa.telefonoContacto || ""}
-              onChange={handleEmpresaChange}
-              placeholder="Ej: 56995925655"
-            />
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Sistema</label>
-            <div className="space-y-2 rounded-xl border border-slate-200 p-3">
-              {SISTEMAS.map((s) => (
-                <label
-                  key={s}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={(empresa.sistema || []).includes(s)}
-                    onChange={() => handleSistemaChange(s)}
-                    className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                  />
-                  <span className="text-sm">{s}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Rubro</label>
-            <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              name="rubro"
-              value={empresa.rubro || ""}
-              onChange={handleEmpresaChange}
-            >
-              <option value="">Seleccionar rubro...</option>
-              {RUBROS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ProtectedInput name="razonSocial" label="Razón Social" placeholder="Ej: EDALTEC LTDA" />
+          <ProtectedInput name="nombreFantasia" label="Nombre de fantasía" placeholder="Ej: EDALTEC" />
+          <ProtectedInput name="rut" label="RUT" placeholder="Ej: 76.201.998-1" />
+          <ProtectedInput name="giro" label="Giro" placeholder="Ej: Comercializadora de equipos" />
+          <ProtectedInput name="direccion" label="Dirección" placeholder="Ej: Chiloé 5138" />
+          <ProtectedInput name="comuna" label="Comuna" placeholder="Ej: San Miguel" />
+          <ProtectedInput
+            name="emailFacturacion"
+            label="Email de facturación"
+            type="email"
+            placeholder="Ej: marcelo.vargas@edaltec.cl"
+          />
+          <ProtectedInput
+            name="telefonoContacto"
+            label="Teléfono de contacto"
+            type="tel"
+            placeholder="Ej: 56995925655"
+          />
+          <ProtectedSistemas />
+          <ProtectedRubroSelect />
         </div>
       </div>
 
@@ -2066,7 +2191,7 @@ const DecisionStep = ({ onDecision }) => {
 
 export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState(0)
+  const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
@@ -2091,6 +2216,9 @@ export default function OnboardingTurnos({}) {
     rubro: "",
     grupos: [], // Ensure grupos is initialized as an array
   })
+
+  const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
+
   const [trabajadores, setTrabajadores] = useState([])
   const [turnos, setTurnos] = useState([
     {
@@ -2128,6 +2256,7 @@ export default function OnboardingTurnos({}) {
   })
   const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here for TrabajadoresStep
 
+  // Inicializar hooks de data protection
   const {
     trackProgress,
     sendCompleteData,
@@ -2137,6 +2266,21 @@ export default function OnboardingTurnos({}) {
     currentStep,
     totalSteps: steps.length,
   })
+
+  const {
+    isFieldPrefilled,
+    isFieldEdited,
+    trackFieldChange,
+    completeStep,
+    isStepCompleted,
+    getChangesSummary,
+    prepareFinalSubmission,
+  } = useDataProtection({
+    prefilledData: prefilledData || undefined,
+    onboardingId: empresa.rut || undefined,
+  })
+
+  const prefilledFields = prefilledData ? new Set(Object.keys(prefilledData).map((k) => `empresa.${k}`)) : new Set()
 
   const ensureGrupoByName = (nombre) => {
     const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
@@ -2162,11 +2306,13 @@ export default function OnboardingTurnos({}) {
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.empresaData) {
+            setPrefilledData(data.empresaData)
+
             // Prellenar los datos de la empresa
             setEmpresa((prev) => ({
               ...prev,
@@ -2611,77 +2757,76 @@ export default function OnboardingTurnos({}) {
     URL.revokeObjectURL(url)
   }
 
-  const handleFinalizar = async () => {
-    // Only send webhook if we're on the final step (Resumen)
-    if (currentStep !== steps.length - 1) {
-      return
-    }
+  const handleNext = () => {
+    // Marcar el paso actual como completado
+    completeStep(currentStep)
 
+    // Enviar evento de progreso a Zoho
+    trackProgress(steps[currentStep]?.label || `Paso ${currentStep}`)
+
+    // Lógica existente de navegación
+    if (currentStep === 3) {
+      if (configureNow) {
+        setCurrentStep(4)
+      } else {
+        setCurrentStep(7)
+      }
+    } else if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const handleFinalizar = async () => {
     setIsSubmitting(true)
     setZohoSubmissionResult(null)
 
+    const formData = {
+      empresa,
+      admins,
+      trabajadores,
+      turnos,
+      planificaciones,
+      asignaciones,
+      configureNow, // Include configureNow in the data
+    }
+
+    // Preparar datos con metadata de cambios
+    const submissionData = prepareFinalSubmission(formData)
+
     try {
-      const excelFile = generateExcelAsBase64()
-
-      const formData = {
-        empresa,
-        admins,
-        trabajadores,
-        ...(configureNow && {
-          turnos,
-          planificaciones,
-          asignaciones,
-        }),
-        completedAt: new Date().toISOString(),
-        archivo: {
-          nombre: excelFile.fileName,
-          contenido: excelFile.fileBase64,
-          tipo: excelFile.mimeType,
+      const result = await sendCompleteData({
+        ...submissionData.formData,
+        _metadata: {
+          changesSummary: submissionData.changesSummary,
+          totalChanges: submissionData.changesSummary.totalChanges,
+          editedFields: submissionData.changesSummary.editedFields,
         },
-      }
+      })
 
-      // Enviar datos completos usando el sistema de tracking
-      const result = await sendCompleteData(formData)
       setZohoSubmissionResult(result)
 
+      // If submission is successful, mark the final step as completed
       if (result.success) {
-        console.log("[v0] Datos enviados exitosamente a Zoho Flow")
-        // Avanzar al siguiente paso después de envío exitoso
-        setCurrentStep(currentStep + 1)
-      } else {
-        console.error("[v0] Error al enviar datos a Zoho Flow:", result.error)
-        // Se actualiza el estado de ZohoSubmissionResult con un mensaje más detallado
-        setZohoSubmissionResult({
-          success: false,
-          message: result.message || "Ocurrió un error desconocido.",
-          error: result.error || "No se pudo procesar la solicitud.",
-        })
+        completeStep(currentStep)
+        setCurrentStep(currentStep + 1) // Move to the next (non-existent) step to indicate completion
       }
     } catch (error) {
-      console.error("Error al enviar datos:", error)
+      console.error("Error sending data:", error)
       setZohoSubmissionResult({
         success: false,
-        message: "Error al enviar los datos. Por favor, intenta nuevamente.",
         error: error instanceof Error ? error.message : "Error desconocido",
+        message: "Error al enviar los datos. Por favor, intenta nuevamente.",
       })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleNext = () => {
-    const nextStep = currentStep + 1
-    const stepName = steps[nextStep]?.label || `Paso ${nextStep}`
-
-    // Enviar tracking de progreso a Zoho (fire and forget)
-    trackProgress(stepName)
-
-    setCurrentStep(nextStep)
-  }
-
   const handlePrev = () => {
-    if (currentStep === steps.length - 1 && !configureNow) {
-      setCurrentStep(3) // Go back to decision step
+    if (currentStep === 3 && !configureNow) {
+      setCurrentStep(3) // Stay on decision step if configuration was skipped
+    } else if (currentStep === 7 && !configureNow) {
+      setCurrentStep(3) // Go back to decision step if on summary and config was skipped
     } else {
       setCurrentStep(Math.max(0, currentStep - 1))
     }
@@ -2709,13 +2854,19 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100">
-      {/* Removed the ZohoPrefillHandler component as its functionality is now handled by the useEffect hook */}
-      {/* <ZohoPrefillHandler setEmpresa={setEmpresa} setAdmins={setAdmins} /> */}
-
+    <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
 
-      {currentStep === 0 && <EmpresaStep empresa={empresa} setEmpresa={setEmpresa} />}
+      {!isLoadingToken && currentStep === 0 && (
+        <EmpresaStep
+          empresa={empresa}
+          setEmpresa={setEmpresa}
+          prefilledFields={prefilledFields}
+          isFieldPrefilled={isFieldPrefilled}
+          isFieldEdited={isFieldEdited}
+          trackFieldChange={trackFieldChange}
+        />
+      )}
       {currentStep === 1 && (
         <AdminStep
           admins={admins}
