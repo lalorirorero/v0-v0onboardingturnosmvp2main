@@ -16,6 +16,8 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ArrowRight,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
@@ -2151,39 +2153,9 @@ const casosDeExitoVideos = [
     videoId: "wg8iLbheAzg",
   },
   {
-    empresa: "Virgin Mobile",
-    industria: "Telecomunicaciones",
-    videoId: "BHXid-4Rlrg",
-  },
-  {
     empresa: "Bureau Veritas",
     industria: "Certificación",
     videoId: "Ofzj8SsgdDs",
-  },
-  {
-    empresa: "Toshiba",
-    industria: "Tecnología",
-    videoId: "P-SDGVuoquM",
-  },
-  {
-    empresa: "Energy Fitness",
-    industria: "Fitness",
-    videoId: "9Ix6xiSH9SY",
-  },
-  {
-    empresa: "Block Constructora",
-    industria: "Construcción",
-    videoId: "E30DdXJhTaI",
-  },
-  {
-    empresa: "ECR Group",
-    industria: "Servicios",
-    videoId: "6s4fGDVpits",
-  },
-  {
-    empresa: "Cygnus",
-    industria: "Tecnología",
-    videoId: "8aG9Edk4NQE",
   },
   {
     empresa: "Grupo Eulen México",
@@ -2194,6 +2166,7 @@ const casosDeExitoVideos = [
 
 const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [showCasosExito, setShowCasosExito] = useState(false)
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
@@ -2204,8 +2177,8 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
   }
 
   return (
-    <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-6 md:p-8">
-      {/* Header */}
+    <section className="space-y-6 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-6 md:p-8">
+      {/* 1. Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-2">
           <Rocket className="w-8 h-8 text-sky-600" />
@@ -2219,84 +2192,7 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2 text-center justify-center">
-          <Star className="w-5 h-5 text-amber-500" />
-          Casos de éxito de empresas que confían en GeoVictoria
-        </h2>
-
-        <div className="relative">
-          {/* Carrusel de videos */}
-          <div className="overflow-hidden rounded-xl">
-            <div
-              className="flex transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-            >
-              {casosDeExitoVideos.map((caso, index) => (
-                <div key={index} className="w-full flex-shrink-0 px-2">
-                  <div className="space-y-3">
-                    {/* Info de la empresa */}
-                    <div className="flex items-center justify-center gap-2">
-                      <Building2 className="w-4 h-4 text-sky-500" />
-                      <span className="font-semibold text-slate-800">{caso.empresa}</span>
-                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {caso.industria}
-                      </span>
-                    </div>
-                    {/* Video de YouTube */}
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
-                        title={`Caso de éxito: ${caso.empresa}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="absolute inset-0 w-full h-full"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Botones de navegación */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
-            aria-label="Video anterior"
-          >
-            <ChevronLeft className="w-5 h-5 text-slate-600" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
-            aria-label="Video siguiente"
-          >
-            <ChevronRight className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Indicadores y contador */}
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <div className="flex justify-center gap-1.5">
-            {casosDeExitoVideos.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
-                }`}
-                aria-label={`Ir a video ${index + 1}`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-slate-500">
-            {currentSlide + 1} de {casosDeExitoVideos.length} videos
-          </span>
-        </div>
-      </div>
-
-      {/* Qué haremos */}
+      {/* 2. Qué haremos - Da contexto primero */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -2334,7 +2230,21 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
         </div>
       </div>
 
-      {/* Qué tener a mano */}
+      {/* 3. Mensaje tranquilizador - ANTES del checklist para reducir ansiedad */}
+      <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5 space-y-2">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
+            <p className="text-sm text-emerald-700 mt-1">
+              Puedes avanzar con la información que tengas disponible. Al final podrás revisar todo antes de confirmar,
+              y siempre podrás hacer ajustes más adelante. Tus datos están protegidos y seguros.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Qué tener a mano - Después del mensaje de calma */}
       <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 space-y-3">
         <h2 className="font-semibold text-amber-800 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-amber-600" />
@@ -2356,52 +2266,103 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
         </ul>
       </div>
 
-      {/* Mensaje tranquilizador */}
-      <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5 space-y-2">
-        <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
-            <p className="text-sm text-emerald-700 mt-1">
-              Puedes avanzar con la información que tengas disponible. Al final podrás revisar todo antes de confirmar,
-              y siempre podrás hacer ajustes más adelante. Tus datos están protegidos y seguros.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Valor GeoVictoria */}
-      <div className="text-center space-y-3 py-4 border-t border-slate-200">
-        <p className="text-sm text-slate-600">
-          <span className="font-semibold text-slate-700">GeoVictoria</span> es utilizada por miles de empresas en
-          Latinoamérica para tener visibilidad de asistencia en tiempo real, reducir errores administrativos y mejorar
-          la gestión de sus equipos.
-        </p>
-      </div>
-
-      {/* Botón principal */}
-      <div className="flex justify-center pt-2">
+      {/* 5. Botón principal - Call to action destacado */}
+      <div className="flex justify-center py-4">
         <button
           type="button"
           onClick={onContinue}
           className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
         >
           Comenzar implementación
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
+          <ArrowRight className="w-5 h-5" />
         </button>
+      </div>
+
+      {/* 6. Casos de éxito - Colapsable/opcional */}
+      <div className="border-t border-slate-200 pt-4">
+        <button
+          type="button"
+          onClick={() => setShowCasosExito(!showCasosExito)}
+          className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors py-2"
+        >
+          <Star className="w-4 h-4 text-amber-500" />
+          <span>{showCasosExito ? "Ocultar" : "Ver"} casos de éxito de empresas que confían en GeoVictoria</span>
+          <ChevronDown className={`w-4 h-4 transition-transform ${showCasosExito ? "rotate-180" : ""}`} />
+        </button>
+
+        {showCasosExito && (
+          <div className="mt-4 bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+            <div className="relative">
+              {/* Carrusel de videos */}
+              <div className="overflow-hidden rounded-xl">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                >
+                  {casosDeExitoVideos.map((caso, index) => (
+                    <div key={index} className="w-full flex-shrink-0 px-2">
+                      <div className="space-y-3">
+                        {/* Info de la empresa */}
+                        <div className="flex items-center justify-center gap-2">
+                          <Building2 className="w-4 h-4 text-sky-500" />
+                          <span className="font-semibold text-slate-800">{caso.empresa}</span>
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {caso.industria}
+                          </span>
+                        </div>
+                        {/* Video de YouTube */}
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
+                            title={`Caso de éxito: ${caso.empresa}`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="absolute inset-0 w-full h-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Botones de navegación */}
+              <button
+                onClick={prevSlide}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+                aria-label="Video anterior"
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+                aria-label="Video siguiente"
+              >
+                <ChevronRight className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            {/* Indicadores */}
+            <div className="flex flex-col items-center gap-2 pt-2">
+              <div className="flex justify-center gap-1.5">
+                {casosDeExitoVideos.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
+                    }`}
+                    aria-label={`Ir a video ${index + 1}`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-slate-500">
+                {currentSlide + 1} de {casosDeExitoVideos.length} videos
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
