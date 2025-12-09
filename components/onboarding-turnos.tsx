@@ -2462,7 +2462,7 @@ const BienvenidaMarketingStep = ({
 
 const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
   return (
-    <section className="space-y-6 max-w-2xl mx-auto">
+    <section className="space-y-6 max-w-[1700px] mx-auto">
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
@@ -2474,10 +2474,11 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
         </p>
       </div>
 
-      {/* Qué pediremos */}
+      {/* Qué pediremos - Reorganizado en grid 2x2 */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
         <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos?</h3>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Fila 1 */}
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               1
@@ -2496,6 +2497,7 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
               <p className="text-xs text-slate-500">Quien gestionará GeoVictoria en tu empresa</p>
             </div>
           </div>
+          {/* Fila 2 */}
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               3
@@ -2517,40 +2519,42 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
         </div>
       </div>
 
-      {/* Mensaje tranquilizador */}
-      <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5 space-y-2">
-        <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
-            <p className="text-sm text-emerald-700 mt-1">
-              Puedes avanzar con la información que tengas. Al final podrás revisar todo, y siempre podrás hacer ajustes
-              más adelante. Tus datos están protegidos y seguros.
-            </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Mensaje tranquilizador */}
+        <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
+              <p className="text-sm text-emerald-700 mt-1">
+                Puedes avanzar con la información que tengas. Al final podrás revisar todo, y siempre podrás hacer
+                ajustes más adelante. Tus datos están protegidos y seguros.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Qué tener a mano */}
-      <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 space-y-3">
-        <h2 className="font-semibold text-amber-800 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
-          ¿Qué es útil tener a mano?
-        </h2>
-        <ul className="space-y-2 text-sm text-amber-700">
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Datos básicos de la empresa (RUT, Razón Social, Dirección)
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Listado de trabajadores (nombre, RUT, correo) - puede ser en borrador
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Información general de turnos y horarios (si ya los tienes definidos)
-          </li>
-        </ul>
+        {/* Qué tener a mano */}
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
+          <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
+            <AlertCircle className="w-5 h-5 text-amber-600" />
+            ¿Qué es útil tener a mano?
+          </h2>
+          <ul className="space-y-2 text-sm text-amber-700">
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Datos básicos de la empresa (RUT, Razón Social, Dirección)
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Listado de trabajadores (nombre, RUT, correo)
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Información general de turnos y horarios
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Tiempo estimado */}
