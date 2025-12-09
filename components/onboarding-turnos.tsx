@@ -19,9 +19,11 @@ import {
   Award,
   Heart,
   Zap,
+  Info,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" // Import added
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
@@ -348,7 +350,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-slate-900">{admin.nombre}</span>
                     {admin.grupoNombre && (
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                      <span className="rounded-full bg-info-muted px-2 py-0.5 text-[10px] font-medium text-info-foreground">
                         {admin.grupoNombre}
                       </span>
                     )}
@@ -362,7 +364,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
                 <button
                   type="button"
                   onClick={() => removeAdmin(admin.id)}
-                  className="ml-2 text-xs text-red-500 hover:text-red-700 focus:outline-none"
+                  className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
                   title="Eliminar administrador"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -394,6 +396,39 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
 
 const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
+
+  const SISTEMAS_INFO = {
+    "GeoVictoria BOX": {
+      imagen: "/images/box.png",
+      titulo: "Relojes Biométricos",
+      descripcion:
+        "Dispositivos físicos con huella digital o reconocimiento facial. Ideal para oficinas, plantas y lugares con acceso fijo.",
+    },
+    "GeoVictoria CALL": {
+      imagen: "/images/call.png",
+      titulo: "Marcaje por Llamada",
+      descripcion:
+        "El trabajador marca llamando a un número gratuito. Ideal para personal en terreno sin smartphone o con baja conectividad.",
+    },
+    "GeoVictoria APP": {
+      imagen: "/images/app.png",
+      titulo: "Aplicación Móvil",
+      descripcion:
+        "App para smartphone con geolocalización y foto. Ideal para equipos en terreno, vendedores y personal móvil.",
+    },
+    "GeoVictoria USB": {
+      imagen: "/images/usb.png",
+      titulo: "Lector USB Biométrico",
+      descripcion:
+        "Lector de huella conectado a computador. Ideal para recepciones, escritorios compartidos o puestos de trabajo fijos.",
+    },
+    "GeoVictoria WEB": {
+      imagen: "/images/web.png",
+      titulo: "Portal Web",
+      descripcion:
+        "Marcaje desde el navegador con credenciales. Ideal para personal administrativo, teletrabajo y oficinas.",
+    },
+  }
 
   const RUBROS = [
     "SALUD",
@@ -469,16 +504,16 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
         <label className="font-medium flex items-center gap-2">
           {label}
           {isPrefilled && wasEdited && (
-            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
         {isLocked ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
             {value || <span className="text-slate-400 italic">Sin valor</span>}
           </div>
         ) : (
           <input
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-1 focus:ring-info"
             type={type}
             name={name}
             value={value}
@@ -502,16 +537,16 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
         <label className="font-medium flex items-center gap-2">
           Rubro
           {isPrefilled && wasEdited && (
-            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
         {isLocked ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
             {value || <span className="text-slate-400 italic">Sin valor</span>}
           </div>
         ) : (
           <select
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-1 focus:ring-info"
             name="rubro"
             value={value}
             onChange={handleEmpresaChange}
@@ -536,15 +571,15 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
     return (
-      <div className="space-y-1 text-sm">
+      <div className="space-y-2 text-sm col-span-2">
         <label className="font-medium flex items-center gap-2">
-          Sistema
+          Sistema de marcaje
           {isPrefilled && wasEdited && (
-            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Editado</span>
+            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
           )}
         </label>
         {isLocked ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
             {selectedSistemas.length > 0 ? (
               selectedSistemas.join(", ")
             ) : (
@@ -552,21 +587,48 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             )}
           </div>
         ) : (
-          <div className="space-y-2 rounded-xl border border-slate-200 p-3">
-            {SISTEMAS.map((s) => (
-              <label
-                key={s}
-                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSistemas.includes(s)}
-                  onChange={() => handleSistemaChange(s)}
-                  className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                />
-                <span className="text-sm">{s}</span>
-              </label>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            {SISTEMAS.map((s) => {
+              const info = SISTEMAS_INFO[s]
+              const isSelected = selectedSistemas.includes(s)
+              const shortName = s.replace("GeoVictoria ", "")
+
+              return (
+                <HoverCard key={s} openDelay={200} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <label
+                      className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all whitespace-nowrap ${
+                        isSelected
+                          ? "border-sky-500 bg-sky-50"
+                          : "border-slate-200 hover:border-sky-300 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSistemaChange(s)}
+                        className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                      />
+                      <span className="text-sm font-medium">{shortName}</span>
+                      <Info className="h-3.5 w-3.5 text-slate-400" />
+                    </label>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-72" side="top">
+                    <div className="space-y-3">
+                      <img
+                        src={info.imagen || "/placeholder.svg"}
+                        alt={info.titulo}
+                        className="w-full h-32 object-contain rounded-lg bg-slate-50"
+                      />
+                      <div>
+                        <h4 className="font-semibold text-sm">{info.titulo}</h4>
+                        <p className="text-xs text-slate-600 mt-1">{info.descripcion}</p>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              )
+            })}
           </div>
         )}
       </div>
@@ -576,13 +638,13 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   return (
     <section className="space-y-6">
       {hasPrefilled && (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+        <div className="rounded-xl border border-info-border bg-info-muted p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-sky-900">Datos de su empresa</h4>
-                <p className="text-sm text-sky-700 mt-1">
+                <h4 className="font-medium text-info-foreground">Datos de su empresa</h4>
+                <p className="text-sm text-info-foreground mt-1">
                   {isEditing
                     ? "Puede modificar los campos que necesite. Los cambios quedarán registrados."
                     : 'Verifique que la información sea correcta. Si necesita hacer cambios, haga clic en "Editar datos".'}
@@ -1480,8 +1542,8 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
           </p>
           <p className="text-xs text-purple-800 leading-relaxed">
             <strong>Ejemplo:</strong> Puedes crear una planificación llamada "Oficina 5x2" donde de Lunes a Viernes
-            asignas "Turno Oficina" y Sábado y Domingo asignas "Libre". O una planificación "Turno Rotativo" con
-            diferentes turnos cada día.
+            asignas "Turno Oficina" y Sábado y Domingo asignas "Libre". O una planificación "Rotativo" con diferentes
+            turnos cada día.
           </p>
           <p className="text-xs text-purple-800 leading-relaxed">
             <strong>Relación con turnos:</strong> Cada día de la planificación usa uno de los turnos que definiste

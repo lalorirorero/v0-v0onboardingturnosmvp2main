@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -19,7 +19,7 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -37,6 +37,38 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* GeoVictoria Brand Colors */
+  --gv-primary: oklch(0.55 0.2 220);
+  --gv-primary-foreground: oklch(0.985 0 0);
+  --gv-secondary: oklch(0.75 0.15 85);
+  --gv-secondary-foreground: oklch(0.3 0.1 85);
+
+  /* Semantic Status Colors */
+  --info: oklch(0.65 0.15 220);
+  --info-foreground: oklch(0.35 0.1 220);
+  --info-muted: oklch(0.95 0.03 220);
+  --info-border: oklch(0.85 0.08 220);
+
+  --success: oklch(0.65 0.18 145);
+  --success-foreground: oklch(0.35 0.12 145);
+  --success-muted: oklch(0.95 0.04 145);
+  --success-border: oklch(0.85 0.1 145);
+
+  --warning: oklch(0.75 0.15 85);
+  --warning-foreground: oklch(0.4 0.12 85);
+  --warning-muted: oklch(0.97 0.04 85);
+  --warning-border: oklch(0.88 0.1 85);
+
+  --error: oklch(0.6 0.22 25);
+  --error-foreground: oklch(0.4 0.15 25);
+  --error-muted: oklch(0.97 0.03 25);
+  --error-border: oklch(0.88 0.12 25);
+
+  /* Highlight for selected/admin items */
+  --highlight: oklch(0.95 0.03 220);
+  --highlight-foreground: oklch(0.4 0.12 220);
+  --highlight-border: oklch(0.85 0.08 220);
 }
 
 .dark {
@@ -72,11 +104,41 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Dark mode semantic colors */
+  --gv-primary: oklch(0.6 0.18 220);
+  --gv-primary-foreground: oklch(0.985 0 0);
+  --gv-secondary: oklch(0.7 0.12 85);
+  --gv-secondary-foreground: oklch(0.985 0 0);
+
+  --info: oklch(0.6 0.12 220);
+  --info-foreground: oklch(0.85 0.06 220);
+  --info-muted: oklch(0.25 0.05 220);
+  --info-border: oklch(0.4 0.08 220);
+
+  --success: oklch(0.6 0.15 145);
+  --success-foreground: oklch(0.85 0.08 145);
+  --success-muted: oklch(0.25 0.06 145);
+  --success-border: oklch(0.4 0.1 145);
+
+  --warning: oklch(0.65 0.12 85);
+  --warning-foreground: oklch(0.9 0.06 85);
+  --warning-muted: oklch(0.25 0.05 85);
+  --warning-border: oklch(0.45 0.1 85);
+
+  --error: oklch(0.55 0.18 25);
+  --error-foreground: oklch(0.9 0.08 25);
+  --error-muted: oklch(0.25 0.06 25);
+  --error-border: oklch(0.4 0.12 25);
+
+  --highlight: oklch(0.25 0.05 220);
+  --highlight-foreground: oklch(0.85 0.06 220);
+  --highlight-border: oklch(0.4 0.08 220);
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -113,6 +175,37 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* GeoVictoria Brand */
+  --color-gv-primary: var(--gv-primary);
+  --color-gv-primary-foreground: var(--gv-primary-foreground);
+  --color-gv-secondary: var(--gv-secondary);
+  --color-gv-secondary-foreground: var(--gv-secondary-foreground);
+
+  /* Semantic Status */
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-muted: var(--info-muted);
+  --color-info-border: var(--info-border);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
+  --color-success-border: var(--success-border);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-border: var(--warning-border);
+
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-error-muted: var(--error-muted);
+  --color-error-border: var(--error-border);
+
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-highlight-border: var(--highlight-border);
 }
 
 @layer base {
