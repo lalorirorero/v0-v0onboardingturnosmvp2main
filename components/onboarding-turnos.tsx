@@ -10,31 +10,32 @@ import {
   CheckCircle2,
   Clock,
   Users,
-  Calendar,
   Shield,
   Rocket,
-  Star,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   ArrowRight,
+  TrendingUp,
+  Award,
+  Heart,
+  Zap,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
-// Pasos del flujo
 const steps = [
-  { id: 0, label: "Bienvenida", description: "Información inicial" },
-  { id: 1, label: "Empresa", description: "Datos base de la empresa" },
-  { id: 2, label: "Admin", description: "Responsable de la cuenta" },
-  { id: 3, label: "Trabajadores", description: "Listado inicial" },
-  { id: 4, label: "Configuración", description: "Decidir qué configurar" },
-  { id: 5, label: "Turnos", description: "Definición de turnos" },
-  { id: 6, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 7, label: "Asignación", description: "Quién trabaja qué planificación" },
-  { id: 8, label: "Resumen", description: "Revisión final" },
+  { id: 0, label: "Bienvenida", description: "Te damos la bienvenida" },
+  { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
+  { id: 2, label: "Empresa", description: "Datos base de la empresa" },
+  { id: 3, label: "Admin", description: "Responsable de la cuenta" },
+  { id: 4, label: "Trabajadores", description: "Listado inicial" },
+  { id: 5, label: "Configuración", description: "Decidir qué configurar" },
+  { id: 6, label: "Turnos", description: "Definición de turnos" },
+  { id: 7, label: "Planificaciones", description: "Tipos de planificación semanal" },
+  { id: 8, label: "Asignación", description: "Asignar turnos a trabajadores" },
+  { id: 9, label: "Resumen", description: "Revisión final" },
 ]
 
 // Si se agregan pasos al inicio, cambiar este valor
@@ -2146,27 +2147,72 @@ const casosDeExitoVideos = [
     empresa: "Starbucks",
     industria: "Alimentación",
     videoId: "Je6-Ka-1Fjo",
+    quote: "Logramos reducir en un 90% el tiempo dedicado a gestión de asistencia",
   },
   {
     empresa: "Huawei Chile",
     industria: "Telecomunicaciones",
     videoId: "wg8iLbheAzg",
+    quote: "Control total de nuestros equipos en tiempo real desde cualquier lugar",
   },
   {
     empresa: "Bureau Veritas",
     industria: "Certificación",
     videoId: "Ofzj8SsgdDs",
+    quote: "Procesos de nómina más eficientes y sin errores",
   },
   {
-    empresa: "Grupo Eulen México",
-    industria: "Servicios",
-    videoId: "Gu6CiM0Rlpo",
+    empresa: "Virgin Mobile",
+    industria: "Telecomunicaciones",
+    videoId: "BHXid-4Rlrg",
+    quote: "Visibilidad completa del equipo de ventas en terreno",
+  },
+  {
+    empresa: "Toshiba",
+    industria: "Tecnología",
+    videoId: "P-SDGVuoquM",
+    quote: "Automatización que nos ahorra horas de trabajo administrativo",
+  },
+  {
+    empresa: "Energy Fitness",
+    industria: "Fitness",
+    videoId: "9Ix6xiSH9SY",
+    quote: "Gestión simplificada de turnos rotativos",
   },
 ]
 
-const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
+const beneficiosGeoVictoria = [
+  {
+    icon: TrendingUp,
+    titulo: "Reduce errores de nómina",
+    descripcion: "Hasta 90% menos errores en cálculos de asistencia",
+  },
+  {
+    icon: Clock,
+    titulo: "Ahorra tiempo",
+    descripcion: "Automatiza procesos que antes tomaban horas",
+  },
+  {
+    icon: Users,
+    titulo: "Control en tiempo real",
+    descripcion: "Visibilidad de tu equipo desde cualquier lugar",
+  },
+  {
+    icon: Shield,
+    titulo: "Datos seguros",
+    descripcion: "Información protegida y respaldada en la nube",
+  },
+]
+
+const BienvenidaMarketingStep = ({
+  nombreEmpresa,
+  onContinue,
+}: {
+  nombreEmpresa?: string
+  onContinue: () => void
+}) => {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [showCasosExito, setShowCasosExito] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
@@ -2177,60 +2223,236 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
   }
 
   return (
-    <section className="space-y-6 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-6 md:p-8">
-      {/* 1. Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-2">
-          <Rocket className="w-8 h-8 text-sky-600" />
+    <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 md:p-8">
+      {/* Header personalizado */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 shadow-lg shadow-sky-500/30 mb-2">
+          <Rocket className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
-          Bienvenido a tu implementación con GeoVictoria
-        </h1>
+
+        {nombreEmpresa ? (
+          <>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+              ¡Bienvenido, <span className="text-sky-600">{nombreEmpresa}</span>!
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Estás a punto de unirte a miles de empresas que ya transformaron su gestión de asistencia con GeoVictoria.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+              ¡Bienvenido a <span className="text-sky-600">GeoVictoria</span>!
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Estás a punto de transformar la gestión de asistencia de tu empresa. Miles de organizaciones ya lo
+              hicieron.
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Beneficios destacados */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {beneficiosGeoVictoria.map((beneficio, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl border border-slate-200 p-4 text-center hover:shadow-md hover:border-sky-200 transition-all"
+          >
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sky-100 mb-3">
+              <beneficio.icon className="w-6 h-6 text-sky-600" />
+            </div>
+            <h3 className="font-semibold text-slate-800 text-sm mb-1">{beneficio.titulo}</h3>
+            <p className="text-xs text-slate-500">{beneficio.descripcion}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Estadísticas de confianza */}
+      <div className="bg-gradient-to-r from-sky-600 to-sky-700 rounded-xl p-6 text-white">
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="text-3xl md:text-4xl font-bold">+5,000</p>
+            <p className="text-sky-200 text-sm">Empresas activas</p>
+          </div>
+          <div>
+            <p className="text-3xl md:text-4xl font-bold">+1M</p>
+            <p className="text-sky-200 text-sm">Trabajadores gestionados</p>
+          </div>
+          <div>
+            <p className="text-3xl md:text-4xl font-bold">15+</p>
+            <p className="text-sky-200 text-sm">Países en Latam</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Casos de éxito con videos */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-center gap-2">
+          <Award className="w-5 h-5 text-amber-500" />
+          <h2 className="font-semibold text-slate-800">Empresas que confían en nosotros</h2>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+          <div className="relative">
+            {/* Carrusel de videos */}
+            <div className="overflow-hidden rounded-xl">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {casosDeExitoVideos.map((caso, index) => (
+                  <div key={index} className="w-full flex-shrink-0 px-2">
+                    <div className="space-y-3">
+                      {/* Info de la empresa */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-sky-500" />
+                          <span className="font-semibold text-slate-800">{caso.empresa}</span>
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {caso.industria}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Quote */}
+                      <p className="text-sm text-slate-600 italic border-l-2 border-sky-300 pl-3">"{caso.quote}"</p>
+
+                      {/* Video de YouTube */}
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
+                          title={`Caso de éxito: ${caso.empresa}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="absolute inset-0 w-full h-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Botones de navegación */}
+            <button
+              onClick={prevSlide}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+              aria-label="Video anterior"
+            >
+              <ChevronLeft className="w-5 h-5 text-slate-600" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+              aria-label="Video siguiente"
+            >
+              <ChevronRight className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+
+          {/* Indicadores */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <div className="flex justify-center gap-1.5">
+              {casosDeExitoVideos.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
+                  }`}
+                  aria-label={`Ir a video ${index + 1}`}
+                />
+              ))}
+            </div>
+            <span className="text-xs text-slate-500">
+              {currentSlide + 1} de {casosDeExitoVideos.length} casos de éxito
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Call to action */}
+      <div className="text-center space-y-4 pt-4">
+        <p className="text-slate-600">
+          <Heart className="w-4 h-4 inline text-red-400 mr-1" />
+          Estamos emocionados de acompañarte en este proceso
+        </p>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 px-10 py-4 text-lg font-semibold text-white hover:from-sky-600 hover:to-sky-700 transition-all shadow-lg shadow-sky-500/30 hover:shadow-xl hover:shadow-sky-500/40"
+        >
+          <Zap className="w-5 h-5" />
+          Comenzar mi implementación
+          <ArrowRight className="w-5 h-5" />
+        </button>
+      </div>
+    </section>
+  )
+}
+
+const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
+  return (
+    <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 md:p-8">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
+          <CheckCircle2 className="w-8 h-8 text-slate-600" />
+        </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Antes de comenzar</h1>
         <p className="text-slate-600 max-w-2xl mx-auto">
-          Estás iniciando el proceso para dejar lista tu plataforma de control de asistencia y gestión de equipos. En
-          pocos pasos tendrás todo configurado.
+          Te explicamos brevemente qué información te pediremos para configurar tu plataforma.
         </p>
       </div>
 
-      {/* 2. Qué haremos - Da contexto primero */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-          ¿Qué haremos en este proceso?
+      {/* Qué haremos en el proceso */}
+      <div className="bg-sky-50 rounded-xl border border-sky-200 p-5 space-y-4">
+        <h2 className="font-semibold text-sky-800 flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-sky-600" />
+          ¿Qué información te pediremos?
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-            <Building2 className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+              1
+            </div>
             <div>
               <p className="font-medium text-slate-700 text-sm">Datos de tu empresa</p>
               <p className="text-xs text-slate-500">Confirmar información básica de facturación y contacto</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-            <Users className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+              2
+            </div>
             <div>
-              <p className="font-medium text-slate-700 text-sm">Cargar trabajadores</p>
+              <p className="font-medium text-slate-700 text-sm">Responsable de la cuenta</p>
+              <p className="text-xs text-slate-500">Quién administrará la plataforma</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+              3
+            </div>
+            <div>
+              <p className="font-medium text-slate-700 text-sm">Listado de trabajadores</p>
               <p className="text-xs text-slate-500">Registrar a tu equipo (puedes pegar desde Excel)</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-            <Clock className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-slate-700 text-sm">Configurar turnos</p>
-              <p className="text-xs text-slate-500">Definir los horarios de trabajo de tu empresa</p>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+              4
             </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-            <Calendar className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-slate-700 text-sm">Crear planificaciones</p>
-              <p className="text-xs text-slate-500">Asignar turnos semanales a cada trabajador</p>
+              <p className="font-medium text-slate-700 text-sm">Turnos y planificaciones</p>
+              <p className="text-xs text-slate-500">Definir horarios de trabajo (opcional, puedes hacerlo después)</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Mensaje tranquilizador - ANTES del checklist para reducir ansiedad */}
+      {/* Mensaje tranquilizador */}
       <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5 space-y-2">
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
@@ -2244,7 +2466,7 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
         </div>
       </div>
 
-      {/* 4. Qué tener a mano - Después del mensaje de calma */}
+      {/* Qué tener a mano */}
       <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 space-y-3">
         <h2 className="font-semibold text-amber-800 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-amber-600" />
@@ -2266,103 +2488,22 @@ const BienvenidaStep = ({ onContinue }: { onContinue: () => void }) => {
         </ul>
       </div>
 
-      {/* 5. Botón principal - Call to action destacado */}
+      {/* Tiempo estimado */}
+      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
+        <Clock className="w-4 h-4" />
+        <span>Tiempo estimado: 10-15 minutos</span>
+      </div>
+
+      {/* Botón continuar */}
       <div className="flex justify-center py-4">
         <button
           type="button"
           onClick={onContinue}
           className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
         >
-          Comenzar implementación
+          Entendido, continuar
           <ArrowRight className="w-5 h-5" />
         </button>
-      </div>
-
-      {/* 6. Casos de éxito - Colapsable/opcional */}
-      <div className="border-t border-slate-200 pt-4">
-        <button
-          type="button"
-          onClick={() => setShowCasosExito(!showCasosExito)}
-          className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors py-2"
-        >
-          <Star className="w-4 h-4 text-amber-500" />
-          <span>{showCasosExito ? "Ocultar" : "Ver"} casos de éxito de empresas que confían en GeoVictoria</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${showCasosExito ? "rotate-180" : ""}`} />
-        </button>
-
-        {showCasosExito && (
-          <div className="mt-4 bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-            <div className="relative">
-              {/* Carrusel de videos */}
-              <div className="overflow-hidden rounded-xl">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                >
-                  {casosDeExitoVideos.map((caso, index) => (
-                    <div key={index} className="w-full flex-shrink-0 px-2">
-                      <div className="space-y-3">
-                        {/* Info de la empresa */}
-                        <div className="flex items-center justify-center gap-2">
-                          <Building2 className="w-4 h-4 text-sky-500" />
-                          <span className="font-semibold text-slate-800">{caso.empresa}</span>
-                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                            {caso.industria}
-                          </span>
-                        </div>
-                        {/* Video de YouTube */}
-                        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
-                            title={`Caso de éxito: ${caso.empresa}`}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="absolute inset-0 w-full h-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Botones de navegación */}
-              <button
-                onClick={prevSlide}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
-                aria-label="Video anterior"
-              >
-                <ChevronLeft className="w-5 h-5 text-slate-600" />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
-                aria-label="Video siguiente"
-              >
-                <ChevronRight className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
-
-            {/* Indicadores */}
-            <div className="flex flex-col items-center gap-2 pt-2">
-              <div className="flex justify-center gap-1.5">
-                {casosDeExitoVideos.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
-                    }`}
-                    aria-label={`Ir a video ${index + 1}`}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-slate-500">
-                {currentSlide + 1} de {casosDeExitoVideos.length} videos
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   )
@@ -2444,7 +2585,7 @@ export default function OnboardingTurnos({}) {
       fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.JSON.stringify({ token }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -2828,12 +2969,12 @@ export default function OnboardingTurnos({}) {
     trackProgress(steps[currentStep]?.label || `Step ${currentStep}`)
 
     // Existing navigation logic
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       // Decision step index
       if (configureNow) {
-        setCurrentStep(5) // Go to Turnos step
+        setCurrentStep(6) // Go to Turnos step
       } else {
-        setCurrentStep(8) // Skip to Resumen step
+        setCurrentStep(9) // Skip to Resumen step (now step 9 because of new steps)
       }
     } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
@@ -2887,12 +3028,12 @@ export default function OnboardingTurnos({}) {
   }
 
   const handlePrev = () => {
-    if (currentStep === 4 && !configureNow) {
-      // If on Decision step and skipped config
-      setCurrentStep(4) // Stay on decision step
-    } else if (currentStep === 8 && !configureNow) {
-      // If on Summary and skipped config
-      setCurrentStep(4) // Go back to Decision step
+    if (currentStep === 5 && !configureNow) {
+      // If on Decision step (index 5) and skipped config
+      setCurrentStep(5) // Stay on decision step
+    } else if (currentStep === 9 && !configureNow) {
+      // If on Summary (index 9) and skipped config
+      setCurrentStep(5) // Go back to Decision step
     } else {
       setCurrentStep(Math.max(0, currentStep - 1))
     }
@@ -2901,10 +3042,10 @@ export default function OnboardingTurnos({}) {
   const handleConfigurationDecision = (decision) => {
     if (decision === "now") {
       setConfigureNow(true)
-      setCurrentStep(5) // Go to Turnos step
+      setCurrentStep(6) // Ajustado: Go to Turnos step (era 5, ahora es 6)
     } else {
       setConfigureNow(false)
-      setCurrentStep(8) // Skip to Resumen step
+      setCurrentStep(9) // Ajustado: Skip to Resumen step (era 8, ahora es 9)
     }
   }
 
@@ -2924,10 +3065,16 @@ export default function OnboardingTurnos({}) {
     <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
 
-      {currentStep === 0 && ( // Render BienvenidaStep at step 0
-        <BienvenidaStep onContinue={handleNext} />
+      {currentStep === 0 && (
+        <BienvenidaMarketingStep
+          nombreEmpresa={empresa.nombreFantasia || empresa.razonSocial || undefined}
+          onContinue={handleNext}
+        />
       )}
-      {currentStep === 1 && (
+
+      {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} />}
+
+      {currentStep === 2 && (
         <EmpresaStep
           empresa={empresa}
           setEmpresa={setEmpresa}
@@ -2937,7 +3084,7 @@ export default function OnboardingTurnos({}) {
           trackFieldChange={trackFieldChange}
         />
       )}
-      {currentStep === 2 && (
+      {currentStep === 3 && (
         <AdminStep
           admins={admins}
           setAdmins={setAdmins}
@@ -2945,7 +3092,7 @@ export default function OnboardingTurnos({}) {
           ensureGrupoByName={ensureGrupoByName}
         />
       )}
-      {currentStep === 3 && (
+      {currentStep === 4 && (
         <TrabajadoresStep
           trabajadores={trabajadores}
           setTrabajadores={setTrabajadores}
@@ -2955,16 +3102,16 @@ export default function OnboardingTurnos({}) {
           ensureGrupoByName={ensureGrupoByName} // Pasando la función como prop
         />
       )}
-      {currentStep === 4 && <DecisionStep onDecision={handleConfigurationDecision} />}
-      {currentStep === 5 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
-      {currentStep === 6 && (
+      {currentStep === 5 && <DecisionStep onDecision={handleConfigurationDecision} />}
+      {currentStep === 6 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
+      {currentStep === 7 && (
         <PlanificacionesStep
           planificaciones={planificaciones}
           setPlanificaciones={setPlanificaciones}
           turnos={turnos}
         />
       )}
-      {currentStep === 7 && (
+      {currentStep === 8 && (
         <AsignacionStep
           asignaciones={asignaciones}
           setAsignaciones={setAsignaciones}
@@ -2974,7 +3121,7 @@ export default function OnboardingTurnos({}) {
           errorGlobal={errorGlobalAsignaciones}
         />
       )}
-      {currentStep === 8 && (
+      {currentStep === 9 && (
         <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
           <h2 className="text-lg font-semibold text-emerald-900">Resumen del Onboarding</h2>
           <div className="space-y-3 text-sm text-emerald-800">
@@ -2989,7 +3136,7 @@ export default function OnboardingTurnos({}) {
             <div className="rounded-lg bg-white p-3">
               <p className="font-medium">Trabajadores registrados: {trabajadores.length}</p>
             </div>
-            {!configureNow && ( // Changed from skipConfiguration to configureNow
+            {!configureNow && (
               <>
                 <div className="rounded-lg bg-white p-3">
                   <p className="font-medium">Turnos configurados: {turnos.length}</p>
@@ -3002,7 +3149,7 @@ export default function OnboardingTurnos({}) {
                 </div>
               </>
             )}
-            {!configureNow && ( // Changed from skipConfiguration to configureNow
+            {!configureNow && (
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
                 <p className="font-medium text-amber-900">⏭️ Configuración de turnos y planificaciones omitida</p>
                 <p className="text-xs text-amber-700">Se configurará durante la capacitación</p>
@@ -3034,37 +3181,45 @@ export default function OnboardingTurnos({}) {
         </section>
       )}
 
-      {currentStep !== 0 && (
+      {currentStep > 1 && (
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={handlePrev}
             className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            disabled={currentStep === 1}
+            disabled={currentStep === 2}
           >
             ← Atrás
           </button>
 
+          {/* Ajustar texto del paso */}
           <span className="text-sm text-slate-600">
-            Paso {currentStep} de {steps.length - 1}
+            Paso {currentStep - 1} de {steps.length - 2}
           </span>
 
-          {currentStep === steps.length - 1 ? (
-            <button
-              type="button"
-              onClick={handleFinalizar}
-              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Enviando..." : "Completar y enviar"}
-            </button>
-          ) : currentStep === 4 ? null : (
+          {currentStep < 9 ? (
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center rounded-full bg-cyan-500 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-600"
+              className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
             >
               Siguiente →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleFinalizar}
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
+                  Enviando...
+                </>
+              ) : (
+                "Completar y enviar"
+              )}
             </button>
           )}
         </div>
