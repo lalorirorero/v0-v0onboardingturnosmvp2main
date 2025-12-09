@@ -19,9 +19,11 @@ import {
   Award,
   Heart,
   Zap,
+  Info,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
@@ -392,6 +394,39 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
 const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
+  const SISTEMAS_INFO: Record<string, { imagen: string; titulo: string; descripcion: string }> = {
+    "GeoVictoria BOX": {
+      imagen: "/images/box.png",
+      titulo: "Reloj Control Biométrico",
+      descripcion:
+        "Dispositivos físicos de control de asistencia con huella digital, reconocimiento facial o tarjeta. Ideal para ubicaciones fijas con alto flujo de personal.",
+    },
+    "GeoVictoria CALL": {
+      imagen: "/images/call.png",
+      titulo: "Marcaje por Llamada",
+      descripcion:
+        "Los trabajadores marcan asistencia llamando a un número telefónico. Perfecto para personal en terreno sin acceso a internet o smartphone.",
+    },
+    "GeoVictoria APP": {
+      imagen: "/images/app.png",
+      titulo: "Aplicación Móvil",
+      descripcion:
+        "App para iOS y Android con geolocalización. Ideal para equipos en terreno, vendedores, técnicos o personal que trabaja en múltiples ubicaciones.",
+    },
+    "GeoVictoria USB": {
+      imagen: "/images/usb.png",
+      titulo: "Lector USB Biométrico",
+      descripcion:
+        "Dispositivo USB compacto de huella digital que se conecta a cualquier computador. Solución económica para oficinas pequeñas.",
+    },
+    "GeoVictoria WEB": {
+      imagen: "/images/web.png",
+      titulo: "Marcaje Web",
+      descripcion:
+        "Marcaje desde cualquier navegador web. Ideal para trabajo remoto, home office o personal administrativo con acceso a computador.",
+    },
+  }
+
   const RUBROS = [
     "SALUD",
     "EDUCACIÓN",
@@ -533,7 +568,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
     return (
-      <div className="space-y-1 text-sm">
+      <div className="space-y-1 text-sm md:col-span-2">
         <label className="font-medium flex items-center gap-2">
           Sistema
           {isPrefilled && wasEdited && (
@@ -549,21 +584,53 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             )}
           </div>
         ) : (
-          <div className="space-y-2 rounded-xl border border-slate-200 p-3">
-            {SISTEMAS.map((s) => (
-              <label
-                key={s}
-                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSistemas.includes(s)}
-                  onChange={() => handleSistemaChange(s)}
-                  className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                />
-                <span className="text-sm">{s}</span>
-              </label>
-            ))}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {SISTEMAS.map((s) => {
+              const info = SISTEMAS_INFO[s]
+              const isSelected = selectedSistemas.includes(s)
+
+              return (
+                <HoverCard key={s} openDelay={200} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <label
+                      className={`
+                        flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all
+                        ${
+                          isSelected
+                            ? "border-sky-500 bg-sky-50 shadow-sm"
+                            : "border-slate-200 bg-white hover:border-sky-300 hover:bg-slate-50"
+                        }
+                      `}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSistemaChange(s)}
+                        className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium block">{s.replace("GeoVictoria ", "")}</span>
+                        <span className="text-xs text-slate-500 block truncate">{info.titulo}</span>
+                      </div>
+                      <Info className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                    </label>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-80 p-0 overflow-hidden" side="top" align="center">
+                    <div className="relative h-40 bg-gradient-to-b from-sky-50 to-white flex items-center justify-center">
+                      <img
+                        src={info.imagen || "/placeholder.svg"}
+                        alt={info.titulo}
+                        className="h-36 w-auto object-contain"
+                      />
+                    </div>
+                    <div className="p-4 border-t border-slate-100">
+                      <h4 className="font-semibold text-slate-900">{s}</h4>
+                      <p className="text-sm text-slate-600 mt-1">{info.descripcion}</p>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              )
+            })}
           </div>
         )}
       </div>
