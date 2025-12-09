@@ -3152,7 +3152,7 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="mx-auto max-w-[1500px] space-y-6 p-4 pb-24">
+    <div className="mx-auto max-w-[1700px] space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
 
       {currentStep === 0 && (
