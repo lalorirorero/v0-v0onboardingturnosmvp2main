@@ -26,16 +26,15 @@ import { useSearchParams } from "next/navigation"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
 const steps = [
-  { id: 0, label: "Bienvenida", description: "Te damos la bienvenida" },
+  { id: 0, label: "Bienvenida", description: "Comienza aquí" },
   { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
   { id: 2, label: "Empresa", description: "Datos base de la empresa" },
-  { id: 3, label: "Admin", description: "Responsable de la cuenta" },
+  { id: 3, label: "Admin", description: "Encargado de la plataforma" },
   { id: 4, label: "Trabajadores", description: "Listado inicial" },
   { id: 5, label: "Configuración", description: "Decidir qué configurar" },
   { id: 6, label: "Turnos", description: "Definición de turnos" },
   { id: 7, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 8, label: "Asignación", description: "Asignar turnos a trabajadores" },
-  { id: 9, label: "Resumen", description: "Revisión final" },
+  { id: 8, label: "Resumen", description: "Revisión final" },
 ]
 
 // Si se agregan pasos al inicio, cambiar este valor
@@ -180,15 +179,19 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
   return (
     <section className="space-y-6">
       <header>
-        <h2 className="text-lg font-semibold text-slate-900">Administradores</h2>
-        <p className="text-xs text-slate-500">
-          Personas de contacto principales para coordinar la implementación y cambios de turnos.
+        <h2 className="text-lg font-semibold text-slate-900">Administrador de la plataforma</h2>
+        <p className="text-sm text-slate-600 mt-1">
+          El administrador es la persona que tendrá acceso completo a GeoVictoria para gestionar la asistencia,
+          configurar turnos, administrar trabajadores y generar reportes de tu empresa.
+        </p>
+        <p className="text-xs text-slate-500 mt-2">
+          Puede ser el encargado de RRHH, jefe de operaciones o quien será responsable del control de asistencia.
         </p>
       </header>
 
       {/* Formulario único */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Administrador</h3>
+        <h3 className="text-sm font-medium text-slate-700 mb-3">Datos del administrador</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1 text-sm">
             <label className="font-medium">Nombre completo</label>
@@ -2394,7 +2397,7 @@ const BienvenidaMarketingStep = ({
 
 const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
   return (
-    <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 md:p-8">
+    <section className="space-y-6 max-w-2xl mx-auto">
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
@@ -2406,47 +2409,44 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
         </p>
       </div>
 
-      {/* Qué haremos en el proceso */}
-      <div className="bg-sky-50 rounded-xl border border-sky-200 p-5 space-y-4">
-        <h2 className="font-semibold text-sky-800 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-sky-600" />
-          ¿Qué información te pediremos?
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+      {/* Qué pediremos */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos?</h3>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               1
             </div>
             <div>
               <p className="font-medium text-slate-700 text-sm">Datos de tu empresa</p>
-              <p className="text-xs text-slate-500">Confirmar información básica de facturación y contacto</p>
+              <p className="text-xs text-slate-500">Razón social, RUT, dirección y contacto</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               2
             </div>
             <div>
-              <p className="font-medium text-slate-700 text-sm">Responsable de la cuenta</p>
-              <p className="text-xs text-slate-500">Quién administrará la plataforma</p>
+              <p className="font-medium text-slate-700 text-sm">Administrador de la plataforma</p>
+              <p className="text-xs text-slate-500">Quien gestionará GeoVictoria en tu empresa</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               3
             </div>
             <div>
-              <p className="font-medium text-slate-700 text-sm">Listado de trabajadores</p>
-              <p className="text-xs text-slate-500">Registrar a tu equipo (puedes pegar desde Excel)</p>
+              <p className="font-medium text-slate-700 text-sm">Listado de tus trabajadores</p>
+              <p className="text-xs text-slate-500">Nombre, RUT, correo y grupo (puedes pegarlo desde Excel)</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-sky-100">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 text-sky-600 font-bold text-sm flex-shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
               4
             </div>
             <div>
               <p className="font-medium text-slate-700 text-sm">Turnos y planificaciones</p>
-              <p className="text-xs text-slate-500">Definir horarios de trabajo (opcional, puedes hacerlo después)</p>
+              <p className="text-xs text-slate-500">Horarios de trabajo, periodos de descanso (opcional por ahora)</p>
             </div>
           </div>
         </div>
@@ -2459,8 +2459,8 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
           <div>
             <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
             <p className="text-sm text-emerald-700 mt-1">
-              Puedes avanzar con la información que tengas disponible. Al final podrás revisar todo antes de confirmar,
-              y siempre podrás hacer ajustes más adelante. Tus datos están protegidos y seguros.
+              Puedes avanzar con la información que tengas. Al final podrás revisar todo, y siempre podrás hacer ajustes
+              más adelante. Tus datos están protegidos y seguros.
             </p>
           </div>
         </div>
@@ -2475,15 +2475,15 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
         <ul className="space-y-2 text-sm text-amber-700">
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Datos básicos de la empresa (RUT, dirección, email de facturación)
+            Datos básicos de la empresa (RUT, Razón Social, Dirección)
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Listado de trabajadores (nombre, RUT, email) - puede ser en borrador
+            Listado de trabajadores (nombre, RUT, correo) - puede ser en borrador
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Información general de turnos y horarios
+            Información general de turnos y horarios (si ya los tienes definidos)
           </li>
         </ul>
       </div>
