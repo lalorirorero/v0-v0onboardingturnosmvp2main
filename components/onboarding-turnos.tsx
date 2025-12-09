@@ -89,32 +89,32 @@ const isValidEmail = (email) => {
 
 const Stepper = ({ currentStep }) => {
   return (
-    <div className="overflow-x-auto pb-2">
-      <ol className="flex gap-2 min-w-max">
+    <div className="w-full overflow-hidden">
+      <ol className="flex justify-between gap-1">
         {steps.map((step, index) => {
           const status = index < currentStep ? "completed" : index === currentStep ? "current" : "pending"
 
-          const base = "flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs bg-white flex-shrink-0"
+          const base = "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm bg-white min-w-0"
           const stateClass =
             status === "current"
-              ? "border-sky-500 bg-sky-50"
+              ? "border-primary bg-primary/10"
               : status === "completed"
-                ? "border-emerald-500 bg-emerald-50"
-                : "border-slate-200"
+                ? "border-success bg-success/10"
+                : "border-muted"
 
           return (
             <li key={step.id} className={`${base} ${stateClass}`}>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0
-              ${status === "current" ? "bg-sky-500 text-white" : ""}
-              ${status === "completed" ? "bg-emerald-500 text-white" : ""}
-              ${status === "pending" ? "bg-slate-200 text-slate-700" : ""}`}
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold flex-shrink-0
+              ${status === "current" ? "bg-primary text-primary-foreground" : ""}
+              ${status === "completed" ? "bg-success text-success-foreground" : ""}
+              ${status === "pending" ? "bg-muted text-muted-foreground" : ""}`}
               >
                 {status === "completed" ? "✓" : index + 1}
               </div>
-              <div className="flex flex-col min-w-0">
-                <div className="font-semibold text-slate-800 text-[11px] truncate">{step.label}</div>
-                <div className="text-[9px] text-slate-500 leading-tight truncate">{step.description}</div>
+              <div className="flex flex-col min-w-0 overflow-hidden">
+                <div className="font-medium text-foreground text-[11px] truncate">{step.label}</div>
+                <div className="text-muted-foreground text-[9px] truncate hidden lg:block">{step.description}</div>
               </div>
             </li>
           )
@@ -2145,7 +2145,9 @@ const DecisionStep = ({ onDecision }) => {
   return (
     <section className="space-y-6">
       <header className="text-center">
-        <h2 className="text-2xl font-semibold text-slate-900">¿Deseas configurar turnos y planificaciones ahora?</h2>
+        <h2 className="text-2xl md:text-3xl font-semibold text-slate-900">
+          ¿Deseas configurar turnos y planificaciones ahora?
+        </h2>
         <p className="mt-2 text-sm text-slate-600">
           Puedes configurar los turnos, planificaciones y asignaciones ahora, o verlo más tarde durante la capacitación
           de la plataforma.
@@ -3150,7 +3152,7 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24">
+    <div className="mx-auto max-w-[1500px] space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
 
       {currentStep === 0 && (
