@@ -84,13 +84,37 @@ export async function encryptToken(empresaData: EmpresaData): Promise<string> {
 
 export async function decryptToken(token: string): Promise<EmpresaData | null> {
   try {
+    if (!token || typeof token !== "string") {
+      console.error("Token inválido: debe ser una cadena no vacía")
+      return null
+    }
+
+    // Restaurar base64 desde URL-safe
     const base64 = token.replace(/-/g, "+").replace(/_/g, "/")
     const padding = "=".repeat((4 - (base64.length % 4)) % 4)
-    const buffer = Buffer.from(base64 + padding, "base64")
+
+    let buffer: Buffer
+    try {
+      buffer = Buffer.from(base64 + padding, "base64")
+    } catch (bufferError) {
+      console.error("Error al decodificar base64:", bufferError)
+      return null
+    }
+
+    // Verificar que el buffer tenga el tamaño mínimo esperado
+    if (buffer.length < 28) {
+      console.error("Token demasiado corto para ser válido")
+      return null
+    }
 
     const salt = buffer.slice(0, 16)
     const iv = buffer.slice(16, 28)
     const encryptedData = buffer.slice(28)
+
+    if (encryptedData.length === 0) {
+      console.error("No hay datos encriptados en el token")
+      return null
+    }
 
     const secret = process.env.ENCRYPTION_SECRET || "default-secret-key"
     const encoder = new TextEncoder()
@@ -116,7 +140,16 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
 
     const decoder = new TextDecoder()
     const jsonString = decoder.decode(decryptedBuffer)
-    return JSON.parse(jsonString)
+
+    let parsed
+    try {
+      parsed = JSON.parse(jsonString)
+    } catch (jsonError) {
+      console.error("Error al parsear JSON desencriptado:", jsonError)
+      return null
+    }
+
+    return parsed
   } catch (error) {
     console.error("Error decrypting token:", error)
     return null

@@ -2519,6 +2519,7 @@ export default function OnboardingTurnos({}) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [configureNow, setConfigureNow] = useState(true) // Renamed from skipConfiguration
+  const [tokenError, setTokenError] = useState<string | null>(null)
 
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
@@ -2576,37 +2577,48 @@ export default function OnboardingTurnos({}) {
   const [errors, setErrors] = useState({ byId: {}, global: [] })
 
   useEffect(() => {
-    const token = searchParams.get("token")
+    const token = searchParams?.get("token")
 
-    if (token) {
-      setIsLoadingToken(true)
-      setCurrentStep(PRIMER_PASO) // Start at the first step (Bienvenida)
+    if (!token) return
 
-      fetch("/api/decrypt-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify({ token }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.empresaData) {
-            setPrefilledData(data.empresaData)
-            setEmpresa((prev) => ({
-              ...prev,
-              ...data.empresaData,
-              grupos: Array.isArray(data.empresaData.grupos) ? data.empresaData.grupos : [],
-            }))
-          } else {
-            console.error("Error al desencriptar token:", data.error)
-          }
+    setIsLoadingToken(true)
+    setTokenError(null)
+    setCurrentStep(PRIMER_PASO)
+
+    const decryptToken = async () => {
+      try {
+        const response = await fetch("/api/decrypt-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
         })
-        .catch((error) => {
-          console.error("Error al procesar token:", error)
-        })
-        .finally(() => {
-          setIsLoadingToken(false)
-        })
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.success && data.empresaData) {
+          setPrefilledData(data.empresaData)
+          setEmpresa((prev) => ({
+            ...prev,
+            ...data.empresaData,
+            grupos: Array.isArray(data.empresaData.grupos) ? data.empresaData.grupos : [],
+          }))
+        } else {
+          console.error("Error al desencriptar token:", data.error)
+          setTokenError(data.error || "Token inválido")
+        }
+      } catch (error) {
+        console.error("Error al procesar token:", error)
+        setTokenError(error instanceof Error ? error.message : "Error desconocido")
+      } finally {
+        setIsLoadingToken(false)
+      }
     }
+
+    decryptToken()
   }, [searchParams])
 
   const prefilledFields = prefilledData
@@ -3061,6 +3073,20 @@ export default function OnboardingTurnos({}) {
     )
   }
 
+  // Mostrar error de token si existe
+  if (tokenError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center rounded-xl border border-red-400 bg-red-50 p-6 text-red-800">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3 text-red-600" />
+          <h2 className="text-xl font-semibold mb-2">Error al cargar la configuración</h2>
+          <p className="text-sm">{tokenError}</p>
+          <p className="text-xs mt-2">Por favor, contacta a soporte si el problema persiste.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24">
       <Stepper currentStep={currentStep} />
@@ -3194,7 +3220,7 @@ export default function OnboardingTurnos({}) {
 
           {/* Ajustar texto del paso */}
           <span className="text-sm text-slate-600">
-            Paso {currentStep - 1} de {steps.length - 2}
+            Paso {currentStep} de {steps.length - 1}
           </span>
 
           {currentStep < 9 ? (
