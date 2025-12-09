@@ -36,7 +36,8 @@ const steps = [
   { id: 5, label: "Configuración", description: "Decidir qué configurar" },
   { id: 6, label: "Turnos", description: "Definición de turnos" },
   { id: 7, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 8, label: "Resumen", description: "Revisión final" },
+  { id: 8, label: "Asignaciones", description: "Asignar planificaciones a trabajadores" },
+  { id: 9, label: "Resumen", description: "Revisión final" },
 ]
 
 // Si se agregan pasos al inicio, cambiar este valor
@@ -712,7 +713,7 @@ const TrabajadoresStep = ({
   ensureGrupoByName, // Agregado prop ensureGrupoByName
 }) => {
   const [bulkText, setBulkText] = useState("")
-  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false) // Renamed from showExcelVideo
   const [bulkStatus, setBulkStatus] = useState({ total: 0, added: 0, error: "" })
   const MAX_ROWS = 500
   const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here
@@ -952,7 +953,7 @@ const TrabajadoresStep = ({
           onClick={() => setShowVideoModal(false)}
         >
           <div
-            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-[1700px] bg-white rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
@@ -2279,7 +2280,7 @@ const BienvenidaMarketingStep = ({
   onContinue: () => void
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false) // unused variable
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
