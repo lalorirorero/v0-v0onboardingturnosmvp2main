@@ -507,6 +507,14 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     }
   }
 
+  const normalizeRubro = (rubro: string): string => {
+    if (!rubro) return ""
+    const normalized = rubro.toUpperCase().trim()
+    // Verificar si el rubro normalizado existe en la lista
+    const exists = RUBROS.find((r) => r.toUpperCase() === normalized)
+    return exists || ""
+  }
+
   const ProtectedInput = ({
     name,
     label,
@@ -554,13 +562,8 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const fieldKey = "empresa.rubro"
     const isPrefilled = isFieldPrefilled(fieldKey)
     const wasEdited = isFieldEdited(fieldKey)
-    const value = empresa.rubro || ""
+    const value = normalizeRubro(empresa.rubro)
     const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
-
-    console.log("[v0] ProtectedRubroSelect - empresa.rubro:", empresa.rubro)
-    console.log("[v0] ProtectedRubroSelect - value:", value)
-    console.log("[v0] ProtectedRubroSelect - isLocked:", isLocked)
-    console.log("[v0] ProtectedRubroSelect - isEditing:", isEditing)
 
     return (
       <div className="space-y-1 text-sm">
