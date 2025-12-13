@@ -21,6 +21,7 @@ import {
   Heart,
   Zap,
   Info,
+  Save,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
@@ -28,6 +29,18 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Button } from "@/components/ui/button" // Import added
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
+
+import { saveDraft, loadDraft, deleteDraft, getDraftAge, type DraftData } from "@/lib/draft-storage"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const steps = [
   { id: 0, label: "Bienvenida", description: "Comienza aquí" },
@@ -2567,7 +2580,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-300 transition-colors"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
         >
           <ArrowLeft className="w-5 h-5" />
           Atrás
@@ -2587,6 +2600,11 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
 
 export default function OnboardingTurnos({}) {
   const searchParams = useSearchParams()
+
+  const [showDraftDialog, setShowDraftDialog] = useState(false)
+  const [existingDraft, setExistingDraft] = useState<DraftData | null>(null)
+  const [savingStatus, setSavingStatus] = useState<"saved" | "saving" | "idle">("idle")
+  const [showConfirmRestart, setShowConfirmRestart] = useState(false)
 
   // Estados principales
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
@@ -2654,6 +2672,16 @@ export default function OnboardingTurnos({}) {
 
   useEffect(() => {
     const token = searchParams?.get("token")
+    const draft = loadDraft(token || undefined)
+
+    if (draft) {
+      setExistingDraft(draft)
+      setShowDraftDialog(true)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    const token = searchParams?.get("token")
 
     if (!token) return
 
@@ -2696,6 +2724,55 @@ export default function OnboardingTurnos({}) {
 
     decryptToken()
   }, [searchParams])
+
+  useEffect(() => {
+    // No guardar si estamos en el primer paso o si acabamos de cargar
+    if (currentStep === PRIMER_PASO || isLoadingToken) return
+
+    // No guardar si estamos mostrando el diálogo de borrador
+    if (showDraftDialog) return
+
+    const token = searchParams?.get("token")
+
+    setSavingStatus("saving")
+
+    const saveTimeout = setTimeout(() => {
+      saveDraft(
+        {
+          currentStep,
+          empresa,
+          admins,
+          trabajadores,
+          turnos,
+          planificaciones,
+          asignaciones,
+          configureNow,
+        },
+        token || undefined,
+      )
+
+      setSavingStatus("saved")
+
+      // Volver a 'idle' después de 2 segundos
+      setTimeout(() => {
+        setSavingStatus("idle")
+      }, 2000)
+    }, 1000) // Debounce de 1 segundo
+
+    return () => clearTimeout(saveTimeout)
+  }, [
+    currentStep,
+    empresa,
+    admins,
+    trabajadores,
+    turnos,
+    planificaciones,
+    asignaciones,
+    configureNow,
+    searchParams,
+    isLoadingToken,
+    showDraftDialog,
+  ])
 
   const prefilledFields = prefilledData
     ? new Set(
@@ -3137,8 +3214,91 @@ export default function OnboardingTurnos({}) {
     }
   }
 
+  // Handlers for AlertDialog
+  const handleStartFresh = () => {
+    setShowConfirmRestart(true)
+    setShowDraftDialog(false)
+  }
+
+  const confirmStartFresh = () => {
+    const token = searchParams?.get("token")
+    deleteDraft(token) // Delete existing draft
+    setCurrentStep(PRIMER_PASO) // Reset to the first step
+    // Reset all state to initial values
+    setEmpresa({
+      razonSocial: "",
+      nombreFantasia: "",
+      rut: "",
+      giro: "",
+      direccion: "",
+      comuna: "",
+      emailFacturacion: "",
+      telefonoContacto: "",
+      sistema: [],
+      rubro: "",
+      grupos: [],
+    })
+    setAdmins([])
+    setTrabajadores([])
+    setTurnos([
+      {
+        id: 1,
+        nombre: "Descanso",
+        horaInicio: "",
+        horaFin: "",
+        colacionMinutos: 0,
+        tooltip: "Fin de Semana o Feriado",
+      },
+      {
+        id: 2,
+        nombre: "Libre",
+        horaInicio: "",
+        horaFin: "",
+        colacionMinutos: 0,
+        tooltip: "No marca o Artículo 22",
+      },
+      {
+        id: 3,
+        nombre: "Presencial",
+        horaInicio: "",
+        horaFin: "",
+        colacionMinutos: 0,
+        tooltip: "Sin planificación",
+      },
+    ])
+    setPlanificaciones([])
+    setAsignaciones([])
+    setConfigureNow(true)
+    setEditedFields({})
+    setCompletedSteps(new Set())
+    setTokenError(null)
+    setPrefilledData(null)
+    setZohoSubmissionResult(null)
+    setShowConfirmRestart(false)
+    setSavingStatus("idle")
+    setShowDraftDialog(false)
+    setExistingDraft(null)
+    setIsSubmitting(false)
+    setIsLoadingToken(false)
+  }
+
+  const handleContinueDraft = () => {
+    if (existingDraft) {
+      setCurrentStep(existingDraft.currentStep || PRIMER_PASO)
+      setEmpresa(existingDraft.empresa)
+      setAdmins(existingDraft.admins)
+      setTrabajadores(existingDraft.trabajadores)
+      setTurnos(existingDraft.turnos)
+      setPlanificaciones(existingDraft.planificaciones)
+      setAsignaciones(existingDraft.asignaciones)
+      setConfigureNow(existingDraft.configureNow ?? true)
+      // Note: editedFields and completedSteps are not persisted in draft, so they will be reset.
+      setShowDraftDialog(false)
+    }
+  }
+
   // Removed hook usage for now
-  if (isLoadingToken /* || isPersistenceLoading */) {
+  if (isLoadingToken) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -3164,7 +3324,63 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="mx-auto max-w-[1700px] space-y-6 p-4 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {savingStatus !== "idle" && currentStep !== PRIMER_PASO && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
+          {savingStatus === "saving" ? (
+            <>
+              <Save className="w-4 h-4 text-slate-400 animate-pulse" />
+              <span className="text-sm text-slate-600">Guardando...</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-slate-600">Guardado</span>
+            </>
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Save className="w-5 h-5 text-primary" />
+              Tienes un borrador guardado
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>Encontramos un borrador de tu onboarding guardado {existingDraft && getDraftAge(existingDraft)}.</p>
+              <p className="text-sm">Puedes continuar donde lo dejaste o empezar de nuevo.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleStartFresh}>Empezar de nuevo</AlertDialogCancel>
+            <AlertDialogAction onClick={handleContinueDraft}>Continuar donde lo dejé</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showConfirmRestart} onOpenChange={setShowConfirmRestart}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>Se perderá todo el progreso guardado y tendrás que comenzar el onboarding desde el inicio.</p>
+              <p className="text-sm font-medium text-destructive">Esta acción no se puede deshacer.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmRestart(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmStartFresh}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sí, empezar de nuevo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Stepper currentStep={currentStep} />
 
       {currentStep === 0 && (
