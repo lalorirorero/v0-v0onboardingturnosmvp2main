@@ -557,6 +557,11 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     const value = empresa.rubro || ""
     const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
 
+    console.log("[v0] ProtectedRubroSelect - empresa.rubro:", empresa.rubro)
+    console.log("[v0] ProtectedRubroSelect - value:", value)
+    console.log("[v0] ProtectedRubroSelect - isLocked:", isLocked)
+    console.log("[v0] ProtectedRubroSelect - isEditing:", isEditing)
+
     return (
       <div className="space-y-1 text-sm">
         <label className="font-medium flex items-center gap-2">
