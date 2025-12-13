@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  ArrowLeft,
   TrendingUp,
   Award,
   Heart,
@@ -24,6 +25,7 @@ import {
 import * as XLSX from "xlsx"
 import { useSearchParams } from "next/navigation"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" // Import added
+import { Button } from "@/components/ui/button" // Import added
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
@@ -2280,19 +2282,6 @@ const BienvenidaMarketingStep = ({
   onContinue: () => void
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false) // unused variable
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Si se ha scrolleado más de 300px, mostrar botón flotante
-      setIsScrolled(window.scrollY > 300)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-  // </CHANGE>
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
@@ -2304,8 +2293,7 @@ const BienvenidaMarketingStep = ({
 
   return (
     <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 md:p-8">
-      {/* Header personalizado */}
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-6">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 shadow-lg shadow-sky-500/30 mb-2">
           <Rocket className="w-10 h-10 text-white" />
         </div>
@@ -2330,6 +2318,22 @@ const BienvenidaMarketingStep = ({
             </p>
           </>
         )}
+
+        <div className="flex flex-col items-center gap-3 mt-6">
+          <p className="text-sm text-slate-500 flex items-center gap-2">
+            <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+            Estamos emocionados de acompañarte en este proceso
+          </p>
+          <Button
+            onClick={onContinue}
+            size="lg"
+            className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 transition-all duration-300 text-base px-8 py-6 rounded-full"
+          >
+            <Zap className="w-5 h-5 mr-2" />
+            Comenzar mi implementación
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
       </div>
 
       {/* Beneficios destacados */}
@@ -2451,43 +2455,11 @@ const BienvenidaMarketingStep = ({
           </div>
         </div>
       </div>
-
-      {/* Call to action */}
-      <div className="text-center space-y-4 pt-4">
-        <p className="text-slate-600">
-          <Heart className="w-4 h-4 inline text-red-400 mr-1" />
-          Estamos emocionados de acompañarte en este proceso
-        </p>
-        <button
-          type="button"
-          onClick={onContinue}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 px-10 py-4 text-lg font-semibold text-white hover:from-sky-600 hover:to-sky-700 transition-all shadow-lg shadow-sky-500/30 hover:shadow-xl hover:shadow-sky-500/40"
-        >
-          <Zap className="w-5 h-5" />
-          Comenzar mi implementación
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {isScrolled && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
-          <button
-            type="button"
-            onClick={onContinue}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 px-8 py-3 text-base font-semibold text-white hover:from-sky-600 hover:to-sky-700 transition-all shadow-xl shadow-sky-500/40 hover:shadow-2xl hover:shadow-sky-500/50 hover:scale-105"
-          >
-            <Zap className="w-5 h-5" />
-            Comenzar mi implementación
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-      {/* </CHANGE> */}
     </section>
   )
 }
 
-const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
+const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; onBack: () => void }) => {
   return (
     <section className="space-y-6 max-w-[1700px] mx-auto">
       {/* Header */}
@@ -2591,7 +2563,15 @@ const AntesDeComenzarStep = ({ onContinue }: { onContinue: () => void }) => {
       </div>
 
       {/* Botón continuar */}
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center items-center gap-4 py-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-300 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Atrás
+        </button>
         <button
           type="button"
           onClick={onContinue}
@@ -3194,7 +3174,7 @@ export default function OnboardingTurnos({}) {
         />
       )}
 
-      {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} />}
+      {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />}
 
       {currentStep === 2 && (
         <EmpresaStep
@@ -3309,7 +3289,7 @@ export default function OnboardingTurnos({}) {
             type="button"
             onClick={handlePrev}
             className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            disabled={currentStep === 2}
+            // Removido disabled={currentStep === 2}
           >
             ← Atrás
           </button>
