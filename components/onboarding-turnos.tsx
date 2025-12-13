@@ -143,6 +143,7 @@ const Stepper = ({ currentStep }) => {
 const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
   const [formData, setFormData] = useState({
     nombre: "",
+    apellido: "",
     rut: "",
     email: "",
     telefono: "",
@@ -154,9 +155,8 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
   }
 
   const addAdmin = () => {
-    // Validar que al menos el nombre esté completo
-    if (!formData.nombre.trim()) {
-      alert("Por favor ingresa el nombre del administrador")
+    if (!formData.nombre.trim() || !formData.apellido.trim()) {
+      alert("Por favor ingresa el nombre y apellido del administrador")
       return
     }
 
@@ -166,12 +166,11 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       grupoId = ensureGrupoByName(formData.grupo.trim())
     }
 
-    // Agregar el administrador
     setAdmins([
       ...admins,
       {
         id: Date.now(),
-        nombre: formData.nombre,
+        nombre: `${formData.nombre.trim()} ${formData.apellido.trim()}`,
         rut: formData.rut,
         email: formData.email,
         telefono: formData.telefono,
@@ -180,9 +179,9 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       },
     ])
 
-    // Limpiar el formulario
     setFormData({
       nombre: "",
+      apellido: "",
       rut: "",
       email: "",
       telefono: "",
@@ -212,13 +211,23 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
         <h3 className="text-sm font-medium text-slate-700 mb-3">Datos del administrador</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1 text-sm">
-            <label className="font-medium">Nombre completo</label>
+            <label className="font-medium">Nombre</label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               type="text"
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
-              placeholder="Ej: Juan Pérez"
+              placeholder="Ej: Juan"
+            />
+          </div>
+          <div className="space-y-1 text-sm">
+            <label className="font-medium">Apellido</label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
+              value={formData.apellido}
+              onChange={(e) => handleFormChange("apellido", e.target.value)}
+              placeholder="Ej: Pérez"
             />
           </div>
           <div className="space-y-1 text-sm">
@@ -2161,7 +2170,7 @@ const DecisionStep = ({ onDecision }) => {
   return (
     <section className="space-y-6">
       <header className="text-center">
-        <h2 className="text-2xl md:text-3xl font-semibold text-slate-900">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
           ¿Deseas configurar turnos y planificaciones ahora?
         </h2>
         <p className="mt-2 text-sm text-slate-600">
