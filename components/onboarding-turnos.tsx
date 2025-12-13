@@ -2281,6 +2281,18 @@ const BienvenidaMarketingStep = ({
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false) // unused variable
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Si se ha scrolleado más de 300px, mostrar botón flotante
+      setIsScrolled(window.scrollY > 300)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+  // </CHANGE>
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
@@ -2456,6 +2468,21 @@ const BienvenidaMarketingStep = ({
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>
+
+      {isScrolled && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
+          <button
+            type="button"
+            onClick={onContinue}
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 px-8 py-3 text-base font-semibold text-white hover:from-sky-600 hover:to-sky-700 transition-all shadow-xl shadow-sky-500/40 hover:shadow-2xl hover:shadow-sky-500/50 hover:scale-105"
+          >
+            <Zap className="w-5 h-5" />
+            Comenzar mi implementación
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {/* </CHANGE> */}
     </section>
   )
 }
