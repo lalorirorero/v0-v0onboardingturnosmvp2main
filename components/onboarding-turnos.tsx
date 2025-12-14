@@ -2638,6 +2638,7 @@ export default function OnboardingTurnosCliente({
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
   const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
+  const [idZoho, setIdZoho] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
   const [configureNow, setConfigureNow] = useState(true) // Renamed from skipConfiguration
@@ -2755,6 +2756,9 @@ export default function OnboardingTurnosCliente({
 
         if (data.success && data.empresaData) {
           setPrefilledData(data.empresaData)
+          if (data.empresaData.id_zoho) {
+            setIdZoho(data.empresaData.id_zoho)
+          }
           setEmpresa((prev) => ({
             ...prev,
             ...data.empresaData,
@@ -2937,6 +2941,7 @@ export default function OnboardingTurnosCliente({
         body: JSON.stringify({
           accion: "actualizar",
           eventType: "progress",
+          id_zoho: idZoho,
           metadata: {
             pasoActual: currentStep,
             pasoNombre: stepLabel,
@@ -3158,6 +3163,7 @@ export default function OnboardingTurnosCliente({
       body: JSON.stringify({
         accion: prefilledData ? "actualizar" : "crear",
         eventType: "complete",
+        id_zoho: idZoho,
         formData: data,
         excelFile: {
           filename: excelFilename,
