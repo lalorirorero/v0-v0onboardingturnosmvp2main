@@ -22,15 +22,24 @@ import {
   Zap,
   Info,
   Save,
+  AlertTriangle,
+  X,
 } from "lucide-react"
 import * as XLSX from "xlsx"
-import { useSearchParams } from "next/navigation"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" // Import added
 import { Button } from "@/components/ui/button" // Import added
 // import { useOnboardingPersistence } from "@/hooks/use-onboarding-persistence"
 // import { useDataProtection } from "@/hooks/use-data-protection"
 
-import { saveDraft, loadDraft, deleteDraft, getDraftAge, type DraftData } from "@/lib/draft-storage"
+import {
+  saveDraft,
+  loadDraft,
+  deleteDraft,
+  getDraftAge,
+  calculateValidStep,
+  isDraftCompatible,
+  type DraftData,
+} from "@/lib/draft-storage"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2615,10 +2624,12 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
-export default function OnboardingTurnos({}) {
-  const searchParams = useSearchParams()
-
+export default function OnboardingTurnosCliente({
+  searchParams,
+}: { searchParams: Record<string, string | string[] | undefined> }) {
   const [showDraftDialog, setShowDraftDialog] = useState(false)
+  const [showVersionWarning, setShowVersionWarning] = useState(false)
+  const [draftWarningMessage, setDraftWarningMessage] = useState("")
   const [existingDraft, setExistingDraft] = useState<DraftData | null>(null)
   const [savingStatus, setSavingStatus] = useState<"saved" | "saving" | "idle">("idle")
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
@@ -2692,6 +2703,28 @@ export default function OnboardingTurnos({}) {
     const draft = loadDraft(token || undefined)
 
     if (draft) {
+      const isCompatible = isDraftCompatible(draft)
+
+      if (!isCompatible) {
+        // Versión del formulario cambió
+        const validStep = calculateValidStep(draft, steps.length)
+        draft.currentStep = validStep
+        setShowVersionWarning(true)
+        setDraftWarningMessage(
+          `Actualizamos el flujo. Te llevamos al paso "${steps[validStep]?.label || validStep}". Por favor revisa la información.`,
+        )
+      } else {
+        // Validar que el paso guardado sea válido
+        if (draft.currentStep < 0 || draft.currentStep >= steps.length) {
+          const validStep = calculateValidStep(draft, steps.length)
+          draft.currentStep = validStep
+          setShowVersionWarning(true)
+          setDraftWarningMessage(
+            `El paso guardado ya no existe. Te llevamos al paso "${steps[validStep]?.label || validStep}".`,
+          )
+        }
+      }
+
       setExistingDraft(draft)
       setShowDraftDialog(true)
     }
@@ -2920,28 +2953,7 @@ export default function OnboardingTurnos({}) {
     }
   }
 
-  const sendCompleteData = async (data: any) => {
-    const response = await fetch("/api/submit-to-zoho", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        accion: prefilledData ? "actualizar" : "crear",
-        eventType: "complete",
-        formData: data,
-        metadata: {
-          empresaRut: empresa.rut,
-          empresaNombre: empresa.razonSocial,
-          totalCambios: data._metadata?.totalChanges || 0,
-          editedFields: data._metadata?.editedFields || [],
-        },
-      }),
-    })
-
-    const result = await response.json()
-    return result
-  }
-
-  const exportToExcel = () => {
+  const generateExcelBase64 = (): string => {
     const workbook = XLSX.utils.book_new()
 
     const empresaData = [
@@ -3131,16 +3143,38 @@ export default function OnboardingTurnos({}) {
 
     XLSX.utils.book_append_sheet(workbook, ws2, "Planificación")
 
-    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
-    const blob = new Blob([wbout], { type: "application/octet-stream" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `Onboarding_${empresa.nombreFantasia || "Empresa"}_${new Date().toISOString().split("T")[0]}.xlsx`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "base64" })
+    return wbout
+  }
+
+  const sendCompleteData = async (data: any) => {
+    // Generar el Excel en base64
+    const excelBase64 = generateExcelBase64()
+    const excelFilename = `Onboarding_${empresa.nombreFantasia || "Empresa"}_${new Date().toISOString().split("T")[0]}.xlsx`
+
+    const response = await fetch("/api/submit-to-zoho", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accion: prefilledData ? "actualizar" : "crear",
+        eventType: "complete",
+        formData: data,
+        excelFile: {
+          filename: excelFilename,
+          base64: excelBase64,
+          mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        metadata: {
+          empresaRut: empresa.rut,
+          empresaNombre: empresa.razonSocial,
+          totalCambios: data._metadata?.totalChanges || 0,
+          editedFields: data._metadata?.editedFields || [],
+        },
+      }),
+    })
+
+    const result = await response.json()
+    return result
   }
 
   const handleNext = () => {
@@ -3341,22 +3375,163 @@ export default function OnboardingTurnos({}) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {savingStatus !== "idle" && currentStep !== PRIMER_PASO && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
-          {savingStatus === "saving" ? (
-            <>
-              <Save className="w-4 h-4 text-slate-400 animate-pulse" />
-              <span className="text-sm text-slate-600">Guardando...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-slate-600">Guardado</span>
-            </>
-          )}
-        </div>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-slate-50 py-8">
+      <div className="mx-auto max-w-[1700px] px-4">
+        {showVersionWarning && (
+          <div className="mb-4 rounded-lg border border-warning bg-warning/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-warning-foreground">{draftWarningMessage}</p>
+            </div>
+            <button
+              onClick={() => setShowVersionWarning(false)}
+              className="text-warning-foreground/60 hover:text-warning-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        <Stepper currentStep={currentStep} />
+
+        {currentStep === 0 && (
+          <BienvenidaMarketingStep
+            nombreEmpresa={empresa.nombreFantasia || empresa.razonSocial || undefined}
+            onContinue={handleNext}
+          />
+        )}
+
+        {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />}
+
+        {currentStep === 2 && (
+          <EmpresaStep
+            empresa={empresa}
+            setEmpresa={setEmpresa}
+            prefilledFields={prefilledFields}
+            isFieldPrefilled={isFieldPrefilled}
+            isFieldEdited={isFieldEdited}
+            trackFieldChange={trackFieldChange}
+          />
+        )}
+        {currentStep === 3 && (
+          <AdminStep
+            admins={admins}
+            setAdmins={setAdmins}
+            grupos={empresa.grupos}
+            ensureGrupoByName={ensureGrupoByName}
+          />
+        )}
+        {currentStep === 4 && (
+          <TrabajadoresStep
+            trabajadores={trabajadores}
+            setTrabajadores={setTrabajadores}
+            grupos={empresa.grupos}
+            setGrupos={(newGrupos) => setEmpresa({ ...empresa, grupos: newGrupos })}
+            errorGlobal={errorGlobalAsignaciones}
+            ensureGrupoByName={ensureGrupoByName} // Pasando la función como prop
+          />
+        )}
+        {currentStep === 5 && <DecisionStep onDecision={handleConfigurationDecision} />}
+        {currentStep === 6 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
+        {currentStep === 7 && (
+          <PlanificacionesStep
+            planificaciones={planificaciones}
+            setPlanificaciones={setPlanificaciones}
+            turnos={turnos}
+          />
+        )}
+        {currentStep === 8 && (
+          <AsignacionStep
+            asignaciones={asignaciones}
+            setAsignaciones={setAsignaciones}
+            trabajadores={trabajadores}
+            planificaciones={planificaciones}
+            grupos={empresa.grupos}
+            errorGlobal={errorGlobalAsignaciones}
+          />
+        )}
+        {currentStep === 9 && (
+          <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
+            <h2 className="text-lg font-semibold text-emerald-900">Resumen del Onboarding</h2>
+            <div className="space-y-3 text-sm text-emerald-800">
+              <div className="rounded-lg bg-white p-3">
+                <p className="font-medium">Empresa: {empresa.nombreFantasia || empresa.razonSocial}</p>
+                <p className="text-xs text-slate-600">RUT: {empresa.rut}</p>
+              </div>
+              <div className="rounded-lg bg-white p-3">
+                <p className="font-medium">Administradores: {admins.length}</p>
+                <p className="text-xs text-slate-600">{admins.map((a) => a.nombre).join(", ")}</p>
+              </div>
+              <div className="rounded-lg bg-white p-3">
+                <p className="font-medium">Trabajadores registrados: {trabajadores.length}</p>
+              </div>
+              {!configureNow && (
+                <>
+                  <div className="rounded-lg bg-white p-3">
+                    <p className="font-medium">Turnos configurados: {turnos.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-3">
+                    <p className="font-medium">Planificaciones creadas: {planificaciones.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-3">
+                    <p className="font-medium">Asignaciones realizadas: {asignaciones.length}</p>
+                  </div>
+                </>
+              )}
+              {!configureNow && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="font-medium text-amber-900">⏭️ Configuración de turnos y planificaciones omitida</p>
+                  <p className="text-xs text-amber-700">Se configurará durante la capacitación</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {currentStep > 1 && (
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              // Removido disabled={currentStep === 2}
+            >
+              ← Atrás
+            </button>
+
+            {/* Ajustar texto del paso */}
+            <span className="text-sm text-slate-600">
+              Paso {currentStep} de {steps.length - 1}
+            </span>
+
+            {currentStep < 9 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
+              >
+                Siguiente →
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinalizar}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
+                    Enviando...
+                  </>
+                ) : (
+                  "Completar y enviar"
+                )}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
         <AlertDialogContent className="max-w-md">
@@ -3397,168 +3572,6 @@ export default function OnboardingTurnos({}) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Stepper currentStep={currentStep} />
-
-      {currentStep === 0 && (
-        <BienvenidaMarketingStep
-          nombreEmpresa={empresa.nombreFantasia || empresa.razonSocial || undefined}
-          onContinue={handleNext}
-        />
-      )}
-
-      {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />}
-
-      {currentStep === 2 && (
-        <EmpresaStep
-          empresa={empresa}
-          setEmpresa={setEmpresa}
-          prefilledFields={prefilledFields}
-          isFieldPrefilled={isFieldPrefilled}
-          isFieldEdited={isFieldEdited}
-          trackFieldChange={trackFieldChange}
-        />
-      )}
-      {currentStep === 3 && (
-        <AdminStep
-          admins={admins}
-          setAdmins={setAdmins}
-          grupos={empresa.grupos}
-          ensureGrupoByName={ensureGrupoByName}
-        />
-      )}
-      {currentStep === 4 && (
-        <TrabajadoresStep
-          trabajadores={trabajadores}
-          setTrabajadores={setTrabajadores}
-          grupos={empresa.grupos}
-          setGrupos={(newGrupos) => setEmpresa({ ...empresa, grupos: newGrupos })}
-          errorGlobal={errorGlobalAsignaciones}
-          ensureGrupoByName={ensureGrupoByName} // Pasando la función como prop
-        />
-      )}
-      {currentStep === 5 && <DecisionStep onDecision={handleConfigurationDecision} />}
-      {currentStep === 6 && <TurnosStep turnos={turnos} setTurnos={setTurnos} />}
-      {currentStep === 7 && (
-        <PlanificacionesStep
-          planificaciones={planificaciones}
-          setPlanificaciones={setPlanificaciones}
-          turnos={turnos}
-        />
-      )}
-      {currentStep === 8 && (
-        <AsignacionStep
-          asignaciones={asignaciones}
-          setAsignaciones={setAsignaciones}
-          trabajadores={trabajadores}
-          planificaciones={planificaciones}
-          grupos={empresa.grupos}
-          errorGlobal={errorGlobalAsignaciones}
-        />
-      )}
-      {currentStep === 9 && (
-        <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
-          <h2 className="text-lg font-semibold text-emerald-900">Resumen del Onboarding</h2>
-          <div className="space-y-3 text-sm text-emerald-800">
-            <div className="rounded-lg bg-white p-3">
-              <p className="font-medium">Empresa: {empresa.nombreFantasia || empresa.razonSocial}</p>
-              <p className="text-xs text-slate-600">RUT: {empresa.rut}</p>
-            </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="font-medium">Administradores: {admins.length}</p>
-              <p className="text-xs text-slate-600">{admins.map((a) => a.nombre).join(", ")}</p>
-            </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="font-medium">Trabajadores registrados: {trabajadores.length}</p>
-            </div>
-            {!configureNow && (
-              <>
-                <div className="rounded-lg bg-white p-3">
-                  <p className="font-medium">Turnos configurados: {turnos.length}</p>
-                </div>
-                <div className="rounded-lg bg-white p-3">
-                  <p className="font-medium">Planificaciones creadas: {planificaciones.length}</p>
-                </div>
-                <div className="rounded-lg bg-white p-3">
-                  <p className="font-medium">Asignaciones realizadas: {asignaciones.length}</p>
-                </div>
-              </>
-            )}
-            {!configureNow && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
-                <p className="font-medium text-amber-900">⏭️ Configuración de turnos y planificaciones omitida</p>
-                <p className="text-xs text-amber-700">Se configurará durante la capacitación</p>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={exportToExcel}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Descargar Excel
-          </button>
-        </section>
-      )}
-
-      {currentStep > 1 && (
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={handlePrev}
-            className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            // Removido disabled={currentStep === 2}
-          >
-            ← Atrás
-          </button>
-
-          {/* Ajustar texto del paso */}
-          <span className="text-sm text-slate-600">
-            Paso {currentStep} de {steps.length - 1}
-          </span>
-
-          {currentStep < 9 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
-            >
-              Siguiente →
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleFinalizar}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
-                  Enviando...
-                </>
-              ) : (
-                "Completar y enviar"
-              )}
-            </button>
-          )}
-        </div>
-      )}
     </div>
   )
 }
