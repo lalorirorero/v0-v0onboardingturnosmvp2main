@@ -323,6 +323,59 @@ export class DataManager {
     return 2 // Siempre volver al paso 2 como mínimo si hay datos
   }
 
+  private createUnifiedPayload(
+    eventType: "progress" | "complete",
+    step?: number,
+    stepName?: string,
+    excelBase64?: string,
+  ) {
+    const totalSteps = 10
+    const percentage = step ? Math.round((step / totalSteps) * 100) : 100
+
+    return {
+      // Campos de identificación (siempre presentes)
+      accion: this.sessionData.id_zoho ? "actualizar" : "crear",
+      eventType: eventType,
+      id_zoho: this.sessionData.id_zoho || null,
+
+      // Datos del formulario (vacíos en progress, llenos en complete)
+      formData:
+        eventType === "complete"
+          ? this.sessionData.formData
+          : {
+              empresa: {},
+              admins: [],
+              trabajadores: [],
+              turnos: [],
+              planificaciones: [],
+              asignaciones: [],
+              configureNow: false,
+            },
+
+      // Metadata de progreso y empresa
+      metadata: {
+        pasoActual: step || 10,
+        pasoNombre: stepName || "Resumen",
+        totalPasos: totalSteps,
+        porcentajeProgreso: percentage,
+        empresaRut: this.sessionData.formData.empresa.rut || "",
+        empresaNombre: this.sessionData.formData.empresa.razonSocial || "",
+        totalCambios: eventType === "complete" ? this.calculateChanges() : 0,
+        editedFields: eventType === "complete" ? this.getEditedFields() : [],
+      },
+
+      // Archivo Excel (null en progress, presente en complete)
+      excelFile:
+        eventType === "complete" && excelBase64
+          ? {
+              filename: `onboarding_${this.sessionData.formData.empresa.razonSocial?.replace(/\s+/g, "_") || "empresa"}.xlsx`,
+              base64: excelBase64,
+              mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }
+          : null,
+    }
+  }
+
   // Enviar webhook de progreso a Zoho Flow
   async sendProgressWebhook(step: number, stepName: string) {
     // Solo enviar si hay id_zoho
@@ -331,22 +384,7 @@ export class DataManager {
       return
     }
 
-    const totalSteps = 10
-    const percentage = Math.round((step / totalSteps) * 100)
-
-    const payload = {
-      accion: "actualizar",
-      eventType: "progress",
-      id_zoho: this.sessionData.id_zoho,
-      metadata: {
-        pasoActual: step,
-        pasoNombre: stepName,
-        totalPasos: totalSteps,
-        porcentajeProgreso: percentage,
-        empresaRut: this.sessionData.formData.empresa.rut,
-        empresaNombre: this.sessionData.formData.empresa.razonSocial,
-      },
-    }
+    const payload = this.createUnifiedPayload("progress", step, stepName)
 
     console.log("[v0] DataManager: Enviando progreso a Zoho Flow:", payload)
 
@@ -370,31 +408,11 @@ export class DataManager {
 
   // Enviar datos completos a Zoho Flow
   async sendCompleteWebhook(data: OnboardingData, excelBase64?: string) {
-    const payload: any = {
-      accion: this.sessionData.id_zoho ? "actualizar" : "crear",
-      eventType: "complete",
-      formData: data,
-      metadata: {
-        empresaRut: data.empresa.rut,
-        empresaNombre: data.empresa.razonSocial,
-        totalCambios: this.calculateChanges(),
-        editedFields: this.getEditedFields(),
-      },
-    }
+    this.sessionData.formData = data
 
-    // Agregar id_zoho si existe
-    if (this.sessionData.id_zoho) {
-      payload.id_zoho = this.sessionData.id_zoho
-    }
+    const payload = this.createUnifiedPayload("complete", undefined, undefined, excelBase64)
 
-    // Agregar Excel si existe
-    if (excelBase64) {
-      payload.excelFile = {
-        filename: `onboarding_${data.empresa.razonSocial.replace(/\s+/g, "_")}.xlsx`,
-        base64: excelBase64,
-        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }
-    }
+    console.log("[v0] DataManager: Enviando datos completos a Zoho Flow:", payload)
 
     try {
       const response = await fetch("/api/submit-to-zoho", {
