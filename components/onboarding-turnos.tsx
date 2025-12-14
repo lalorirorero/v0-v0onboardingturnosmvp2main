@@ -2634,20 +2634,7 @@ export default function OnboardingTurnosCliente({
   const [savingStatus, setSavingStatus] = useState<"saved" | "saving" | "idle">("idle")
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
 
-  // Estados principales
-  const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
-  const [isLoadingToken, setIsLoadingToken] = useState(false)
-  const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
-  const [idZoho, setIdZoho] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
-  const [configureNow, setConfigureNow] = useState(true) // Renamed from skipConfiguration
-  const [tokenError, setTokenError] = useState<string | null>(null)
-
-  const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-
-  // Estado empresa
+  // Estados individuales para cada paso, para facilitar la carga de datos prellenados
   const [empresa, setEmpresa] = useState({
     razonSocial: "",
     nombreFantasia: "",
@@ -2659,6 +2646,7 @@ export default function OnboardingTurnosCliente({
     telefonoContacto: "",
     sistema: [] as string[],
     rubro: "",
+    // Inicializado como arreglo vacío para evitar errores al acceder a él.
     grupos: [] as { id: number; nombre: string; descripcion: string }[],
   })
 
@@ -2699,84 +2687,166 @@ export default function OnboardingTurnosCliente({
   })
   const [errors, setErrors] = useState({ byId: {}, global: [] })
 
+  // Estados para la navegación y control del flujo
+  const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
+  const [isLoadingToken, setIsLoadingToken] = useState(false)
+  const [prefilledData, setPrefilledData] = useState<Record<string, unknown> | null>(null)
+  const [idZoho, setIdZoho] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
+  const [configureNow, setConfigureNow] = useState(true) // Renamed from skipConfiguration
+  const [tokenError, setTokenError] = useState<string | null>(null)
+
+  const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+
   useEffect(() => {
     const token = searchParams?.get("token")
-    const draft = loadDraft(token || undefined)
 
-    if (draft) {
-      const isCompatible = isDraftCompatible(draft)
+    // Si hay token, procesar token primero y NO cargar borrador
+    if (token) {
+      setIsLoadingToken(true)
+      setTokenError(null)
+      setCurrentStep(PRIMER_PASO)
 
-      if (!isCompatible) {
-        // Versión del formulario cambió
-        const validStep = calculateValidStep(draft, steps.length)
-        draft.currentStep = validStep
-        setShowVersionWarning(true)
-        setDraftWarningMessage(
-          `Actualizamos el flujo. Te llevamos al paso "${steps[validStep]?.label || validStep}". Por favor revisa la información.`,
-        )
-      } else {
-        // Validar que el paso guardado sea válido
-        if (draft.currentStep < 0 || draft.currentStep >= steps.length) {
+      const decryptToken = async () => {
+        try {
+          const response = await fetch("/api/decrypt-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`)
+          }
+
+          const data = await response.json()
+
+          if (data.success && data.empresaData) {
+            setPrefilledData(data.empresaData)
+            if (data.empresaData.id_zoho) {
+              setIdZoho(data.empresaData.id_zoho)
+            }
+
+            // Cargar todos los datos prellenados
+            // Usamos el estado inicial para asegurar que todos los campos estén presentes
+            const initialState = {
+              empresa: {
+                razonSocial: "",
+                nombreFantasia: "",
+                rut: "",
+                giro: "",
+                direccion: "",
+                comuna: "",
+                emailFacturacion: "",
+                telefonoContacto: "",
+                sistema: [] as string[],
+                rubro: "",
+                grupos: [] as { id: number; nombre: string; descripcion: string }[],
+              },
+              admins: [] as any[],
+              trabajadores: [] as any[],
+              turnos: [
+                {
+                  id: 1,
+                  nombre: "Descanso",
+                  horaInicio: "",
+                  horaFin: "",
+                  colacionMinutos: 0,
+                  tooltip: "Fin de Semana o Feriado",
+                },
+                {
+                  id: 2,
+                  nombre: "Libre",
+                  horaInicio: "",
+                  horaFin: "",
+                  colacionMinutos: 0,
+                  tooltip: "No marca o Artículo 22",
+                },
+                {
+                  id: 3,
+                  nombre: "Presencial",
+                  horaInicio: "",
+                  horaFin: "",
+                  colacionMinutos: 0,
+                  tooltip: "Sin planificación",
+                },
+              ],
+              planificaciones: [] as any[],
+              asignaciones: [] as any[],
+              configureNow: true, // Valor por defecto si no viene en los datos
+            }
+
+            setEmpresa((prev) => ({
+              ...initialState.empresa,
+              ...data.empresaData.empresa,
+              grupos: Array.isArray(data.empresaData.empresa?.grupos)
+                ? data.empresaData.empresa.grupos
+                : initialState.empresa.grupos,
+            }))
+
+            setAdmins(data.empresaData.admins?.length > 0 ? data.empresaData.admins : initialState.admins)
+            setTrabajadores(
+              data.empresaData.trabajadores?.length > 0 ? data.empresaData.trabajadores : initialState.trabajadores,
+            )
+            setTurnos(data.empresaData.turnos?.length > 0 ? data.empresaData.turnos : initialState.turnos)
+            setPlanificaciones(
+              data.empresaData.planificaciones?.length > 0
+                ? data.empresaData.planificaciones
+                : initialState.planificaciones,
+            )
+            setAsignaciones(
+              data.empresaData.asignaciones?.length > 0 ? data.empresaData.asignaciones : initialState.asignaciones,
+            )
+            setConfigureNow(data.empresaData.configureNow ?? initialState.configureNow)
+
+            // NO mostrar diálogo de borrador cuando hay token
+            setShowDraftDialog(false)
+          } else {
+            console.error("Error al desencriptar token:", data.error)
+            setTokenError(data.error || "Token inválido")
+          }
+        } catch (error) {
+          console.error("Error al procesar token:", error)
+          setTokenError(error instanceof Error ? error.message : "Error desconocido")
+        } finally {
+          setIsLoadingToken(false)
+        }
+      }
+
+      decryptToken()
+    } else {
+      // Solo cargar borrador si NO hay token
+      const draft = loadDraft()
+
+      if (draft) {
+        const isCompatible = isDraftCompatible(draft)
+
+        if (!isCompatible) {
+          // Versión del formulario cambió
           const validStep = calculateValidStep(draft, steps.length)
           draft.currentStep = validStep
           setShowVersionWarning(true)
           setDraftWarningMessage(
-            `El paso guardado ya no existe. Te llevamos al paso "${steps[validStep]?.label || validStep}".`,
+            `Actualizamos el flujo. Te llevamos al paso "${steps[validStep]?.label || validStep}". Por favor revisa la información.`,
           )
-        }
-      }
-
-      setExistingDraft(draft)
-      setShowDraftDialog(true)
-    }
-  }, [searchParams])
-
-  useEffect(() => {
-    const token = searchParams?.get("token")
-
-    if (!token) return
-
-    setIsLoadingToken(true)
-    setTokenError(null)
-    setCurrentStep(PRIMER_PASO)
-
-    const decryptToken = async () => {
-      try {
-        const response = await fetch("/api/decrypt-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        if (data.success && data.empresaData) {
-          setPrefilledData(data.empresaData)
-          if (data.empresaData.id_zoho) {
-            setIdZoho(data.empresaData.id_zoho)
-          }
-          setEmpresa((prev) => ({
-            ...prev,
-            ...data.empresaData,
-            grupos: Array.isArray(data.empresaData.grupos) ? data.empresaData.grupos : [],
-          }))
         } else {
-          console.error("Error al desencriptar token:", data.error)
-          setTokenError(data.error || "Token inválido")
+          // Validar que el paso guardado sea válido
+          if (draft.currentStep < 0 || draft.currentStep >= steps.length) {
+            const validStep = calculateValidStep(draft, steps.length)
+            draft.currentStep = validStep
+            setShowVersionWarning(true)
+            setDraftWarningMessage(
+              `El paso guardado ya no existe. Te llevamos al paso "${steps[validStep]?.label || validStep}".`,
+            )
+          }
         }
-      } catch (error) {
-        console.error("Error al procesar token:", error)
-        setTokenError(error instanceof Error ? error.message : "Error desconocido")
-      } finally {
-        setIsLoadingToken(false)
+
+        setExistingDraft(draft)
+        setShowDraftDialog(true)
       }
     }
-
-    decryptToken()
   }, [searchParams])
 
   useEffect(() => {
