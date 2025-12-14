@@ -654,7 +654,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
                       />
                       <div>
                         <h4 className="font-semibold text-sm">{info.titulo}</h4>
-                        <p className="text-xs text-slate-600 mt-1">{info.descripcion}</p>
+                        <p className="text-xs text-slate-600">{info.descripcion}</p>
                       </div>
                     </div>
                   </HoverCardContent>
@@ -2689,17 +2689,6 @@ export default function OnboardingTurnosCliente({
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // Se usa Set ahora
 
-  // This function is missing from the original code and is needed for the DecisionStep
-  const handleConfigurationDecision = (decision: "now" | "later") => {
-    setConfigureNow(decision === "now")
-    if (decision === "now") {
-      handleNext() // Proceed to TurnosStep
-    } else {
-      // Skip directly to the summary step if not configuring now
-      setCurrentStep(9)
-    }
-  }
-
   useEffect(() => {
     const initializeOnboarding = async () => {
       console.log("[Onboarding] Inicializando...")
@@ -2716,7 +2705,6 @@ export default function OnboardingTurnosCliente({
         setEmpresa({
           ...empresa,
           ...sessionData.formData.empresa,
-          // Grupos are now managed within the company state
           grupos: sessionData.formData.empresa?.grupos || [],
         })
         setAdmins(sessionData.formData.admins || [])
@@ -2732,20 +2720,20 @@ export default function OnboardingTurnosCliente({
         Object.keys(sessionData.prefilledData.empresa).forEach((key) => {
           prefilledFields.add(`empresa.${key}`)
         })
-        setPrefilledFields(new Set(prefilledFields)) // Actualiza el estado
+        setPrefilledFields(new Set(prefilledFields))
       }
 
-      // Mostrar diálogo de borrador solo si NO hay token y hay un paso guardado
-      if (!sessionData.hasToken && sessionData.currentStep > PRIMER_PASO) {
+      if (!sessionData.hasToken && sessionData.hasDraft) {
+        console.log("[Onboarding] Mostrando diálogo de borrador")
         setShowDraftDialog(true)
       }
 
       setIsInitialized(true)
       console.log("[Onboarding] Inicialización completa", {
         hasToken: sessionData.hasToken,
+        hasDraft: sessionData.hasDraft,
         currentStep: sessionData.currentStep,
         hasIdZoho: !!sessionData.id_zoho,
-        prefilledDataCount: Object.keys(sessionData.prefilledData?.empresa || {}).length,
       })
     }
 
@@ -2753,56 +2741,10 @@ export default function OnboardingTurnosCliente({
   }, [])
 
   useEffect(() => {
-    if (!isInitialized) return
-
-    setSavingStatus("saving")
-
-    const formData: OnboardingData = {
-      empresa: {
-        razonSocial: empresa.razonSocial,
-        nombreFantasia: empresa.nombreFantasia,
-        rut: empresa.rut,
-        giro: empresa.giro,
-        direccion: empresa.direccion,
-        comuna: empresa.comuna,
-        emailFacturacion: empresa.emailFacturacion,
-        telefonoContacto: empresa.telefonoContacto,
-        sistema: empresa.sistema,
-        rubro: empresa.rubro,
-        // Ensure groups are included if they are managed within the company step
-        grupos: empresa.grupos,
-      },
-      admins,
-      trabajadores,
-      turnos,
-      planificaciones,
-      asignaciones,
-      configureNow,
-    }
-
-    dataManager.updateFormData(formData)
-    dataManager.updateCurrentStep(currentStep)
-    dataManager.saveDraft(currentStep, formData)
-
-    const timer = setTimeout(() => setSavingStatus("saved"), 500)
-    return () => clearTimeout(timer)
-  }, [
-    isInitialized,
-    currentStep,
-    empresa,
-    admins,
-    trabajadores,
-    turnos,
-    planificaciones,
-    asignaciones,
-    configureNow,
-    dataManager,
-  ])
-
-  useEffect(() => {
     if (!isInitialized || currentStep === 0) return
 
     const stepName = steps[currentStep]?.label || ""
+    console.log("[v0] Componente: Paso cambiado, enviando webhook", { currentStep, stepName })
     dataManager.sendProgressWebhook(currentStep, stepName)
   }, [isInitialized, currentStep, dataManager])
 
@@ -2820,82 +2762,24 @@ export default function OnboardingTurnosCliente({
     }
   }
 
-  // This function is missing in the original code and is needed for the DecisionStep
-  const generateExcelBase64 = () => {
-    // Placeholder for actual Excel generation logic
-    // In a real scenario, you would use XLSX library to create a workbook
-    // and then convert it to base64.
-    console.warn("generateExcelBase64 not fully implemented.")
-    return ""
-  }
-
-  const handleFinalizar = async () => {
-    setIsSubmitting(true)
-
-    try {
-      // Generar Excel en base64
-      const excelBase64 = generateExcelBase64() // This function needs to be implemented
-
-      // Preparar datos finales
-      const finalData: OnboardingData = {
-        empresa: {
-          razonSocial: empresa.razonSocial,
-          nombreFantasia: empresa.nombreFantasia,
-          rut: empresa.rut,
-          giro: empresa.giro,
-          direccion: empresa.direccion,
-          comuna: empresa.comuna,
-          emailFacturacion: empresa.emailFacturacion,
-          telefonoContacto: empresa.telefonoContacto,
-          sistema: empresa.sistema,
-          rubro: empresa.rubro,
-          // Ensure groups are included if relevant for final submission
-          grupos: empresa.grupos,
-        },
-        admins,
-        trabajadores,
-        turnos,
-        planificaciones,
-        asignaciones,
-        configureNow,
-      }
-
-      // Enviar a Zoho Flow usando DataManager
-      await dataManager.sendCompleteWebhook(finalData, excelBase64)
-
-      setZohoSubmissionResult({
-        success: true,
-        message: "Datos enviados correctamente",
-      })
-
-      console.log("[Onboarding] Finalizado exitosamente")
-    } catch (error) {
-      console.error("[Onboarding] Error al finalizar:", error)
-      setZohoSubmissionResult({
-        success: false,
-        message: "Error al enviar los datos. Por favor intenta de nuevo.",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const handleContinueDraft = () => {
+    console.log("[Onboarding] Usuario eligió continuar con borrador")
     setShowDraftDialog(false)
-    console.log("[Onboarding] Continuando con borrador guardado")
+    // El currentStep y formData ya están cargados desde el borrador
   }
 
   const handleStartFresh = () => {
+    console.log("[Onboarding] Usuario quiere empezar de nuevo, mostrando confirmación")
+    setShowDraftDialog(false)
     setShowConfirmRestart(true)
   }
 
   const confirmRestart = () => {
+    console.log("[Onboarding] Confirmado: reiniciando desde cero")
     dataManager.deleteDraft()
-    setCurrentStep(PRIMER_PASO)
-    setShowDraftDialog(false)
-    setShowConfirmRestart(false)
 
-    // Resetear formulario
+    // Resetear todo
+    setCurrentStep(PRIMER_PASO)
     setEmpresa({
       razonSocial: "",
       nombreFantasia: "",
@@ -2907,7 +2791,7 @@ export default function OnboardingTurnosCliente({
       telefonoContacto: "",
       sistema: [],
       rubro: "",
-      grupos: [], // Reset groups
+      grupos: [],
     })
     setAdmins([])
     setTrabajadores([])
@@ -2940,12 +2824,67 @@ export default function OnboardingTurnosCliente({
     setPlanificaciones([])
     setAsignaciones([])
     setConfigureNow(true)
-    setPrefilledData(null) // Clear prefilled data on restart
-    setEditedFields({}) // Clear edited fields
-    setPrefilledFields(new Set()) // Clear prefilled fields tracker
-    setIdZoho(null) // Clear Zoho ID
 
-    console.log("[Onboarding] Reiniciado desde cero")
+    setShowConfirmRestart(false)
+  }
+
+  // This function is missing in the original code and is needed for the DecisionStep
+  const generateExcelBase64 = () => {
+    // Placeholder for actual Excel generation logic
+    // In a real scenario, you would use XLSX library to create a workbook
+    // and then convert it to base64.
+    console.warn("generateExcelBase64 not fully implemented.")
+    return ""
+  }
+
+  const handleFinalizar = async () => {
+    setIsSubmitting(true)
+
+    try {
+      // Generar Excel en base64
+      const excelBase64 = generateExcelBase64() // This function needs to be implemented
+
+      // Preparar datos finales
+      const finalData: OnboardingData = {
+        empresa: {
+          razonSocial: empresa.razonSocial,
+          nombreFantasia: empresa.nombreFantasia,
+          rut: empresa.rut,
+          giro: empresa.giro,
+          direccion: empresa.direccion,
+          comuna: empresa.comuna,
+          emailFacturacion: empresa.emailFacturacion,
+          telefonoContacto: empresa.telefonoContacto,
+          sistema: empresa.sistema,
+          rubro: empresa.rubro,
+          grupos: empresa.grupos,
+        },
+        admins,
+        trabajadores,
+        turnos,
+        planificaciones,
+        asignaciones,
+        configureNow,
+      }
+
+      // Enviar a Zoho Flow usando DataManager
+      await dataManager.sendCompleteWebhook(finalData, excelBase64)
+
+      setZohoSubmissionResult({
+        success: true,
+        message: "Datos enviados correctamente",
+      })
+
+      console.log("[Onboarding] Finalizado exitosamente")
+    } catch (error) {
+      console.error("[Onboarding] Error al finalizar:", error)
+      setZohoSubmissionResult({
+        success: false,
+        message: "Error al enviar los datos. Por favor intenta de nuevo.",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const isFieldPrefilled = (fieldKey: string): boolean => {
@@ -2976,6 +2915,17 @@ export default function OnboardingTurnosCliente({
         delete updated[fieldKey]
         return updated
       })
+    }
+  }
+
+  // Function to handle the decision from DecisionStep
+  const handleConfigurationDecision = (decision: "now" | "later") => {
+    setConfigureNow(decision === "now")
+    if (decision === "now") {
+      handleNext() // Go to TurnosStep
+    } else {
+      // Skip to the end or a confirmation step if "later" is chosen
+      setCurrentStep(9) // Go to Resumen step
     }
   }
 

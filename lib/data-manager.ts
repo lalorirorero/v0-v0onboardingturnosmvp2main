@@ -58,6 +58,7 @@ export interface SessionData {
   currentStep: number
   formData: OnboardingData
   hasToken: boolean
+  hasDraft: boolean // Añadido para indicar si hay borrador
 }
 
 // Constantes
@@ -78,6 +79,7 @@ export class DataManager {
       hasToken: false,
       currentStep: 0,
       formData: this.getEmptyFormData(),
+      hasDraft: false, // Añadido para indicar si hay borrador
     }
   }
 
@@ -106,6 +108,7 @@ export class DataManager {
           currentStep: 0,
           formData: { ...decrypted.data },
           hasToken: true,
+          hasDraft: false, // No hay borrador cuando hay token
         }
         console.log("[DataManager] Datos prellenados cargados", {
           id_zoho: decrypted.id_zoho,
@@ -122,12 +125,22 @@ export class DataManager {
     if (draft) {
       this.sessionData = {
         hasToken: false,
+        hasDraft: true, // Indicar que hay borrador
         currentStep: draft.currentStep,
         formData: draft.formData,
       }
-      console.log("[DataManager] Borrador local cargado", {
+      console.log("[DataManager] Borrador local encontrado", {
         step: draft.currentStep,
+        version: draft.version,
       })
+    } else {
+      this.sessionData = {
+        hasToken: false,
+        hasDraft: false,
+        currentStep: 0,
+        formData: this.getEmptyFormData(),
+      }
+      console.log("[DataManager] Sin token ni borrador, empezando desde cero")
     }
 
     return this.sessionData
@@ -289,9 +302,11 @@ export class DataManager {
 
   // Eliminar borrador
   deleteDraft() {
-    if (typeof window === "undefined") return
-    localStorage.removeItem("onboarding_draft_local")
-    console.log("[DataManager] Borrador eliminado")
+    const key = this.getDraftKey()
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(key)
+      console.log("[DataManager] Borrador eliminado")
+    }
   }
 
   // Calcular último paso válido según datos
@@ -309,7 +324,7 @@ export class DataManager {
   async sendProgressWebhook(step: number, stepName: string) {
     // Solo enviar si hay id_zoho
     if (!this.sessionData.id_zoho) {
-      console.log("[DataManager] No se envía progreso (no hay id_zoho)")
+      console.log("[v0] DataManager: No se envía progreso (no hay id_zoho)")
       return
     }
 
@@ -330,15 +345,23 @@ export class DataManager {
       },
     }
 
+    console.log("[v0] DataManager: Enviando progreso a Zoho Flow:", payload)
+
     try {
-      await fetch("/api/submit-to-zoho", {
+      const response = await fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-      console.log("[DataManager] Progreso enviado a Zoho Flow", { step, stepName })
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${await response.text()}`)
+      }
+
+      console.log("[v0] DataManager: Progreso enviado exitosamente a Zoho Flow")
     } catch (error) {
-      console.error("[DataManager] Error enviando progreso:", error)
+      console.error("[v0] DataManager: Error enviando progreso:", error)
+      // No lanzar error para no interrumpir el flujo del usuario
     }
   }
 
@@ -480,9 +503,14 @@ export class DataManager {
 
   updateFormData(data: OnboardingData) {
     this.sessionData.formData = data
+    console.log("[v0] DataManager: formData actualizado")
   }
 
   updateCurrentStep(step: number) {
     this.sessionData.currentStep = step
+  }
+
+  private getDraftKey(): string {
+    return "onboarding_draft_local"
   }
 }
