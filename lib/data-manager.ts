@@ -193,6 +193,8 @@ export class DataManager {
         hasTrabajadores: !!empresaData.trabajadores,
       })
 
+      const id_zoho = empresaData.id_zoho
+
       const onboardingData: OnboardingData = {
         empresa: {
           razonSocial: empresaData.razonSocial || "",
@@ -215,13 +217,14 @@ export class DataManager {
       }
 
       console.log("[v0] DataManager: OnboardingData construido:", {
+        id_zoho: id_zoho, // Loggear el id_zoho extraído
         empresa: onboardingData.empresa.razonSocial,
         adminsCount: onboardingData.admins.length,
         trabajadoresCount: onboardingData.trabajadores.length,
       })
 
       return {
-        id_zoho: empresaData.id_zoho,
+        id_zoho: id_zoho,
         data: onboardingData,
       }
     } catch (error) {
