@@ -342,6 +342,7 @@ export class DataManager {
       accion: this.sessionData.id_zoho ? "actualizar" : "crear",
       eventType: eventType,
       id_zoho: this.sessionData.id_zoho || null,
+      fechaHoraEnvio: new Date().toISOString(),
 
       // Datos del formulario (vacíos en progress, llenos en complete)
       formData:
