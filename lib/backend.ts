@@ -20,6 +20,7 @@
 // ============================================================================
 
 export interface EmpresaData {
+  id_zoho?: string // ID del registro en Zoho CRM que generó esta sesión
   razonSocial: string
   nombreFantasia: string
   rut: string
@@ -164,6 +165,7 @@ export interface ZohoPayload {
   accion: "crear" | "actualizar"
   timestamp: string
   eventType: "started" | "progress" | "complete"
+  id_zoho?: string // ID del registro en Zoho CRM
   // Solo para eventos complete
   formData?: FormData
   // Para todos los eventos
