@@ -24,18 +24,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Token vacío" }, { status: 400 })
     }
 
+    console.log("[v0] decrypt-token API: Llamando a decryptToken...")
+
     const empresaData = await decryptToken(cleanToken)
 
     if (!empresaData) {
+      console.log("[v0] decrypt-token API: Token inválido o expirado")
       return NextResponse.json({ success: false, error: "Token inválido o expirado" }, { status: 400 })
     }
+
+    console.log("[v0] decrypt-token API: Token desencriptado exitosamente:", {
+      id_zoho: empresaData.id_zoho,
+      razonSocial: empresaData.razonSocial,
+    })
 
     return NextResponse.json({
       success: true,
       empresaData,
     })
   } catch (error) {
-    console.error("Error en decrypt-token:", error)
+    console.error("[v0] decrypt-token API: Error:", error)
     return NextResponse.json(
       {
         success: false,

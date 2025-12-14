@@ -22,15 +22,20 @@
 export interface EmpresaData {
   id_zoho?: string // ID del registro en Zoho CRM que generó esta sesión
   razonSocial: string
-  nombreFantasia: string
+  nombreFantasia?: string
   rut: string
-  giro: string
-  direccion: string
-  comuna: string
-  emailFacturacion: string
-  telefonoContacto: string
-  sistema: string[]
-  rubro: string
+  giro?: string
+  direccion?: string
+  comuna?: string
+  emailFacturacion?: string
+  telefonoContacto?: string
+  sistema?: string[]
+  rubro?: string
+  admins?: any[]
+  trabajadores?: any[]
+  turnos?: any[]
+  planificaciones?: any[]
+  asignaciones?: any[]
 }
 
 export interface FormData {
@@ -48,6 +53,13 @@ export interface FormData {
 // ============================================================================
 
 export async function encryptToken(empresaData: EmpresaData): Promise<string> {
+  console.log("[v0] backend.encryptToken: Iniciando encriptación")
+  console.log("[v0] backend.encryptToken: Datos recibidos:", {
+    id_zoho: empresaData.id_zoho,
+    razonSocial: empresaData.razonSocial,
+    rut: empresaData.rut,
+  })
+
   const jsonString = JSON.stringify(empresaData)
   const encoder = new TextEncoder()
   const dataBuffer = encoder.encode(jsonString)
@@ -80,13 +92,20 @@ export async function encryptToken(empresaData: EmpresaData): Promise<string> {
   resultBuffer.set(iv, salt.length)
   resultBuffer.set(new Uint8Array(encryptedBuffer), salt.length + iv.length)
 
-  return Buffer.from(resultBuffer).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+  const token = Buffer.from(resultBuffer).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+
+  console.log("[v0] backend.encryptToken: Token generado exitosamente")
+
+  return token
 }
 
 export async function decryptToken(token: string): Promise<EmpresaData | null> {
   try {
+    console.log("[v0] backend.decryptToken: Iniciando desencriptación")
+    console.log("[v0] backend.decryptToken: Token recibido:", token.substring(0, 20) + "...")
+
     if (!token || typeof token !== "string") {
-      console.error("Token inválido: debe ser una cadena no vacía")
+      console.error("[v0] backend.decryptToken: Token inválido: debe ser una cadena no vacía")
       return null
     }
 
@@ -98,13 +117,13 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
     try {
       buffer = Buffer.from(base64 + padding, "base64")
     } catch (bufferError) {
-      console.error("Error al decodificar base64:", bufferError)
+      console.error("[v0] backend.decryptToken: Error al decodificar base64:", bufferError)
       return null
     }
 
     // Verificar que el buffer tenga el tamaño mínimo esperado
     if (buffer.length < 28) {
-      console.error("Token demasiado corto para ser válido")
+      console.error("[v0] backend.decryptToken: Token demasiado corto para ser válido")
       return null
     }
 
@@ -113,7 +132,7 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
     const encryptedData = buffer.slice(28)
 
     if (encryptedData.length === 0) {
-      console.error("No hay datos encriptados en el token")
+      console.error("[v0] backend.decryptToken: No hay datos encriptados en el token")
       return null
     }
 
@@ -146,13 +165,21 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
     try {
       parsed = JSON.parse(jsonString)
     } catch (jsonError) {
-      console.error("Error al parsear JSON desencriptado:", jsonError)
+      console.error("[v0] backend.decryptToken: Error al parsear JSON desencriptado:", jsonError)
       return null
     }
 
+    console.log("[v0] backend.decryptToken: Desencriptación exitosa:", {
+      id_zoho: parsed.id_zoho,
+      razonSocial: parsed.razonSocial,
+      rut: parsed.rut,
+      hasAdmins: Array.isArray(parsed.admins),
+      hasTrabajadores: Array.isArray(parsed.trabajadores),
+    })
+
     return parsed
   } catch (error) {
-    console.error("Error decrypting token:", error)
+    console.error("[v0] backend.decryptToken: Error decrypting token:", error)
     return null
   }
 }

@@ -146,23 +146,73 @@ export class DataManager {
     data: OnboardingData
   } | null> {
     try {
+      console.log("[v0] DataManager: Llamando a /api/decrypt-token con token:", token.substring(0, 20) + "...")
+
       const response = await fetch("/api/decrypt-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       })
 
-      if (!response.ok) return null
+      console.log("[v0] DataManager: Respuesta status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[v0] DataManager: Error en respuesta:", errorText)
+        return null
+      }
 
       const result = await response.json()
-      return result.success
-        ? {
-            id_zoho: result.data.id_zoho,
-            data: result.data,
-          }
-        : null
+      console.log("[v0] DataManager: Resultado JSON:", result)
+
+      if (!result.success || !result.empresaData) {
+        console.error("[v0] DataManager: Respuesta no exitosa o sin empresaData")
+        return null
+      }
+
+      // Extraer id_zoho y construir OnboardingData
+      const empresaData = result.empresaData
+      console.log("[v0] DataManager: empresaData recibido:", {
+        id_zoho: empresaData.id_zoho,
+        razonSocial: empresaData.razonSocial,
+        rut: empresaData.rut,
+        hasAdmins: !!empresaData.admins,
+        hasTrabajadores: !!empresaData.trabajadores,
+      })
+
+      const onboardingData: OnboardingData = {
+        empresa: {
+          razonSocial: empresaData.razonSocial || "",
+          nombreFantasia: empresaData.nombreFantasia || "",
+          rut: empresaData.rut || "",
+          giro: empresaData.giro || "",
+          direccion: empresaData.direccion || "",
+          comuna: empresaData.comuna || "",
+          emailFacturacion: empresaData.emailFacturacion || "",
+          telefonoContacto: empresaData.telefonoContacto || "",
+          sistema: empresaData.sistema || [],
+          rubro: empresaData.rubro || "",
+        },
+        admins: empresaData.admins || [],
+        trabajadores: empresaData.trabajadores || [],
+        turnos: empresaData.turnos || [],
+        planificaciones: empresaData.planificaciones || [],
+        asignaciones: empresaData.asignaciones || [],
+        configureNow: true,
+      }
+
+      console.log("[v0] DataManager: OnboardingData construido:", {
+        empresa: onboardingData.empresa.razonSocial,
+        adminsCount: onboardingData.admins.length,
+        trabajadoresCount: onboardingData.trabajadores.length,
+      })
+
+      return {
+        id_zoho: empresaData.id_zoho,
+        data: onboardingData,
+      }
     } catch (error) {
-      console.error("[DataManager] Error desencriptando token:", error)
+      console.error("[v0] DataManager: Error desencriptando token:", error)
       return null
     }
   }
