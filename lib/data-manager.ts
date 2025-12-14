@@ -73,6 +73,7 @@ export class DataManager {
   private static instance: DataManager
   private sessionData: SessionData
   private saveTimeout: NodeJS.Timeout | null = null
+  private webhookCallback?: (type: "progress" | "complete", response: any, error?: any) => void
 
   private constructor() {
     this.sessionData = {
@@ -88,6 +89,10 @@ export class DataManager {
       this.instance = new DataManager()
     }
     return this.instance
+  }
+
+  setWebhookCallback(callback: (type: "progress" | "complete", response: any, error?: any) => void) {
+    this.webhookCallback = callback
   }
 
   // Inicializar desde URL o borrador
@@ -399,9 +404,18 @@ export class DataManager {
         throw new Error(`Error ${response.status}: ${await response.text()}`)
       }
 
-      console.log("[v0] DataManager: Progreso enviado exitosamente a Zoho Flow")
+      const responseData = await response.json()
+      console.log("[v0] DataManager: Progreso enviado exitosamente a Zoho Flow", responseData)
+
+      if (this.webhookCallback) {
+        this.webhookCallback("progress", responseData)
+      }
     } catch (error) {
       console.error("[v0] DataManager: Error enviando progreso:", error)
+
+      if (this.webhookCallback) {
+        this.webhookCallback("progress", null, error)
+      }
       // No lanzar error para no interrumpir el flujo del usuario
     }
   }
@@ -423,7 +437,12 @@ export class DataManager {
 
       if (!response.ok) throw new Error("Error en envío a Zoho")
 
-      console.log("[DataManager] Datos completos enviados a Zoho Flow")
+      const responseData = await response.json()
+      console.log("[DataManager] Datos completos enviados a Zoho Flow", responseData)
+
+      if (this.webhookCallback) {
+        this.webhookCallback("complete", responseData)
+      }
 
       // Limpiar borrador después de enviar exitosamente
       this.deleteDraft()
@@ -431,6 +450,11 @@ export class DataManager {
       return true
     } catch (error) {
       console.error("[DataManager] Error enviando datos completos:", error)
+
+      if (this.webhookCallback) {
+        this.webhookCallback("complete", null, error)
+      }
+
       throw error
     }
   }

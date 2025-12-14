@@ -38,6 +38,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
+import { useToast } from "@/hooks/use-toast"
+
 import { DataManager } from "@/lib/data-manager"
 import type { OnboardingData } from "@/lib/data-manager"
 
@@ -2617,6 +2619,8 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
 export default function OnboardingTurnosCliente({
   searchParams,
 }: { searchParams: Record<string, string | string[] | undefined> }) {
+  const { toast } = useToast()
+
   const [dataManager] = useState(() => DataManager.getInstance())
   const [isInitialized, setIsInitialized] = useState(false)
   const [showDraftDialog, setShowDraftDialog] = useState(false)
@@ -2688,6 +2692,45 @@ export default function OnboardingTurnosCliente({
   const [idZoho, setIdZoho] = useState<string | null>(null)
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // Se usa Set ahora
+
+  useEffect(() => {
+    dataManager.setWebhookCallback((type, response, error) => {
+      if (error) {
+        toast({
+          title: `Error en Webhook ${type === "progress" ? "de Progreso" : "Final"}`,
+          description: (
+            <div className="space-y-2">
+              <p className="font-medium text-destructive">No se pudo enviar a Zoho Flow</p>
+              <pre className="text-xs bg-destructive/10 p-2 rounded overflow-auto max-h-40">
+                {error.message || JSON.stringify(error, null, 2)}
+              </pre>
+            </div>
+          ),
+          variant: "destructive",
+          duration: 10000,
+        })
+      } else {
+        toast({
+          title: `Webhook ${type === "progress" ? "de Progreso" : "Completo"} Enviado`,
+          description: (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {type === "progress" ? "Progreso actualizado en Zoho Flow" : "Datos completos enviados a Zoho Flow"}
+              </p>
+              <details className="text-xs">
+                <summary className="cursor-pointer font-medium">Ver respuesta de Zoho Flow</summary>
+                <pre className="mt-2 bg-muted p-2 rounded overflow-auto max-h-60 text-xs">
+                  {JSON.stringify(response, null, 2)}
+                </pre>
+              </details>
+            </div>
+          ),
+          variant: "default",
+          duration: 8000,
+        })
+      }
+    })
+  }, [dataManager, toast])
 
   useEffect(() => {
     const initializeOnboarding = async () => {
@@ -2947,7 +2990,7 @@ export default function OnboardingTurnosCliente({
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-lg border">
           {savingStatus === "saving" ? (
             <>
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-r-transparent" />
               <span className="text-xs text-muted-foreground">Guardando...</span>
             </>
           ) : (
