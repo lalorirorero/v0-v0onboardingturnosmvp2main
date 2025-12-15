@@ -2728,55 +2728,48 @@ export function OnboardingTurnosCliente() {
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get("token")
 
-      // Solo mostrar diálogo si hay progreso real guardado (currentStep > 0)
+      const draft = PersistenceManager.loadDraft()
+      const hasDraftWithProgress = draft && draft.metadata && draft.metadata.currentStep > 0
+
+      console.log("[v0] Draft check:", {
+        hasDraft: !!draft,
+        currentStep: draft?.metadata?.currentStep,
+        hasDraftWithProgress,
+      })
 
       if (token) {
         console.log("[v0] Token detected, fetching prefill data...")
-        // Decodificar y guardar prefill
         const tokenData = await fetchTokenData(token)
 
         if (tokenData) {
           console.log("[v0] Token data loaded:", tokenData.empresa?.razonSocial)
-          // Guardar prefill base
           PersistenceManager.savePrefill(tokenData, tokenData.empresa?.id_zoho || "")
           setPrefilledData(tokenData)
           setHasToken(true)
           setIdZoho(tokenData.empresa?.id_zoho || null)
 
-          // Verificar si hay borrador con progreso real
-          const draft = PersistenceManager.loadDraft()
-
-          if (draft && draft.metadata.currentStep > 0) {
+          if (hasDraftWithProgress) {
             console.log("[v0] Draft with progress found, showing dialog...")
-            // Hay progreso guardado, mostrar diálogo
-            loadDataFromDraft(draft)
+            loadDataFromDraft(draft!)
             setShowDraftDialog(true)
           } else {
             console.log("[v0] First session or no progress, starting at Step 0...")
-            // Primera sesión o sin progreso: iniciar en Paso 0 con prefill
             loadDataFromPrefill(tokenData)
-            setCurrentStep(PRIMER_PASO) // Explícitamente Paso 0
+            setCurrentStep(PRIMER_PASO)
             setCompletedSteps([])
 
-            // Limpiar borrador residual si existe
-            if (draft) {
-              PersistenceManager.clearDraft()
-            }
+            PersistenceManager.clearDraft()
           }
         }
       } else {
         console.log("[v0] No token, checking for draft...")
-        // Sin token, intentar cargar borrador
-        const draft = PersistenceManager.loadDraft()
 
-        if (draft && draft.metadata.currentStep > 0) {
+        if (hasDraftWithProgress) {
           console.log("[v0] Draft with progress found (no token), showing dialog...")
-          // Hay borrador con progreso, mostrar diálogo
-          loadDataFromDraft(draft)
+          loadDataFromDraft(draft!)
           setShowDraftDialog(true)
         } else {
           console.log("[v0] No token, no progress, starting empty at Step 0...")
-          // Sin token ni progreso: estado vacío en Paso 0
           setCurrentStep(PRIMER_PASO)
           setCompletedSteps([])
           setFormData({
@@ -2788,6 +2781,10 @@ export function OnboardingTurnosCliente() {
             asignaciones: [],
             configureNow: true,
           })
+
+          if (draft) {
+            PersistenceManager.clearDraft()
+          }
         }
       }
 

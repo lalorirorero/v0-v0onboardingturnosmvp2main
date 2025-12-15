@@ -54,7 +54,13 @@ export class PersistenceManager {
         return null
       }
 
-      console.log("[v0] Draft loaded:", state.metadata.currentStep)
+      if (!state.metadata || state.metadata.currentStep === undefined || state.metadata.currentStep === 0) {
+        console.warn("[v0] Draft has no progress (currentStep = 0), ignoring")
+        this.clearDraft()
+        return null
+      }
+
+      console.log("[v0] Draft loaded with progress at step:", state.metadata.currentStep)
       return state
     } catch (error) {
       console.error("[v0] Error loading draft:", error)
