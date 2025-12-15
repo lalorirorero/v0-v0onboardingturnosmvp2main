@@ -142,7 +142,15 @@ const Stepper = ({ currentStep }) => {
   )
 }
 
-const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
+const AdminStep = ({
+  admins,
+  setAdmins,
+  grupos,
+  ensureGrupoByName,
+  addAdmin, // Usar addAdmin de las props
+  onRemoveAdmin,
+  isEditMode, // Agregado isEditMode
+}) => {
   const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
@@ -156,12 +164,10 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
     setFormData({ ...formData, [field]: value })
   }
 
-  const addAdmin = () => {
-    console.log("[v0] AdminStep: addAdmin LLAMADO - INICIO")
-    console.log("[v0] AdminStep: formData actual:", JSON.stringify(formData))
-
+  // CHANGE: Corrigiendo llamado a addAdmin para pasar los parámetros correctos
+  const handleAddAdminClick = () => {
+    console.log("[v0] ===== BOTÓN AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
     if (!formData.nombre.trim() || !formData.apellido.trim()) {
-      console.log("[v0] AdminStep: Faltan nombre o apellido")
       alert("Por favor ingresa el nombre y apellido del administrador")
       return
     }
@@ -170,7 +176,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
     let grupoId = ""
     if (formData.grupo.trim()) {
       grupoId = ensureGrupoByName(formData.grupo.trim())
-      console.log("[v0] AdminStep: Grupo asignado", { grupoId })
     }
 
     const newAdmin = {
@@ -181,10 +186,8 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       email: formData.email,
       telefono: formData.telefono,
       grupoId: grupoId,
-      grupoNombre: formData.grupo,
+      grupoNombre: formData.grupo, // Guardar el nombre del grupo para mostrar
     }
-
-    console.log("[v0] AdminStep: Nuevo admin creado", newAdmin)
 
     setAdmins([...admins, newAdmin])
 
@@ -196,12 +199,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       telefono: "",
       grupo: "",
     })
-
-    console.log("[v0] AdminStep: Administrador agregado exitosamente")
-  }
-
-  const removeAdmin = (id) => {
-    setAdmins(admins.filter((admin) => admin.id !== id))
   }
 
   return (
@@ -229,6 +226,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
               placeholder="Ej: María"
+              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -239,6 +237,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               value={formData.apellido}
               onChange={(e) => handleFormChange("apellido", e.target.value)}
               placeholder="Ej: González"
+              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -254,6 +253,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               value={formData.rut}
               onChange={(e) => handleFormChange("rut", e.target.value)}
               placeholder="12345678-9"
+              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -269,6 +269,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               value={formData.email}
               onChange={(e) => handleFormChange("email", e.target.value)}
               placeholder=" correo@empresa.cl"
+              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -284,6 +285,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               value={formData.telefono}
               onChange={(e) => handleFormChange("telefono", e.target.value)}
               placeholder="+56912345678"
+              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -293,25 +295,30 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
                 ⓘ
               </span>
             </label>
-            <input
+            <select
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
               value={formData.grupo}
               onChange={(e) => handleFormChange("grupo", e.target.value)}
-              placeholder="Ej: Gerencia, Administración, etc."
-            />
+              disabled={!isEditMode}
+            >
+              <option value="">Seleccionar grupo...</option>
+              {grupos.map((g) => (
+                <option key={g.id} value={g.nombre}>
+                  {g.nombre}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            console.log("[v0] AdminStep: Botón clickeado!")
-            addAdmin()
-          }}
-          className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-        >
-          + Agregar administrador
-        </button>
+        {isEditMode && (
+          <button
+            type="button"
+            onClick={handleAddAdminClick}
+            className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+          >
+            + Agregar administrador
+          </button>
+        )}
       </div>
 
       {/* Listado de administradores */}
@@ -321,7 +328,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
           <div className="space-y-2">
             {admins.map((admin, index) => (
               <div
-                key={admin.id}
+                key={admin.id || index} // Use index as fallback if id is not available
                 className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
               >
                 <div className="flex-1">
@@ -339,28 +346,30 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
                     {admin.telefono && <span>{admin.telefono}</span>}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeAdmin(admin.id)}
-                  className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
-                  title="Eliminar administrador"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                {isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAdmin(index)}
+                    className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
+                    title="Eliminar administrador"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {admins.length === 0 && (
+      {admins.length === 0 && isEditMode && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
           <p className="text-sm text-slate-500">No hay administradores agregados aún</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -435,7 +444,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "CONSTRUCCIÓN",
   ]
 
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(true)
   const hasPrefilled = prefilledFields.size > 0 // Use prefilledFields Set
 
   const handleEmpresaChange = (e) => {
@@ -505,6 +514,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             value={value}
             onChange={handleEmpresaChange}
             placeholder={placeholder}
+            disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
           />
         )}
       </div>
@@ -536,6 +546,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
             name="rubro"
             value={value}
             onChange={handleEmpresaChange}
+            disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
           >
             <option value="">Seleccionar rubro...</option>
             {RUBROS.map((r) => (
@@ -594,6 +605,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
                         checked={isSelected}
                         onChange={() => handleSistemaChange(s)}
                         className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                        disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
                       />
                       <span className="text-sm font-medium">{shortName}</span>
                       <Info className="h-3.5 w-3.5 text-slate-400" />
@@ -623,7 +635,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
 
   return (
     <section className="space-y-6">
-      {hasPrefilled && (
+      {hasPrefilled && !isEditing && (
         <div className="rounded-xl border border-info-border bg-info-muted p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -1076,7 +1088,7 @@ const TrabajadoresStep = ({
                       type="email"
                       value={t.correo}
                       onChange={(e) => updateTrabajador(t.id, "correo", e.target.value)}
-                      placeholder="correo@empresa.cl"
+                      placeholder=" correo@empresa.cl"
                       disabled={isAdmin}
                     />
                     {rowErrors.correo && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.correo}</p>}
@@ -2644,7 +2656,7 @@ export default function OnboardingTurnosCliente({
   })
   const [errors, setErrors] = useState({ byId: {}, global: [] })
 
-  // Estados para la navegación y control del flujo
+  // Estados de navegación y control del flujo
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
@@ -2655,7 +2667,7 @@ export default function OnboardingTurnosCliente({
   const [idZoho, setIdZoho] = useState<string | null>(null)
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(true) // Default to true to allow editing initially
 
   const handleStartFresh = () => {
     setShowConfirmRestart(true)
@@ -2680,11 +2692,23 @@ export default function OnboardingTurnosCliente({
     toast({ title: "Progreso reiniciado", description: "Comienza de nuevo con la configuración inicial." })
   }
 
-  // CHANGE: Corrigiendo condición para mostrar diálogo solo si el usuario avanzó más allá del paso 0
+  // CHANGE: Corregido: Solo mostrar diálogo si el usuario avanzó más allá del paso 0
   const handleContinueDraft = () => {
-    console.log("[v0] Onboarding: handleContinueDraft ejecutado", { pendingDraftData })
-    // Los datos ya están cargados, solo cerramos el diálogo
+    console.log("[v0] Onboarding: handleContinueDraft ejecutado")
+    console.log("[v0] Onboarding: Estados actuales:", {
+      empresa,
+      adminsLength: admins.length,
+      trabajadoresLength: trabajadores.length,
+      currentStep,
+    })
+
+    // Los datos ya están cargados durante la inicialización, solo cerramos el diálogo
     setShowDraftDialog(false)
+
+    // Forzar re-render para asegurar que todo esté actualizado
+    setTimeout(() => {
+      console.log("[v0] Onboarding: Diálogo cerrado, componente listo")
+    }, 100)
   }
 
   useEffect(() => {
@@ -2738,7 +2762,7 @@ export default function OnboardingTurnosCliente({
           setConfigureNow(sessionData.formData.configureNow ?? true)
           setCurrentStep(sessionData.currentStep)
         }
-        setIsEditing(true)
+        setIsEditing(true) // Default to true for draft continuation
 
         // Mostrar diálogo
         setShowDraftDialog(true)
@@ -2762,7 +2786,7 @@ export default function OnboardingTurnosCliente({
           sessionData.prefilledData.trabajadores?.forEach((_: any, idx: number) => fieldsSet.add(`trabajadores.${idx}`))
           setPrefilledFields(fieldsSet)
         }
-        setIsEditing(true)
+        setIsEditing(true) // Default to true for draft continuation
         setCurrentStep(0)
       } else if (sessionData.prefilledData) {
         // Hay token pero no hay borrador, cargar datos prellenados
@@ -3213,7 +3237,7 @@ export default function OnboardingTurnosCliente({
             <AdminStep
               admins={admins}
               setAdmins={setAdmins}
-              grupos={empresa.grupos} // Pass groups from company state
+              grupos={empresa.grupos}
               ensureGrupoByName={(nombre) => {
                 const existing = empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
                 if (existing) return existing.id
@@ -3221,6 +3245,12 @@ export default function OnboardingTurnosCliente({
                 setEmpresa({ ...empresa, grupos: [...empresa.grupos, newGroup] })
                 return newGroup.id
               }}
+              addAdmin={undefined} // Placeholder, addAdmin no se usa aquí directamente
+              onRemoveAdmin={(index) => {
+                console.log("[v0] Admin removido (desde el paso principal):", index)
+                setAdmins(admins.filter((_, i) => i !== index))
+              }}
+              isEditMode={isEditing} // Pasar el estado de edición
             />
           )}
           {currentStep === 4 && (
