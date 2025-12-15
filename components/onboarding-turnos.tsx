@@ -1796,7 +1796,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs flex items-center justify-between gap-2">
         <p className="text-[11px] text-slate-700">
-          Total de trabajadores: <span className="font-semibold text-slate-800">{totalTrabajadores}</span>
+          Total de trabajadores: <span className="font-semibold">{totalTrabajadores}</span>
         </p>
         <p className="text-[11px] text-slate-700">
           Trabajadores sin planificación válida:{" "}
@@ -2720,18 +2720,12 @@ export function OnboardingTurnosCliente() {
           const draft = PersistenceManager.loadDraft()
 
           if (draft && draft.metadata.currentStep > 0) {
-            // Hay conflicto: token nuevo vs borrador existente con progreso
+            // Hay conflicto: token nuevo vs borrador existente
             setPrefilledData(tokenData)
             setShowConflictDialog(true)
-            console.log("[v0] Conflict detected: draft step", draft.metadata.currentStep, "vs new token")
           } else {
-            // No hay conflicto, usar datos del token directamente
+            // No hay conflicto, usar datos del token
             loadDataFromPrefill(tokenData)
-            console.log("[v0] No conflict, loading from token")
-
-            if (draft && draft.metadata.currentStep === 0) {
-              PersistenceManager.clearDraft()
-            }
           }
         }
       } else {
@@ -2739,17 +2733,12 @@ export function OnboardingTurnosCliente() {
         const draft = PersistenceManager.loadDraft()
 
         if (draft && draft.metadata.currentStep > 0) {
-          // Hay borrador con progreso, mostrar diálogo de continuación
+          // Hay borrador, mostrar diálogo de continuación
           loadDataFromDraft(draft)
           setShowDraftDialog(true)
-          console.log("[v0] Draft found with step", draft.metadata.currentStep)
         } else {
-          // No hay nada o draft sin progreso, iniciar vacío
+          // No hay nada, iniciar vacío
           console.log("[v0] Initializing empty state")
-
-          if (draft && draft.metadata.currentStep === 0) {
-            PersistenceManager.clearDraft()
-          }
         }
       }
 
