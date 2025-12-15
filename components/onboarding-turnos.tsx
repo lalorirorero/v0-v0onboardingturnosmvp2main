@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast"
 
 import { DataManager } from "@/lib/data-manager"
 import type { OnboardingData } from "@/lib/data-manager"
+import * as XLSX from "xlsx" // Import XLSX
 
 const steps = [
   { id: 0, label: "Bienvenida", description: "Comienza aquí" },
@@ -172,6 +173,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       {
         id: Date.now(),
         nombre: `${formData.nombre.trim()} ${formData.apellido.trim()}`,
+        apellido: formData.apellido.trim(), // Added for completeness
         rut: formData.rut,
         email: formData.email,
         telefono: formData.telefono,
@@ -2616,6 +2618,33 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
+const DEFAULT_TURNOS = [
+  {
+    id: 1,
+    nombre: "Descanso",
+    horaInicio: "",
+    horaFin: "",
+    colacionMinutos: 0,
+    tooltip: "Fin de Semana o Feriado",
+  },
+  {
+    id: 2,
+    nombre: "Libre",
+    horaInicio: "",
+    horaFin: "",
+    colacionMinutos: 0,
+    tooltip: "No marca o Artículo 22",
+  },
+  {
+    id: 3,
+    nombre: "Presencial",
+    horaInicio: "",
+    horaFin: "",
+    colacionMinutos: 0,
+    tooltip: "Sin planificación",
+  },
+]
+
 export default function OnboardingTurnosCliente({
   searchParams,
 }: { searchParams: Record<string, string | string[] | undefined> }) {
@@ -2646,32 +2675,7 @@ export default function OnboardingTurnosCliente({
 
   const [admins, setAdmins] = useState([])
   const [trabajadores, setTrabajadores] = useState([])
-  const [turnos, setTurnos] = useState([
-    {
-      id: 1,
-      nombre: "Descanso",
-      horaInicio: "",
-      horaFin: "",
-      colacionMinutos: 0,
-      tooltip: "Fin de Semana o Feriado",
-    },
-    {
-      id: 2,
-      nombre: "Libre",
-      horaInicio: "",
-      horaFin: "",
-      colacionMinutos: 0,
-      tooltip: "No marca o Artículo 22",
-    },
-    {
-      id: 3,
-      nombre: "Presencial",
-      horaInicio: "",
-      horaFin: "",
-      colacionMinutos: 0,
-      tooltip: "Sin planificación",
-    },
-  ])
+  const [turnos, setTurnos] = useState(DEFAULT_TURNOS)
   const [planificaciones, setPlanificaciones] = useState([])
   const [asignaciones, setAsignaciones] = useState([])
   const [errorGlobalAsignaciones, setErrorGlobalAsignaciones] = useState("")
@@ -2752,7 +2756,8 @@ export default function OnboardingTurnosCliente({
         })
         setAdmins(sessionData.formData.admins || [])
         setTrabajadores(sessionData.formData.trabajadores || [])
-        setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : turnos)
+        // Use default turns if none loaded from draft
+        setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
         setPlanificaciones(sessionData.formData.planificaciones || [])
         setAsignaciones(sessionData.formData.asignaciones || [])
         setConfigureNow(sessionData.formData.configureNow ?? true)
@@ -2838,32 +2843,7 @@ export default function OnboardingTurnosCliente({
     })
     setAdmins([])
     setTrabajadores([])
-    setTurnos([
-      {
-        id: 1,
-        nombre: "Descanso",
-        horaInicio: "",
-        horaFin: "",
-        colacionMinutos: 0,
-        tooltip: "Fin de Semana o Feriado",
-      },
-      {
-        id: 2,
-        nombre: "Libre",
-        horaInicio: "",
-        horaFin: "",
-        colacionMinutos: 0,
-        tooltip: "No marca o Artículo 22",
-      },
-      {
-        id: 3,
-        nombre: "Presencial",
-        horaInicio: "",
-        horaFin: "",
-        colacionMinutos: 0,
-        tooltip: "Sin planificación",
-      },
-    ])
+    setTurnos(DEFAULT_TURNOS) // Reset to default turns
     setPlanificaciones([])
     setAsignaciones([])
     setConfigureNow(true)
@@ -2871,13 +2851,103 @@ export default function OnboardingTurnosCliente({
     setShowConfirmRestart(false)
   }
 
-  // This function is missing in the original code and is needed for the DecisionStep
-  const generateExcelBase64 = () => {
-    // Placeholder for actual Excel generation logic
-    // In a real scenario, you would use XLSX library to create a workbook
-    // and then convert it to base64.
-    console.warn("generateExcelBase64 not fully implemented.")
-    return ""
+  const generateExcelBase64 = (): string | null => {
+    try {
+      console.log("[v0] Generando Excel en base64...")
+
+      // Crear nuevo workbook
+      const wb = XLSX.utils.book_new()
+
+      // Hoja 1: Información de la Empresa
+      const empresaData = [
+        ["INFORMACIÓN DE LA EMPRESA"],
+        [""],
+        ["Razón Social", empresa.razonSocial || ""],
+        ["Nombre Fantasía", empresa.nombreFantasia || ""],
+        ["RUT", empresa.rut || ""],
+        ["Giro", empresa.giro || ""],
+        ["Dirección", empresa.direccion || ""],
+        ["Comuna", empresa.comuna || ""],
+        ["Email Facturación", empresa.emailFacturacion || ""],
+        ["Teléfono Contacto", empresa.telefonoContacto || ""],
+        ["Sistema", (empresa.sistema || []).join(", ")],
+        ["Rubro", empresa.rubro || ""],
+      ]
+      const wsEmpresa = XLSX.utils.aoa_to_sheet(empresaData)
+      XLSX.utils.book_append_sheet(wb, wsEmpresa, "Empresa")
+
+      // Hoja 2: Administradores
+      const adminsHeaders = [["Nombre", "Apellido", "Email", "Teléfono", "Grupo"]]
+      const adminsData = admins.map((admin) => [
+        admin.nombre || "",
+        admin.apellido || "",
+        admin.email || "",
+        admin.telefono || "",
+        admin.grupoNombre || "",
+      ])
+      const wsAdmins = XLSX.utils.aoa_to_sheet([...adminsHeaders, ...adminsData])
+      XLSX.utils.book_append_sheet(wb, wsAdmins, "Administradores")
+
+      // Hoja 3: Trabajadores
+      const trabajadoresHeaders = [["Nombre", "RUT", "Email", "Grupo", "Teléfonos"]]
+      const trabajadoresData = trabajadores.map((t) => [
+        t.nombre || "",
+        t.rut || "",
+        t.correo || t.email || "",
+        empresa.grupos.find((g) => g.id === t.grupoId)?.nombre || "Sin grupo",
+        [t.telefono1, t.telefono2, t.telefono3].filter(Boolean).join(", "),
+      ])
+      const wsTrabajadores = XLSX.utils.aoa_to_sheet([...trabajadoresHeaders, ...trabajadoresData])
+      XLSX.utils.book_append_sheet(wb, wsTrabajadores, "Trabajadores")
+
+      // Hoja 4: Turnos
+      const turnosHeaders = [["Nombre", "Hora Inicio", "Hora Fin", "Colación (min)", "Descripción"]]
+      const turnosData = turnos.map((turno) => [
+        turno.nombre || "",
+        turno.horaInicio || "",
+        turno.horaFin || "",
+        turno.colacionMinutos || 0,
+        turno.tooltip || "",
+      ])
+      const wsTurnos = XLSX.utils.aoa_to_sheet([...turnosHeaders, ...turnosData])
+      XLSX.utils.book_append_sheet(wb, wsTurnos, "Turnos")
+
+      // Hoja 5: Planificaciones
+      const planificacionesHeaders = [
+        ["Nombre", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+      ]
+      const planificacionesData = planificaciones.map((plan) => {
+        const row = [plan.nombre || ""]
+        for (let i = 0; i < 7; i++) {
+          const turnoId = plan.diasTurnos[i]
+          const turnoNombre = turnos.find((t) => t.id === turnoId)?.nombre || "-"
+          row.push(turnoNombre)
+        }
+        return row
+      })
+      const wsPlanificaciones = XLSX.utils.aoa_to_sheet([...planificacionesHeaders, ...planificacionesData])
+      XLSX.utils.book_append_sheet(wb, wsPlanificaciones, "Planificaciones")
+
+      // Hoja 6: Asignaciones
+      const asignacionesHeaders = [["Trabajador", "Planificación", "Fecha Inicio", "Fecha Fin"]]
+      const asignacionesData = asignaciones.map((asig) => [
+        trabajadores.find((t) => t.id === asig.trabajadorId)?.nombre || "Desconocido",
+        planificaciones.find((p) => p.id === asig.planificacionId)?.nombre || "Desconocida",
+        asig.desde || "",
+        asig.hasta === "permanente" ? "Permanente" : asig.hasta || "",
+      ])
+      const wsAsignaciones = XLSX.utils.aoa_to_sheet([...asignacionesHeaders, ...asignacionesData])
+      XLSX.utils.book_append_sheet(wb, wsAsignaciones, "Asignaciones")
+
+      // Convertir a base64
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "base64" })
+
+      console.log("[v0] Excel generado exitosamente, tamaño base64:", wbout.length, "caracteres")
+      return wbout
+    } catch (error) {
+      console.error("[v0] Error generando Excel:", error)
+      return null
+    }
   }
 
   const handleFinalizar = async () => {
