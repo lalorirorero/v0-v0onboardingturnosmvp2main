@@ -2645,6 +2645,20 @@ const DEFAULT_TURNOS = [
   },
 ]
 
+const getEmptyEmpresa = () => ({
+  razonSocial: "",
+  nombreFantasia: "",
+  rut: "",
+  giro: "",
+  direccion: "",
+  comuna: "",
+  emailFacturacion: "",
+  telefonoContacto: "",
+  sistema: [] as string[],
+  rubro: "",
+  grupos: [] as { id: number; nombre: string; descripcion: string }[],
+})
+
 export default function OnboardingTurnosCliente({
   searchParams,
 }: { searchParams: Record<string, string | string[] | undefined> }) {
@@ -2658,20 +2672,15 @@ export default function OnboardingTurnosCliente({
   const [savingStatus, setSavingStatus] = useState<"saved" | "saving" | "idle">("idle")
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
 
+  // Estado temporal para el borrador antes de que el usuario decida
+  const [pendingDraftData, setPendingDraftData] = useState<{
+    formData: any
+    currentStep: number
+    prefilledData?: any
+  } | null>(null)
+
   // Estados de formulario (se cargarán desde DataManager)
-  const [empresa, setEmpresa] = useState({
-    razonSocial: "",
-    nombreFantasia: "",
-    rut: "",
-    giro: "",
-    direccion: "",
-    comuna: "",
-    emailFacturacion: "",
-    telefonoContacto: "",
-    sistema: [] as string[],
-    rubro: "",
-    grupos: [] as { id: number; nombre: string; descripcion: string }[],
-  })
+  const [empresa, setEmpresa] = useState(getEmptyEmpresa())
 
   const [admins, setAdmins] = useState([])
   const [trabajadores, setTrabajadores] = useState([])
@@ -2698,7 +2707,61 @@ export default function OnboardingTurnosCliente({
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [isEditing, setIsEditing] = useState(false)
 
+  const handleStartFresh = () => {
+    setShowConfirmRestart(true)
+    setShowDraftDialog(false)
+  }
+
+  const confirmRestart = () => {
+    dataManager.clearDraft()
+    setPrefilledData(null)
+    setPrefilledFields(new Set())
+    setIsEditing(true)
+    setEmpresa(getEmptyEmpresa())
+    setAdmins([])
+    setTrabajadores([])
+    setTurnos(DEFAULT_TURNOS)
+    setPlanificaciones([])
+    setAsignaciones([])
+    setConfigureNow(true)
+    setCurrentStep(PRIMER_PASO)
+    setPendingDraftData(null)
+    setShowConfirmRestart(false)
+    toast({ title: "Progreso reiniciado", description: "Comienza de nuevo con la configuración inicial." })
+  }
+
+  const handleContinueDraft = () => {
+    if (pendingDraftData) {
+      console.log("[v0] Onboarding: Continuando draft", {
+        currentStep: pendingDraftData.currentStep,
+        formData: pendingDraftData.formData,
+      })
+      setEmpresa(pendingDraftData.formData.empresa || getEmptyEmpresa())
+      setAdmins(pendingDraftData.formData.admins || [])
+      setTrabajadores(pendingDraftData.formData.trabajadores || [])
+      setTurnos(pendingDraftData.formData.turnos?.length > 0 ? pendingDraftData.formData.turnos : DEFAULT_TURNOS)
+      setPlanificaciones(pendingDraftData.formData.planificaciones || [])
+      setAsignaciones(pendingDraftData.formData.asignaciones || [])
+      setConfigureNow(pendingDraftData.formData.configureNow ?? true)
+      setCurrentStep(pendingDraftData.currentStep)
+      setPrefilledData(pendingDraftData.prefilledData || null)
+
+      if (pendingDraftData.prefilledData) {
+        const fieldsSet = new Set<string>()
+        Object.keys(pendingDraftData.prefilledData.empresa || {}).forEach((key) => fieldsSet.add(`empresa.${key}`))
+        pendingDraftData.prefilledData.admins?.forEach((_: any, idx: number) => fieldsSet.add(`admins.${idx}`))
+        pendingDraftData.prefilledData.trabajadores?.forEach((_: any, idx: number) =>
+          fieldsSet.add(`trabajadores.${idx}`),
+        )
+        setPrefilledFields(fieldsSet)
+      }
+      setIsEditing(true) // Si se continúa un borrador, se asume que se quiere editar
+    }
+    setShowDraftDialog(false)
+  }
+
   useEffect(() => {
+    console.log("[v0] Onboarding: Iniciando inicialización...")
     const initializeData = async () => {
       const sessionData = await dataManager.initialize()
 
@@ -2706,21 +2769,35 @@ export default function OnboardingTurnosCliente({
         hasToken: sessionData.hasToken,
         hasDraft: sessionData.hasDraft,
         currentStep: sessionData.currentStep,
-        id_zoho: sessionData.id_zoho,
       })
 
       // Configurar estados de token e id_zoho
       setHasToken(sessionData.hasToken || false)
       setIdZoho(sessionData.id_zoho || null)
 
-      // Si hay borrador (con o sin token), mostrar diálogo
-      if (sessionData.hasDraft && sessionData.currentStep > 0) {
-        console.log("[v0] Onboarding: Mostrando diálogo de borrador guardado")
-        setShowDraftDialog(true)
+      if (sessionData.hasDraft && sessionData.currentStep >= PRIMER_PASO) {
+        console.log("[v0] Onboarding: Hay borrador con progreso, mostrando diálogo")
 
-        // Cargar datos del borrador en el estado
+        // Guardar datos del borrador temporalmente hasta que el usuario decida
+        setPendingDraftData({
+          formData: sessionData.formData,
+          currentStep: sessionData.currentStep,
+          prefilledData: sessionData.prefilledData,
+        })
+
+        // Si hay datos prellenados, guardarlos para el caso de "Empezar de nuevo"
+        if (sessionData.prefilledData) {
+          setPrefilledData(sessionData.prefilledData)
+          const fieldsSet = new Set<string>()
+          Object.keys(sessionData.prefilledData.empresa || {}).forEach((key) => fieldsSet.add(`empresa.${key}`))
+          sessionData.prefilledData.admins?.forEach((_: any, idx: number) => fieldsSet.add(`admins.${idx}`))
+          sessionData.prefilledData.trabajadores?.forEach((_: any, idx: number) => fieldsSet.add(`trabajadores.${idx}`))
+          setPrefilledFields(fieldsSet)
+        }
+
+        // Cargar los datos del borrador inmediatamente (por si el usuario cierra el diálogo)
         if (sessionData.formData) {
-          setEmpresa(sessionData.formData.empresa || empresa)
+          setEmpresa(sessionData.formData.empresa || getEmptyEmpresa())
           setAdmins(sessionData.formData.admins || [])
           setTrabajadores(sessionData.formData.trabajadores || [])
           setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
@@ -2729,25 +2806,17 @@ export default function OnboardingTurnosCliente({
           setConfigureNow(sessionData.formData.configureNow ?? true)
           setCurrentStep(sessionData.currentStep)
         }
+        setIsEditing(true) // Asumimos que si hay borrador, el usuario podría querer editar
 
-        // Si hay datos prellenados también, guardarlos
-        if (sessionData.prefilledData) {
-          setPrefilledData(sessionData.prefilledData)
-          // Marcar campos como prellenados
-          const fieldsSet = new Set<string>()
-          Object.keys(sessionData.prefilledData.empresa).forEach((key) => fieldsSet.add(`empresa.${key}`))
-          sessionData.prefilledData.admins.forEach((_, idx) => fieldsSet.add(`admins.${idx}`))
-          sessionData.prefilledData.trabajadores.forEach((_, idx) => fieldsSet.add(`trabajadores.${idx}`))
-          setPrefilledFields(fieldsSet)
-          setIsEditing(false) // Empezar en modo no-edición si hay datos prellenados
-        }
+        // Mostrar diálogo
+        setShowDraftDialog(true)
       } else if (sessionData.prefilledData) {
         // Hay token pero no hay borrador, cargar datos prellenados
         console.log("[v0] Onboarding: Cargando datos prellenados desde token")
         setPrefilledData(sessionData.prefilledData)
-        setEmpresa(sessionData.prefilledData.empresa)
-        setAdmins(sessionData.prefilledData.admins)
-        setTrabajadores(sessionData.prefilledData.trabajadores)
+        setEmpresa(sessionData.prefilledData.empresa || getEmptyEmpresa())
+        setAdmins(sessionData.prefilledData.admins || [])
+        setTrabajadores(sessionData.prefilledData.trabajadores || [])
         setTurnos(sessionData.prefilledData.turnos?.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
         setPlanificaciones(sessionData.prefilledData.planificaciones || [])
         setAsignaciones(sessionData.prefilledData.asignaciones || [])
@@ -2756,27 +2825,15 @@ export default function OnboardingTurnosCliente({
 
         // Marcar campos como prellenados
         const fieldsSet = new Set<string>()
-        Object.keys(sessionData.prefilledData.empresa).forEach((key) => fieldsSet.add(`empresa.${key}`))
-        sessionData.prefilledData.admins.forEach((_, idx) => fieldsSet.add(`admins.${idx}`))
-        sessionData.prefilledData.trabajadores.forEach((_, idx) => fieldsSet.add(`trabajadores.${idx}`))
+        Object.keys(sessionData.prefilledData.empresa || {}).forEach((key) => fieldsSet.add(`empresa.${key}`))
+        sessionData.prefilledData.admins?.forEach((_: any, idx: number) => fieldsSet.add(`admins.${idx}`))
+        sessionData.prefilledData.trabajadores?.forEach((_: any, idx: number) => fieldsSet.add(`trabajadores.${idx}`))
         setPrefilledFields(fieldsSet)
         setIsEditing(false) // Empezar en modo no-edición
       } else {
         // No hay borrador ni prellenado, inicializar estado vacío
         console.log("[v0] Onboarding: Inicializando estado vacío")
-        setEmpresa({
-          razonSocial: "",
-          nombreFantasia: "",
-          rut: "",
-          giro: "",
-          direccion: "",
-          comuna: "",
-          emailFacturacion: "",
-          telefonoContacto: "",
-          sistema: [],
-          rubro: "",
-          grupos: [],
-        })
+        setEmpresa(getEmptyEmpresa())
         setAdmins([])
         setTrabajadores([])
         setTurnos(DEFAULT_TURNOS)
@@ -2874,62 +2931,6 @@ export default function OnboardingTurnosCliente({
       setCurrentStep(currentStep - 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
-  }
-
-  const handleContinueDraft = () => {
-    console.log("[v0] Onboarding: Usuario eligió continuar con borrador")
-    setShowDraftDialog(false)
-    // El currentStep y formData ya están cargados desde el borrador
-  }
-
-  const handleStartFresh = () => {
-    console.log("[v0] Onboarding: Usuario quiere empezar de nuevo, mostrando confirmación")
-    setShowDraftDialog(false)
-    setShowConfirmRestart(true)
-  }
-
-  const confirmRestart = () => {
-    console.log("[v0] Onboarding: Confirmado: reiniciando desde cero")
-    dataManager.deleteDraft()
-
-    // Si hay datos prellenados (token), cargar esos datos
-    if (prefilledData) {
-      console.log("[v0] Onboarding: Reiniciando con datos prellenados")
-      setEmpresa(prefilledData.empresa)
-      setAdmins(prefilledData.admins)
-      setTrabajadores(prefilledData.trabajadores)
-      setTurnos(prefilledData.turnos?.length > 0 ? prefilledData.turnos : DEFAULT_TURNOS)
-      setPlanificaciones(prefilledData.planificaciones || [])
-      setAsignaciones(prefilledData.asignaciones || [])
-      setConfigureNow(prefilledData.configureNow ?? true)
-      setIsEditing(false)
-    } else {
-      // Sin datos prellenados, resetear todo a valores por defecto
-      console.log("[v0] Onboarding: Reiniciando completamente desde cero")
-      setEmpresa({
-        razonSocial: "",
-        nombreFantasia: "",
-        rut: "",
-        giro: "",
-        direccion: "",
-        comuna: "",
-        emailFacturacion: "",
-        telefonoContacto: "",
-        sistema: [],
-        rubro: "",
-        grupos: [],
-      })
-      setAdmins([])
-      setTrabajadores([])
-      setTurnos(DEFAULT_TURNOS)
-      setPlanificaciones([])
-      setAsignaciones([])
-      setConfigureNow(true)
-      setIsEditing(true)
-    }
-
-    setCurrentStep(PRIMER_PASO)
-    setShowConfirmRestart(false)
   }
 
   const generateExcelBase64 = (): string | null => {
