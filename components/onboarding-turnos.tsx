@@ -55,7 +55,6 @@ const steps = [
   { id: 9, label: "Resumen", description: "Revisión final" },
 ]
 
-// Si se agregan pasos al inicio, cambiar este valor
 const PRIMER_PASO = 0
 
 // Días de la semana
@@ -1796,7 +1795,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs flex items-center justify-between gap-2">
         <p className="text-[11px] text-slate-700">
-          Total de trabajadores: <span className="font-semibold">{totalTrabajadores}</span>
+          Total de trabajadores: <span className="font-semibold text-slate-800">{totalTrabajadores}</span>
         </p>
         <p className="text-[11px] text-slate-700">
           Trabajadores sin planificación válida:{" "}
@@ -2703,42 +2702,92 @@ export function OnboardingTurnosCliente() {
   }, [autoSave])
 
   useEffect(() => {
+    if (!isInitialized) return
+    if (currentStep === PRIMER_PASO) return // No guardar en Bienvenida
+
+    const saveTimeout = setTimeout(() => {
+      console.log("[v0] Auto-saving draft at step", currentStep)
+      PersistenceManager.saveDraft(formData, {
+        timestamp: Date.now(),
+        version: "2.0",
+        currentStep,
+        completedSteps,
+        hasToken,
+        idZoho,
+      })
+    }, 500) // Debounce 500ms
+
+    return () => clearTimeout(saveTimeout)
+  }, [formData, currentStep, completedSteps, hasToken, idZoho, isInitialized])
+
+  useEffect(() => {
     if (hasInitialized.current) return
 
     const initializeData = async () => {
+      console.log("[v0] Initializing app...")
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get("token")
 
-      if (token) {
-        // Inicializar desde token
-        const tokenData = await fetchTokenData(token)
-        if (tokenData) {
-          // Guardar prefill
-          PersistenceManager.savePrefill(tokenData, tokenData.empresa?.id_zoho || "")
+      // Solo mostrar diálogo si hay progreso real guardado (currentStep > 0)
 
-          // Verificar si hay borrador existente
+      if (token) {
+        console.log("[v0] Token detected, fetching prefill data...")
+        // Decodificar y guardar prefill
+        const tokenData = await fetchTokenData(token)
+
+        if (tokenData) {
+          console.log("[v0] Token data loaded:", tokenData.empresa?.razonSocial)
+          // Guardar prefill base
+          PersistenceManager.savePrefill(tokenData, tokenData.empresa?.id_zoho || "")
+          setPrefilledData(tokenData)
+          setHasToken(true)
+          setIdZoho(tokenData.empresa?.id_zoho || null)
+
+          // Verificar si hay borrador con progreso real
           const draft = PersistenceManager.loadDraft()
 
           if (draft && draft.metadata.currentStep > 0) {
-            // Hay conflicto: token nuevo vs borrador existente
-            setPrefilledData(tokenData)
-            setShowConflictDialog(true)
+            console.log("[v0] Draft with progress found, showing dialog...")
+            // Hay progreso guardado, mostrar diálogo
+            loadDataFromDraft(draft)
+            setShowDraftDialog(true)
           } else {
-            // No hay conflicto, usar datos del token
+            console.log("[v0] First session or no progress, starting at Step 0...")
+            // Primera sesión o sin progreso: iniciar en Paso 0 con prefill
             loadDataFromPrefill(tokenData)
+            setCurrentStep(PRIMER_PASO) // Explícitamente Paso 0
+            setCompletedSteps([])
+
+            // Limpiar borrador residual si existe
+            if (draft) {
+              PersistenceManager.clearDraft()
+            }
           }
         }
       } else {
+        console.log("[v0] No token, checking for draft...")
         // Sin token, intentar cargar borrador
         const draft = PersistenceManager.loadDraft()
 
         if (draft && draft.metadata.currentStep > 0) {
-          // Hay borrador, mostrar diálogo de continuación
+          console.log("[v0] Draft with progress found (no token), showing dialog...")
+          // Hay borrador con progreso, mostrar diálogo
           loadDataFromDraft(draft)
           setShowDraftDialog(true)
         } else {
-          // No hay nada, iniciar vacío
-          console.log("[v0] Initializing empty state")
+          console.log("[v0] No token, no progress, starting empty at Step 0...")
+          // Sin token ni progreso: estado vacío en Paso 0
+          setCurrentStep(PRIMER_PASO)
+          setCompletedSteps([])
+          setFormData({
+            empresa: getEmptyEmpresa(),
+            admins: [],
+            trabajadores: [],
+            turnos: DEFAULT_TURNOS,
+            planificaciones: [],
+            asignaciones: [],
+            configureNow: true,
+          })
         }
       }
 
@@ -2750,34 +2799,54 @@ export function OnboardingTurnosCliente() {
   }, [])
 
   const loadDataFromPrefill = (data: Partial<OnboardingFormData>) => {
-    setFormData((prev) => ({
-      ...prev,
-      ...data,
-      empresa: { ...prev.empresa, ...(data.empresa || {}) },
-    }))
-    setHasToken(true)
-    setIdZoho(data.empresa?.id_zoho || null)
+    console.log("[v0] Loading data from prefill...")
+    setFormData((prev) => {
+      const newEmpresa = { ...prev.empresa }
+
+      if (data.empresa) {
+        Object.keys(data.empresa).forEach((key) => {
+          const value = (data.empresa as any)[key]
+          // Solo actualizar si el valor es válido (no vacío)
+          if (value !== null && value !== undefined && value !== "") {
+            ;(newEmpresa as any)[key] = value
+          }
+        })
+      }
+
+      return {
+        ...prev,
+        empresa: newEmpresa,
+        admins: data.admins && data.admins.length > 0 ? data.admins : prev.admins,
+        trabajadores: data.trabajadores && data.trabajadores.length > 0 ? data.trabajadores : prev.trabajadores,
+        turnos: data.turnos && data.turnos.length > 0 ? data.turnos : prev.turnos,
+        planificaciones:
+          data.planificaciones && data.planificaciones.length > 0 ? data.planificaciones : prev.planificaciones,
+        asignaciones: data.asignaciones && data.asignaciones.length > 0 ? data.asignaciones : prev.asignaciones,
+      }
+    })
+
     setPrefilledData(data)
 
     // Marcar campos prellenados
     const fieldsSet = new Set<string>()
-    if (data.empresa?.razonSocial) fieldsSet.add("empresa.razonSocial")
-    if (data.empresa?.rut) fieldsSet.add("empresa.rut")
-    if (data.empresa?.rubro) fieldsSet.add("empresa.rubro")
-    // ... marcar otros campos
+    if (data.empresa) {
+      Object.keys(data.empresa).forEach((key) => {
+        const value = (data.empresa as any)[key]
+        if (value !== null && value !== undefined && value !== "") {
+          fieldsSet.add(`empresa.${key}`)
+        }
+      })
+    }
     setPrefilledFields(fieldsSet)
-    setIsEditing(false)
-
-    // Iniciar en paso de Empresa
-    setCurrentStep(steps.findIndex((step) => step.label === "Empresa"))
+    setIsEditing(false) // No es edición, son datos prellenados
   }
 
   const loadDataFromDraft = (draft: { data: OnboardingFormData; metadata: PersistenceMetadata }) => {
+    console.log("[v0] Loading data from draft...")
     // Verificar si hay prefill guardado
     const prefill = PersistenceManager.loadPrefill()
 
     if (prefill) {
-      // Mergear draft con prefill (nunca sobreescribir con vacíos)
       const merged = PersistenceManager.mergeData(prefill.data, draft.data)
       setFormData(merged)
       setHasToken(true)
@@ -2824,20 +2893,38 @@ export function OnboardingTurnosCliente() {
   }
 
   const handleContinueDraft = () => {
+    console.log("[v0] User chose to continue from draft")
     setShowDraftDialog(false)
     // Los datos ya están cargados desde loadDataFromDraft
   }
 
   const handleRestartFromBeginning = () => {
-    const reset = PersistenceManager.resetToInitial()
-    if (reset) {
-      loadDataFromDraft(reset)
+    console.log("[v0] User chose to restart from beginning")
+
+    const prefill = PersistenceManager.loadPrefill()
+
+    if (prefill) {
+      // Hay prefill: restaurarlo y limpiar ediciones
+      loadDataFromPrefill(prefill.data)
+    } else {
+      // No hay prefill: estado vacío
+      setFormData({
+        empresa: getEmptyEmpresa(),
+        admins: [],
+        trabajadores: [],
+        turnos: DEFAULT_TURNOS,
+        planificaciones: [],
+        asignaciones: [],
+        configureNow: true,
+      })
     }
-    setShowDraftDialog(false)
+
+    // Volver al Paso 0 (Bienvenida)
     setCurrentStep(PRIMER_PASO)
     setCompletedSteps([])
-    setIsEditing(true) // Reset to editing mode
-    setHasToken(false) // Reset token status
+    PersistenceManager.clearDraft()
+    setShowDraftDialog(false)
+    setIsEditing(true)
   }
 
   const handleUseTokenData = () => {
