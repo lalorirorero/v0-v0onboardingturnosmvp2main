@@ -2698,94 +2698,71 @@ export default function OnboardingTurnosCliente({
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // Se usa Set ahora
 
   useEffect(() => {
-    dataManager.setWebhookCallback((type, response, error) => {
-      if (error) {
-        toast({
-          title: `Error en Webhook ${type === "progress" ? "de Progreso" : "Final"}`,
-          description: (
-            <div className="space-y-2">
-              <p className="font-medium text-destructive">No se pudo enviar a Zoho Flow</p>
-              <pre className="text-xs bg-destructive/10 p-2 rounded overflow-auto max-h-40">
-                {error.message || JSON.stringify(error, null, 2)}
-              </pre>
-            </div>
-          ),
-          variant: "destructive",
-          duration: 10000,
-        })
-      } else {
-        toast({
-          title: `Webhook ${type === "progress" ? "de Progreso" : "Completo"} Enviado`,
-          description: (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                {type === "progress" ? "Progreso actualizado en Zoho Flow" : "Datos completos enviados a Zoho Flow"}
-              </p>
-              <details className="text-xs">
-                <summary className="cursor-pointer font-medium">Ver respuesta de Zoho Flow</summary>
-                <pre className="mt-2 bg-muted p-2 rounded overflow-auto max-h-60 text-xs">
-                  {JSON.stringify(response, null, 2)}
-                </pre>
-              </details>
-            </div>
-          ),
-          variant: "default",
-          duration: 8000,
-        })
-      }
-    })
-  }, [dataManager, toast])
-
-  useEffect(() => {
-    const initializeOnboarding = async () => {
-      console.log("[Onboarding] Inicializando...")
-
+    const initializeData = async () => {
       const sessionData = await dataManager.initialize()
 
-      setHasToken(sessionData.hasToken)
-      setIdZoho(sessionData.id_zoho || null)
-      setPrefilledData(sessionData.prefilledData || null)
-      setCurrentStep(sessionData.currentStep)
-
-      // Cargar datos al formulario
-      if (sessionData.formData) {
-        setEmpresa({
-          ...empresa,
-          ...sessionData.formData.empresa,
-          grupos: sessionData.formData.empresa?.grupos || [],
-        })
-        setAdmins(sessionData.formData.admins || [])
-        setTrabajadores(sessionData.formData.trabajadores || [])
-        // Use default turns if none loaded from draft
-        setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
-        setPlanificaciones(sessionData.formData.planificaciones || [])
-        setAsignaciones(sessionData.formData.asignaciones || [])
-        setConfigureNow(sessionData.formData.configureNow ?? true)
-      }
-
-      // Marcar campos prellenados
-      if (sessionData.prefilledData?.empresa) {
-        Object.keys(sessionData.prefilledData.empresa).forEach((key) => {
-          prefilledFields.add(`empresa.${key}`)
-        })
-        setPrefilledFields(new Set(prefilledFields))
-      }
-
-      if (!sessionData.hasToken && sessionData.hasDraft) {
-        console.log("[Onboarding] Mostrando diálogo de borrador")
-        setShowDraftDialog(true)
-      }
-
-      setIsInitialized(true)
-      console.log("[Onboarding] Inicialización completa", {
+      console.log("[v0] Onboarding: Datos de sesión inicializados", {
         hasToken: sessionData.hasToken,
         hasDraft: sessionData.hasDraft,
         currentStep: sessionData.currentStep,
-        hasIdZoho: !!sessionData.id_zoho,
+        id_zoho: sessionData.id_zoho,
       })
+
+      // Si hay borrador (con o sin token), mostrar diálogo
+      if (sessionData.hasDraft && sessionData.currentStep > 0) {
+        console.log("[v0] Onboarding: Mostrando diálogo de borrador guardado")
+        setShowDraftDialog(true)
+
+        // Cargar datos del borrador en el estado
+        if (sessionData.formData) {
+          setEmpresa(sessionData.formData.empresa)
+          setAdmins(sessionData.formData.admins)
+          setTrabajadores(sessionData.formData.trabajadores)
+          setTurnos(sessionData.formData.turnos.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
+          setPlanificaciones(sessionData.formData.planificaciones)
+          setAsignaciones(sessionData.formData.asignaciones)
+          setConfigureNow(sessionData.formData.configureNow)
+          setCurrentStep(sessionData.currentStep)
+        }
+      } else if (sessionData.prefilledData) {
+        // Hay token pero no hay borrador, cargar datos prellenados
+        console.log("[v0] Onboarding: Cargando datos prellenados desde token")
+        setEmpresa(sessionData.prefilledData.empresa)
+        setAdmins(sessionData.prefilledData.admins)
+        setTrabajadores(sessionData.prefilledData.trabajadores)
+        setTurnos(sessionData.prefilledData.turnos.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
+        setPlanificaciones(sessionData.prefilledData.planificaciones)
+        setAsignaciones(sessionData.prefilledData.asignaciones)
+        setConfigureNow(sessionData.prefilledData.configureNow)
+        setCurrentStep(0) // Empezar desde el inicio
+      } else {
+        // No hay borrador ni prellenado, inicializar estado vacío
+        console.log("[v0] Onboarding: Inicializando estado vacío")
+        setEmpresa({
+          razonSocial: "",
+          nombreFantasia: "",
+          rut: "",
+          giro: "",
+          direccion: "",
+          comuna: "",
+          emailFacturacion: "",
+          telefonoContacto: "",
+          sistema: [],
+          rubro: "",
+          grupos: [],
+        })
+        setAdmins([])
+        setTrabajadores([])
+        setTurnos(DEFAULT_TURNOS)
+        setPlanificaciones([])
+        setAsignaciones([])
+        setConfigureNow(true)
+        setCurrentStep(PRIMER_PASO)
+      }
+      setIsInitialized(true)
     }
 
-    initializeOnboarding()
+    initializeData()
   }, [])
 
   useEffect(() => {
@@ -2811,43 +2788,59 @@ export default function OnboardingTurnosCliente({
   }
 
   const handleContinueDraft = () => {
-    console.log("[Onboarding] Usuario eligió continuar con borrador")
+    console.log("[v0] Onboarding: Usuario eligió continuar con borrador")
     setShowDraftDialog(false)
     // El currentStep y formData ya están cargados desde el borrador
   }
 
   const handleStartFresh = () => {
-    console.log("[Onboarding] Usuario quiere empezar de nuevo, mostrando confirmación")
+    console.log("[v0] Onboarding: Usuario quiere empezar de nuevo, mostrando confirmación")
     setShowDraftDialog(false)
     setShowConfirmRestart(true)
   }
 
   const confirmRestart = () => {
-    console.log("[Onboarding] Confirmado: reiniciando desde cero")
+    console.log("[v0] Onboarding: Confirmado: reiniciando desde cero")
     dataManager.deleteDraft()
 
-    // Resetear todo
-    setCurrentStep(PRIMER_PASO)
-    setEmpresa({
-      razonSocial: "",
-      nombreFantasia: "",
-      rut: "",
-      giro: "",
-      direccion: "",
-      comuna: "",
-      emailFacturacion: "",
-      telefonoContacto: "",
-      sistema: [],
-      rubro: "",
-      grupos: [],
-    })
-    setAdmins([])
-    setTrabajadores([])
-    setTurnos(DEFAULT_TURNOS) // Reset to default turns
-    setPlanificaciones([])
-    setAsignaciones([])
-    setConfigureNow(true)
+    // Obtener los datos de sesión, que pueden incluir prefilledData
+    const sessionData = dataManager.getSessionData()
 
+    // Si hay datos prellenados (token), cargar esos datos
+    if (sessionData.prefilledData) {
+      console.log("[v0] Onboarding: Reiniciando con datos prellenados")
+      setEmpresa(sessionData.prefilledData.empresa)
+      setAdmins(sessionData.prefilledData.admins)
+      setTrabajadores(sessionData.prefilledData.trabajadores)
+      setTurnos(sessionData.prefilledData.turnos.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
+      setPlanificaciones(sessionData.prefilledData.planificaciones)
+      setAsignaciones(sessionData.prefilledData.asignaciones)
+      setConfigureNow(sessionData.prefilledData.configureNow)
+    } else {
+      // Sin datos prellenados, resetear todo a valores por defecto
+      console.log("[v0] Onboarding: Reiniciando completamente desde cero")
+      setEmpresa({
+        razonSocial: "",
+        nombreFantasia: "",
+        rut: "",
+        giro: "",
+        direccion: "",
+        comuna: "",
+        emailFacturacion: "",
+        telefonoContacto: "",
+        sistema: [],
+        rubro: "",
+        grupos: [],
+      })
+      setAdmins([])
+      setTrabajadores([])
+      setTurnos(DEFAULT_TURNOS)
+      setPlanificaciones([])
+      setAsignaciones([])
+      setConfigureNow(true)
+    }
+
+    setCurrentStep(PRIMER_PASO)
     setShowConfirmRestart(false)
   }
 
@@ -2954,8 +2947,16 @@ export default function OnboardingTurnosCliente({
     setIsSubmitting(true)
 
     try {
+      console.log("[v0] Iniciando generación de Excel...")
+      console.log("[v0] Estado empresa.grupos:", empresa.grupos)
+
       // Generar Excel en base64
-      const excelBase64 = generateExcelBase64() // This function needs to be implemented
+      const excelBase64 = generateExcelBase64()
+
+      console.log(
+        "[v0] Excel generado:",
+        excelBase64 ? `${excelBase64.substring(0, 50)}... (${excelBase64.length} chars)` : "NULL",
+      )
 
       // Preparar datos finales
       const finalData: OnboardingData = {

@@ -95,7 +95,6 @@ export class DataManager {
     this.webhookCallback = callback
   }
 
-  // Inicializar desde URL o borrador
   async initialize(): Promise<SessionData> {
     console.log("[DataManager] Inicializando...")
 
@@ -107,18 +106,37 @@ export class DataManager {
       const decrypted = await this.decryptToken(token)
 
       if (decrypted) {
-        this.sessionData = {
-          id_zoho: decrypted.id_zoho,
-          prefilledData: decrypted.data,
-          currentStep: 0,
-          formData: { ...decrypted.data },
-          hasToken: true,
-          hasDraft: false, // No hay borrador cuando hay token
+        const draft = this.loadDraft(token)
+
+        if (draft && draft.currentStep > 0) {
+          // Hay progreso guardado, mostrar diálogo
+          this.sessionData = {
+            id_zoho: decrypted.id_zoho,
+            prefilledData: decrypted.data,
+            currentStep: draft.currentStep,
+            formData: draft.formData,
+            hasToken: true,
+            hasDraft: true, // Hay progreso guardado
+          }
+          console.log("[DataManager] Token con progreso guardado encontrado", {
+            id_zoho: decrypted.id_zoho,
+            step: draft.currentStep,
+          })
+        } else {
+          // No hay progreso, empezar desde cero con datos prellenados
+          this.sessionData = {
+            id_zoho: decrypted.id_zoho,
+            prefilledData: decrypted.data,
+            currentStep: 0,
+            formData: { ...decrypted.data },
+            hasToken: true,
+            hasDraft: false,
+          }
+          console.log("[DataManager] Token sin progreso previo, empezando desde cero", {
+            id_zoho: decrypted.id_zoho,
+          })
         }
-        console.log("[DataManager] Datos prellenados cargados", {
-          id_zoho: decrypted.id_zoho,
-          empresa: decrypted.data.empresa.razonSocial,
-        })
+
         return this.sessionData
       }
     }
@@ -130,7 +148,7 @@ export class DataManager {
     if (draft) {
       this.sessionData = {
         hasToken: false,
-        hasDraft: true, // Indicar que hay borrador
+        hasDraft: true,
         currentStep: draft.currentStep,
         formData: draft.formData,
       }
@@ -238,12 +256,13 @@ export class DataManager {
     }
   }
 
-  // Cargar borrador de localStorage
-  private loadDraft(): { currentStep: number; formData: OnboardingData } | null {
+  // Cargar borrador de localStorage - ahora acepta token opcional para borradores con sesión
+  private loadDraft(token?: string): { currentStep: number; formData: OnboardingData } | null {
     if (typeof window === "undefined") return null
 
     try {
-      const key = "onboarding_draft_local"
+      // Si hay token, usar clave específica para ese token
+      const key = token ? `onboarding_draft_${token.substring(0, 20)}` : "onboarding_draft_local"
       const stored = localStorage.getItem(key)
 
       if (!stored) return null
@@ -278,14 +297,8 @@ export class DataManager {
     }
   }
 
-  // Guardar borrador (solo si NO hay token)
+  // Guardar borrador (solo si NO hay token) - ahora guarda SIEMPRE (con o sin token)
   saveDraft(step: number, data: OnboardingData) {
-    // NO guardar borrador si hay token (datos de Zoho tienen prioridad)
-    if (this.sessionData.hasToken) {
-      console.log("[DataManager] NO se guarda borrador (hay token de Zoho)")
-      return
-    }
-
     // Debounce para no saturar localStorage
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout)
@@ -300,20 +313,25 @@ export class DataManager {
           timestamp: new Date().toISOString(),
         }
 
-        localStorage.setItem("onboarding_draft_local", JSON.stringify(draft))
-        console.log("[DataManager] Borrador guardado", { step })
+        // Si hay token, guardar con clave específica
+        const token = this.getTokenFromURL()
+        const key = token ? `onboarding_draft_${token.substring(0, 20)}` : "onboarding_draft_local"
+
+        localStorage.setItem(key, JSON.stringify(draft))
+        console.log("[DataManager] Borrador guardado", { step, hasToken: !!token })
       } catch (error) {
         console.error("[DataManager] Error guardando borrador:", error)
       }
     }, DEBOUNCE_DELAY)
   }
 
-  // Eliminar borrador
   deleteDraft() {
-    const key = this.getDraftKey()
     if (typeof window !== "undefined") {
+      const token = this.getTokenFromURL()
+      const key = token ? `onboarding_draft_${token.substring(0, 20)}` : "onboarding_draft_local"
+
       localStorage.removeItem(key)
-      console.log("[DataManager] Borrador eliminado")
+      console.log("[DataManager] Borrador eliminado", { hasToken: !!token })
     }
   }
 
