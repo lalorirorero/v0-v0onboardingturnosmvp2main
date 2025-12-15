@@ -2724,52 +2724,64 @@ export function OnboardingTurnosCliente() {
     if (hasInitialized.current) return
 
     const initializeData = async () => {
-      console.log("[v0] Initializing app...")
+      console.log("[v0] ========== INITIALIZATION START ==========")
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get("token")
 
-      const draft = PersistenceManager.loadDraft()
-      const hasDraftWithProgress = draft && draft.metadata && draft.metadata.currentStep > 0
+      console.log("[v0] Checking localStorage for draft...")
+      const rawDraft = localStorage.getItem("onboarding_draft")
+      console.log("[v0] Raw draft from localStorage:", rawDraft ? "EXISTS" : "EMPTY")
 
-      console.log("[v0] Draft check:", {
-        hasDraft: !!draft,
+      const draft = PersistenceManager.loadDraft()
+      console.log("[v0] Draft after loadDraft():", {
+        exists: !!draft,
         currentStep: draft?.metadata?.currentStep,
-        hasDraftWithProgress,
+        hasFormData: !!draft?.data,
       })
 
+      const hasDraftWithProgress = draft && draft.metadata && draft.metadata.currentStep > 0
+      console.log("[v0] hasDraftWithProgress:", hasDraftWithProgress)
+
       if (token) {
-        console.log("[v0] Token detected, fetching prefill data...")
+        console.log("[v0] TOKEN DETECTED:", token.substring(0, 20) + "...")
         const tokenData = await fetchTokenData(token)
 
         if (tokenData) {
-          console.log("[v0] Token data loaded:", tokenData.empresa?.razonSocial)
+          console.log("[v0] Token data fetched successfully")
+          console.log("[v0] Empresa:", tokenData.empresa?.razonSocial)
+          console.log("[v0] ID Zoho:", tokenData.empresa?.id_zoho)
+
           PersistenceManager.savePrefill(tokenData, tokenData.empresa?.id_zoho || "")
           setPrefilledData(tokenData)
           setHasToken(true)
           setIdZoho(tokenData.empresa?.id_zoho || null)
 
           if (hasDraftWithProgress) {
-            console.log("[v0] Draft with progress found, showing dialog...")
+            console.log("[v0] CASE: Token + Draft with progress → Showing dialog")
             loadDataFromDraft(draft!)
             setShowDraftDialog(true)
           } else {
-            console.log("[v0] First session or no progress, starting at Step 0...")
+            console.log("[v0] CASE: Token + NO draft (or step 0) → Starting fresh at Step 0")
             loadDataFromPrefill(tokenData)
             setCurrentStep(PRIMER_PASO)
             setCompletedSteps([])
 
-            PersistenceManager.clearDraft()
+            if (draft) {
+              console.log("[v0] Clearing invalid draft (step 0 or corrupted)")
+              PersistenceManager.clearDraft()
+              localStorage.removeItem("onboarding_draft")
+            }
           }
         }
       } else {
-        console.log("[v0] No token, checking for draft...")
+        console.log("[v0] NO TOKEN")
 
         if (hasDraftWithProgress) {
-          console.log("[v0] Draft with progress found (no token), showing dialog...")
+          console.log("[v0] CASE: No token + Draft with progress → Showing dialog")
           loadDataFromDraft(draft!)
           setShowDraftDialog(true)
         } else {
-          console.log("[v0] No token, no progress, starting empty at Step 0...")
+          console.log("[v0] CASE: No token + NO draft → Starting empty at Step 0")
           setCurrentStep(PRIMER_PASO)
           setCompletedSteps([])
           setFormData({
@@ -2783,11 +2795,15 @@ export function OnboardingTurnosCliente() {
           })
 
           if (draft) {
+            console.log("[v0] Clearing invalid draft")
             PersistenceManager.clearDraft()
+            localStorage.removeItem("onboarding_draft")
           }
         }
       }
 
+      console.log("[v0] Setting isInitialized = true")
+      console.log("[v0] ========== INITIALIZATION END ==========")
       setIsInitialized(true)
       hasInitialized.current = true
     }
@@ -3096,7 +3112,7 @@ export function OnboardingTurnosCliente() {
 
       {isSaving && (
         <div className="fixed bottom-4 right-4 z-50 bg-white dark:bg-slate-800 shadow-lg rounded-lg px-4 py-2 flex items-center gap-2">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-r-transparent rounded-full" />
           <span className="text-sm text-slate-600 dark:text-slate-400">Guardando...</span>
         </div>
       )}
