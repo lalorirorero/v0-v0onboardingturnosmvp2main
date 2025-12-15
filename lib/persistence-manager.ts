@@ -9,6 +9,8 @@ export interface PersistenceMetadata {
   completedSteps: number[]
   hasToken: boolean
   idZoho: string | null
+  source: "onboarding-turnos" // Marca explícita de origen
+  tokenHash?: string // Hash del token para asociar borrador
 }
 
 export interface PersistedState {
@@ -19,48 +21,99 @@ export interface PersistedState {
 const STORAGE_KEY = "onboarding_draft"
 const PREFILL_KEY = "onboarding_prefill"
 const SCHEMA_VERSION = "2.0"
+const SOURCE_MARKER = "onboarding-turnos"
 
 export class PersistenceManager {
-  // Guardar borrador
-  static saveDraft(data: OnboardingFormData, metadata: PersistenceMetadata): void {
+  static async generateTokenHash(tokenOrIdZoho: string): Promise<string> {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(tokenOrIdZoho)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+    return hashHex.substring(0, 16) // Primeros 16 caracteres
+  }
+
+  static async saveDraft(
+    data: OnboardingFormData,
+    metadata: Omit<PersistenceMetadata, "source" | "tokenHash">,
+    tokenOrIdZoho?: string,
+  ): Promise<void> {
     try {
+      const tokenHash = tokenOrIdZoho ? await this.generateTokenHash(tokenOrIdZoho) : undefined
+
       const state: PersistedState = {
         data,
         metadata: {
           ...metadata,
           timestamp: Date.now(),
           version: SCHEMA_VERSION,
+          source: SOURCE_MARKER, // Marca explícita
+          tokenHash, // Hash para asociación
         },
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-      console.log("[v0] Draft saved:", metadata.currentStep)
+      console.log("[v0] Draft saved:", metadata.currentStep, "tokenHash:", tokenHash?.substring(0, 8))
     } catch (error) {
       console.error("[v0] Error saving draft:", error)
     }
   }
 
-  // Cargar borrador
-  static loadDraft(): PersistedState | null {
+  static async loadDraft(currentTokenOrIdZoho?: string): Promise<PersistedState | null> {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (!stored) return null
+      if (!stored) {
+        console.log("[v0] No draft found in localStorage")
+        return null
+      }
 
       const state: PersistedState = JSON.parse(stored)
 
-      // Validar versión del schema
+      // Validación 1: Marca de origen
+      if (state.metadata.source !== SOURCE_MARKER) {
+        console.warn("[v0] Draft rejected: no source marker")
+        this.clearDraft()
+        return null
+      }
+
+      // Validación 2: Versión del schema
       if (state.metadata.version !== SCHEMA_VERSION) {
-        console.warn("[v0] Schema version mismatch, clearing draft")
+        console.warn("[v0] Draft rejected: schema version mismatch")
         this.clearDraft()
         return null
       }
 
+      // Validación 3: Progreso real (currentStep > 0)
       if (!state.metadata || state.metadata.currentStep === undefined || state.metadata.currentStep === 0) {
-        console.warn("[v0] Draft has no progress (currentStep = 0), ignoring")
+        console.warn("[v0] Draft rejected: no progress (currentStep = 0)")
         this.clearDraft()
         return null
       }
 
-      console.log("[v0] Draft loaded with progress at step:", state.metadata.currentStep)
+      // Validación 4: Datos coherentes (no objeto vacío)
+      if (!state.data || Object.keys(state.data).length === 0) {
+        console.warn("[v0] Draft rejected: empty data")
+        this.clearDraft()
+        return null
+      }
+
+      // Validación 5: Asociación con token actual (si hay token)
+      if (currentTokenOrIdZoho) {
+        const currentHash = await this.generateTokenHash(currentTokenOrIdZoho)
+        if (state.metadata.tokenHash && state.metadata.tokenHash !== currentHash) {
+          console.warn("[v0] Draft rejected: token mismatch", {
+            draftTokenHash: state.metadata.tokenHash.substring(0, 8),
+            currentTokenHash: currentHash.substring(0, 8),
+          })
+          return null
+        }
+      }
+
+      console.log("[v0] Draft validated and loaded:", {
+        currentStep: state.metadata.currentStep,
+        hasToken: state.metadata.hasToken,
+        tokenHash: state.metadata.tokenHash?.substring(0, 8),
+      })
+
       return state
     } catch (error) {
       console.error("[v0] Error loading draft:", error)
@@ -96,32 +149,30 @@ export class PersistenceManager {
     }
   }
 
-  // Merge con reglas: nunca sobreescribir con vacíos
   static mergeData(prefill: Partial<OnboardingFormData>, draft: Partial<OnboardingFormData>): OnboardingFormData {
     const merged: any = { ...prefill }
 
-    // Función para determinar si un valor es válido (no vacío)
     const isValidValue = (value: any): boolean => {
       if (value === null || value === undefined) return false
       if (typeof value === "string" && value.trim() === "") return false
       if (Array.isArray(value) && value.length === 0) return false
+      if (typeof value === "object" && Object.keys(value).length === 0) return false
       return true
     }
 
-    // Mergear cada sección respetando las reglas
     Object.keys(draft).forEach((key) => {
       const draftValue = (draft as any)[key]
       const prefillValue = (merged as any)[key]
 
-      // Si el draft tiene valor válido, usar draft
       if (isValidValue(draftValue)) {
-        // Para objetos, mergear recursivamente
         if (typeof draftValue === "object" && !Array.isArray(draftValue) && draftValue !== null) {
           if (typeof prefillValue === "object" && !Array.isArray(prefillValue) && prefillValue !== null) {
-            merged[key] = { ...prefillValue, ...draftValue }
-            // Limpiar propiedades vacías del merge
-            Object.keys(merged[key]).forEach((subKey) => {
-              if (!isValidValue(merged[key][subKey]) && isValidValue(prefillValue[subKey])) {
+            merged[key] = { ...prefillValue }
+            Object.keys(draftValue).forEach((subKey) => {
+              if (isValidValue(draftValue[subKey])) {
+                merged[key][subKey] = draftValue[subKey]
+              } else if (!isValidValue(merged[key][subKey]) && isValidValue(prefillValue[subKey])) {
+                // Mantener prefill si draft es vacío y prefill es válido
                 merged[key][subKey] = prefillValue[subKey]
               }
             })
@@ -129,11 +180,10 @@ export class PersistenceManager {
             merged[key] = draftValue
           }
         } else {
-          // Para valores primitivos y arrays, usar draft directamente
           merged[key] = draftValue
         }
       }
-      // Si draft no tiene valor válido pero prefill sí, mantener prefill (ya está en merged)
+      // Si draft no tiene valor válido, mantener prefill (ya está en merged)
     })
 
     return merged as OnboardingFormData
@@ -169,6 +219,7 @@ export class PersistenceManager {
         completedSteps: [],
         hasToken: true,
         idZoho: prefill.idZoho,
+        source: SOURCE_MARKER,
       },
     }
 
@@ -184,14 +235,13 @@ export class PersistenceManager {
     try {
       console.log("[v0] PersistenceManager.saveComplete: Enviando datos completos a Zoho Flow")
 
-      // Generar Excel en base64
       const excelBase64 = await this.generateExcelBase64(data)
 
       const payload: ZohoPayload = {
         accion: data.id_zoho ? "actualizar" : "crear",
-        timestamp: new Date().toISOString(),
+        fechaHoraEnvio: new Date().toISOString(), // Timestamp del envío
         eventType: "complete",
-        id_zoho: data.id_zoho || undefined,
+        id_zoho: data.id_zoho || null,
         formData: data,
         metadata: {
           empresaRut: data.empresa.rut || "",
@@ -199,6 +249,8 @@ export class PersistenceManager {
           pasoActual: 9,
           totalPasos: 10,
           porcentajeProgreso: 100,
+          totalCambios: 0,
+          editedFields: [],
         },
         excelFile: excelBase64
           ? {
@@ -213,6 +265,8 @@ export class PersistenceManager {
 
       if (result.success) {
         console.log("[v0] Datos enviados exitosamente a Zoho Flow")
+        this.clearDraft()
+        this.clearPrefill()
       } else {
         console.error("[v0] Error al enviar datos a Zoho Flow:", result.error)
       }

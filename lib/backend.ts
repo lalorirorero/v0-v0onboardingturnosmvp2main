@@ -190,19 +190,29 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
 
 export interface ZohoPayload {
   accion: "crear" | "actualizar"
-  timestamp: string
+  fechaHoraEnvio: string // Timestamp ISO del envío
   eventType: "started" | "progress" | "complete"
-  id_zoho?: string // ID del registro en Zoho CRM
-  // Solo para eventos complete
-  formData?: FormData
-  // Para todos los eventos
+  id_zoho: string | null // Cambiado de opcional a nullable
+  formData: FormData | null // Puede ser null en eventos de progreso
   metadata: {
     empresaRut: string
     empresaNombre: string
     pasoActual?: number
+    pasoNombre?: string
     totalPasos?: number
     porcentajeProgreso?: number
+    totalCambios?: number
+    editedFields?: Array<{
+      field: string
+      originalValue: any
+      currentValue: any
+    }>
   }
+  excelFile?: {
+    filename: string
+    base64: string
+    mimeType: string
+  } | null
 }
 
 export async function sendToZohoFlow(payload: ZohoPayload): Promise<{
