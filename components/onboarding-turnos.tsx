@@ -486,7 +486,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   ]
 
   const [isEditing, setIsEditing] = useState(false)
-  const hasPrefilled = prefilledFields.size > 0
+  const hasPrefilled = prefilledFields.size > 0 // Use prefilledFields Set
 
   const handleEmpresaChange = (e) => {
     const { name, value } = e.target
@@ -2670,7 +2670,7 @@ export default function OnboardingTurnosCliente({
     telefonoContacto: "",
     sistema: [] as string[],
     rubro: "",
-    grupos: [] as { id: number; nombre: string; descripcion: string }[], // Grupos managed within empresa
+    grupos: [] as { id: number; nombre: string; descripcion: string }[],
   })
 
   const [admins, setAdmins] = useState([])
@@ -2683,7 +2683,7 @@ export default function OnboardingTurnosCliente({
     byId: {},
     global: [],
   })
-  const [errors, setErrors] = useState({ byId: {}, global: [] }) // This seems redundant with trabajadoresErrors?
+  const [errors, setErrors] = useState({ byId: {}, global: [] })
 
   // Estados para la navegación y control del flujo
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
@@ -2695,7 +2695,8 @@ export default function OnboardingTurnosCliente({
   const [hasToken, setHasToken] = useState(false)
   const [idZoho, setIdZoho] = useState<string | null>(null)
   const [editedFields, setEditedFields] = useState<Record<string, { originalValue: any; currentValue: any }>>({})
-  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // Se usa Set ahora
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     const initializeData = async () => {
@@ -2708,6 +2709,10 @@ export default function OnboardingTurnosCliente({
         id_zoho: sessionData.id_zoho,
       })
 
+      // Configurar estados de token e id_zoho
+      setHasToken(sessionData.hasToken || false)
+      setIdZoho(sessionData.id_zoho || null)
+
       // Si hay borrador (con o sin token), mostrar diálogo
       if (sessionData.hasDraft && sessionData.currentStep > 0) {
         console.log("[v0] Onboarding: Mostrando diálogo de borrador guardado")
@@ -2715,26 +2720,47 @@ export default function OnboardingTurnosCliente({
 
         // Cargar datos del borrador en el estado
         if (sessionData.formData) {
-          setEmpresa(sessionData.formData.empresa)
-          setAdmins(sessionData.formData.admins)
-          setTrabajadores(sessionData.formData.trabajadores)
-          setTurnos(sessionData.formData.turnos.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
-          setPlanificaciones(sessionData.formData.planificaciones)
-          setAsignaciones(sessionData.formData.asignaciones)
-          setConfigureNow(sessionData.formData.configureNow)
+          setEmpresa(sessionData.formData.empresa || empresa)
+          setAdmins(sessionData.formData.admins || [])
+          setTrabajadores(sessionData.formData.trabajadores || [])
+          setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
+          setPlanificaciones(sessionData.formData.planificaciones || [])
+          setAsignaciones(sessionData.formData.asignaciones || [])
+          setConfigureNow(sessionData.formData.configureNow ?? true)
           setCurrentStep(sessionData.currentStep)
+        }
+
+        // Si hay datos prellenados también, guardarlos
+        if (sessionData.prefilledData) {
+          setPrefilledData(sessionData.prefilledData)
+          // Marcar campos como prellenados
+          const fieldsSet = new Set<string>()
+          Object.keys(sessionData.prefilledData.empresa).forEach((key) => fieldsSet.add(`empresa.${key}`))
+          sessionData.prefilledData.admins.forEach((_, idx) => fieldsSet.add(`admins.${idx}`))
+          sessionData.prefilledData.trabajadores.forEach((_, idx) => fieldsSet.add(`trabajadores.${idx}`))
+          setPrefilledFields(fieldsSet)
+          setIsEditing(false) // Empezar en modo no-edición si hay datos prellenados
         }
       } else if (sessionData.prefilledData) {
         // Hay token pero no hay borrador, cargar datos prellenados
         console.log("[v0] Onboarding: Cargando datos prellenados desde token")
+        setPrefilledData(sessionData.prefilledData)
         setEmpresa(sessionData.prefilledData.empresa)
         setAdmins(sessionData.prefilledData.admins)
         setTrabajadores(sessionData.prefilledData.trabajadores)
-        setTurnos(sessionData.prefilledData.turnos.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
-        setPlanificaciones(sessionData.prefilledData.planificaciones)
-        setAsignaciones(sessionData.prefilledData.asignaciones)
-        setConfigureNow(sessionData.prefilledData.configureNow)
+        setTurnos(sessionData.prefilledData.turnos?.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
+        setPlanificaciones(sessionData.prefilledData.planificaciones || [])
+        setAsignaciones(sessionData.prefilledData.asignaciones || [])
+        setConfigureNow(sessionData.prefilledData.configureNow ?? true)
         setCurrentStep(0) // Empezar desde el inicio
+
+        // Marcar campos como prellenados
+        const fieldsSet = new Set<string>()
+        Object.keys(sessionData.prefilledData.empresa).forEach((key) => fieldsSet.add(`empresa.${key}`))
+        sessionData.prefilledData.admins.forEach((_, idx) => fieldsSet.add(`admins.${idx}`))
+        sessionData.prefilledData.trabajadores.forEach((_, idx) => fieldsSet.add(`trabajadores.${idx}`))
+        setPrefilledFields(fieldsSet)
+        setIsEditing(false) // Empezar en modo no-edición
       } else {
         // No hay borrador ni prellenado, inicializar estado vacío
         console.log("[v0] Onboarding: Inicializando estado vacío")
@@ -2758,7 +2784,42 @@ export default function OnboardingTurnosCliente({
         setAsignaciones([])
         setConfigureNow(true)
         setCurrentStep(PRIMER_PASO)
+        setIsEditing(true) // Sin datos prellenados, siempre en modo edición
       }
+
+      // Configurar callback de webhook
+      dataManager.setWebhookCallback((type, response, error) => {
+        if (error) {
+          toast({
+            title: "❌ Error en webhook",
+            description: (
+              <div className="space-y-2">
+                <p className="font-medium">Tipo: {type === "progress" ? "Progreso" : "Completo"}</p>
+                <details className="text-xs">
+                  <summary className="cursor-pointer">Ver error</summary>
+                  <pre className="mt-2 max-h-40 overflow-auto">{JSON.stringify(error, null, 2)}</pre>
+                </details>
+              </div>
+            ),
+            duration: 10000,
+          })
+        } else {
+          toast({
+            title: "✅ Webhook enviado",
+            description: (
+              <div className="space-y-2">
+                <p className="font-medium">Tipo: {type === "progress" ? "Progreso" : "Completo"}</p>
+                <details className="text-xs">
+                  <summary className="cursor-pointer">Ver respuesta</summary>
+                  <pre className="mt-2 max-h-40 overflow-auto">{JSON.stringify(response, null, 2)}</pre>
+                </details>
+              </div>
+            ),
+            duration: 8000,
+          })
+        }
+      })
+
       setIsInitialized(true)
     }
 
@@ -2766,11 +2827,39 @@ export default function OnboardingTurnosCliente({
   }, [])
 
   useEffect(() => {
+    if (!isInitialized) return
+
+    const formData = {
+      empresa,
+      admins,
+      trabajadores,
+      turnos,
+      planificaciones,
+      asignaciones,
+      configureNow,
+    }
+
+    dataManager.updateFormData(formData)
+  }, [isInitialized, empresa, admins, trabajadores, turnos, planificaciones, asignaciones, configureNow])
+
+  useEffect(() => {
     if (!isInitialized || currentStep === 0) return
 
     const stepName = steps[currentStep]?.label || ""
     console.log("[v0] Componente: Paso cambiado, enviando webhook", { currentStep, stepName })
     dataManager.sendProgressWebhook(currentStep, stepName)
+
+    // Autoguardar después de 1 segundo de inactividad
+    const saveTimeout = setTimeout(() => {
+      setSavingStatus("saving")
+      dataManager.saveDraft(currentStep)
+      setTimeout(() => {
+        setSavingStatus("saved")
+        setTimeout(() => setSavingStatus("idle"), 2000)
+      }, 500)
+    }, 1000)
+
+    return () => clearTimeout(saveTimeout)
   }, [isInitialized, currentStep, dataManager])
 
   const handleNext = () => {
@@ -2803,19 +2892,17 @@ export default function OnboardingTurnosCliente({
     console.log("[v0] Onboarding: Confirmado: reiniciando desde cero")
     dataManager.deleteDraft()
 
-    // Obtener los datos de sesión, que pueden incluir prefilledData
-    const sessionData = dataManager.getSessionData()
-
     // Si hay datos prellenados (token), cargar esos datos
-    if (sessionData.prefilledData) {
+    if (prefilledData) {
       console.log("[v0] Onboarding: Reiniciando con datos prellenados")
-      setEmpresa(sessionData.prefilledData.empresa)
-      setAdmins(sessionData.prefilledData.admins)
-      setTrabajadores(sessionData.prefilledData.trabajadores)
-      setTurnos(sessionData.prefilledData.turnos.length > 0 ? sessionData.prefilledData.turnos : DEFAULT_TURNOS)
-      setPlanificaciones(sessionData.prefilledData.planificaciones)
-      setAsignaciones(sessionData.prefilledData.asignaciones)
-      setConfigureNow(sessionData.prefilledData.configureNow)
+      setEmpresa(prefilledData.empresa)
+      setAdmins(prefilledData.admins)
+      setTrabajadores(prefilledData.trabajadores)
+      setTurnos(prefilledData.turnos?.length > 0 ? prefilledData.turnos : DEFAULT_TURNOS)
+      setPlanificaciones(prefilledData.planificaciones || [])
+      setAsignaciones(prefilledData.asignaciones || [])
+      setConfigureNow(prefilledData.configureNow ?? true)
+      setIsEditing(false)
     } else {
       // Sin datos prellenados, resetear todo a valores por defecto
       console.log("[v0] Onboarding: Reiniciando completamente desde cero")
@@ -2838,6 +2925,7 @@ export default function OnboardingTurnosCliente({
       setPlanificaciones([])
       setAsignaciones([])
       setConfigureNow(true)
+      setIsEditing(true)
     }
 
     setCurrentStep(PRIMER_PASO)
