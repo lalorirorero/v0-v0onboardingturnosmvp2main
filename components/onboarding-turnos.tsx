@@ -157,7 +157,11 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
   }
 
   const addAdmin = () => {
+    console.log("[v0] AdminStep: addAdmin LLAMADO - INICIO")
+    console.log("[v0] AdminStep: formData actual:", JSON.stringify(formData))
+
     if (!formData.nombre.trim() || !formData.apellido.trim()) {
+      console.log("[v0] AdminStep: Faltan nombre o apellido")
       alert("Por favor ingresa el nombre y apellido del administrador")
       return
     }
@@ -166,21 +170,23 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
     let grupoId = ""
     if (formData.grupo.trim()) {
       grupoId = ensureGrupoByName(formData.grupo.trim())
+      console.log("[v0] AdminStep: Grupo asignado", { grupoId })
     }
 
-    setAdmins([
-      ...admins,
-      {
-        id: Date.now(),
-        nombre: `${formData.nombre.trim()} ${formData.apellido.trim()}`,
-        apellido: formData.apellido.trim(), // Added for completeness
-        rut: formData.rut,
-        email: formData.email,
-        telefono: formData.telefono,
-        grupoId: grupoId,
-        grupoNombre: formData.grupo,
-      },
-    ])
+    const newAdmin = {
+      id: Date.now(),
+      nombre: `${formData.nombre.trim()} ${formData.apellido.trim()}`,
+      apellido: formData.apellido.trim(),
+      rut: formData.rut,
+      email: formData.email,
+      telefono: formData.telefono,
+      grupoId: grupoId,
+      grupoNombre: formData.grupo,
+    }
+
+    console.log("[v0] AdminStep: Nuevo admin creado", newAdmin)
+
+    setAdmins([...admins, newAdmin])
 
     setFormData({
       nombre: "",
@@ -190,6 +196,8 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
       telefono: "",
       grupo: "",
     })
+
+    console.log("[v0] AdminStep: Administrador agregado exitosamente")
   }
 
   const removeAdmin = (id) => {
@@ -200,59 +208,44 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
     <section className="space-y-6">
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Administrador de la plataforma</h2>
-        <p className="text-sm text-slate-600 mt-1">
+        <p className="mt-1 text-sm text-slate-600">
           El administrador es la persona que tendrá acceso completo a GeoVictoria para gestionar la asistencia,
           configurar turnos, administrar trabajadores y generar reportes de tu empresa.
         </p>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-sm text-slate-500">
           Puede ser el encargado de RRHH, jefe de operaciones o quien será responsable del control de asistencia.
         </p>
       </header>
 
-      {/* Formulario único */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">Datos del administrador</h3>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Nombre</label>
+      {/* Formulario de nuevo administrador */}
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h3 className="text-sm font-medium text-slate-700">Datos del administrador</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">Nombre</label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               type="text"
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
-              placeholder="Ej: Juan"
+              placeholder="Ej: María"
             />
           </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Apellido</label>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">Apellido</label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               type="text"
               value={formData.apellido}
               onChange={(e) => handleFormChange("apellido", e.target.value)}
-              placeholder="Ej: Pérez"
+              placeholder="Ej: González"
             />
           </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium inline-flex items-center gap-1">
-              RUT
-              <span className="group relative">
-                <svg
-                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
-                  Sin puntos y con guión. Ejemplo: 12345678-9
-                </span>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              <span>RUT</span>
+              <span className="ml-1 cursor-help text-slate-400" title="Ingresa el RUT sin puntos y con guión">
+                ⓘ
               </span>
             </label>
             <input
@@ -263,26 +256,11 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               placeholder="12345678-9"
             />
           </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium inline-flex items-center gap-1">
-              Correo
-              <span className="group relative">
-                <svg
-                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
-                  Formato: usuario@dominio.com
-                </span>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              <span>Correo</span>
+              <span className="ml-1 cursor-help text-slate-400" title="Será usado para inicio de sesión">
+                ⓘ
               </span>
             </label>
             <input
@@ -290,29 +268,14 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               type="email"
               value={formData.email}
               onChange={(e) => handleFormChange("email", e.target.value)}
-              placeholder="admin@empresa.com"
+              placeholder=" correo@empresa.cl"
             />
           </div>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium inline-flex items-center gap-1">
-              Teléfono
-              <span className="group relative">
-                <svg
-                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-48 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
-                  Formato: +56 9 1234 5678 (con código país)
-                </span>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              <span>Teléfono</span>
+              <span className="ml-1 cursor-help text-slate-400" title="Con código de país">
+                ⓘ
               </span>
             </label>
             <input
@@ -320,30 +283,14 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
               type="tel"
               value={formData.telefono}
               onChange={(e) => handleFormChange("telefono", e.target.value)}
-              placeholder="+56 9 1234 5678"
+              placeholder="+56912345678"
             />
           </div>
-          <div className="space-y-1 text-sm md:col-span-2">
-            <label className="font-medium inline-flex items-center gap-1">
-              Grupo
-              <span className="group relative">
-                <svg
-                  className="h-3.5 w-3.5 text-slate-400 cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="invisible group-hover:visible absolute left-0 top-5 z-10 w-56 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] text-white shadow-lg">
-                  Los grupos permiten organizar trabajadores por equipos, sucursales o departamentos. Ejemplo: Ventas,
-                  Bodega, Sucursal Centro
-                </span>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              <span>Grupo</span>
+              <span className="ml-1 cursor-help text-slate-400" title="Grupo o departamento al que pertenece">
+                ⓘ
               </span>
             </label>
             <input
@@ -357,7 +304,10 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName }) => {
         </div>
         <button
           type="button"
-          onClick={addAdmin}
+          onClick={() => {
+            console.log("[v0] AdminStep: Botón clickeado!")
+            addAdmin()
+          }}
           className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
         >
           + Agregar administrador
@@ -2730,33 +2680,10 @@ export default function OnboardingTurnosCliente({
     toast({ title: "Progreso reiniciado", description: "Comienza de nuevo con la configuración inicial." })
   }
 
+  // CHANGE: Corrigiendo condición para mostrar diálogo solo si el usuario avanzó más allá del paso 0
   const handleContinueDraft = () => {
-    if (pendingDraftData) {
-      console.log("[v0] Onboarding: Continuando draft", {
-        currentStep: pendingDraftData.currentStep,
-        formData: pendingDraftData.formData,
-      })
-      setEmpresa(pendingDraftData.formData.empresa || getEmptyEmpresa())
-      setAdmins(pendingDraftData.formData.admins || [])
-      setTrabajadores(pendingDraftData.formData.trabajadores || [])
-      setTurnos(pendingDraftData.formData.turnos?.length > 0 ? pendingDraftData.formData.turnos : DEFAULT_TURNOS)
-      setPlanificaciones(pendingDraftData.formData.planificaciones || [])
-      setAsignaciones(pendingDraftData.formData.asignaciones || [])
-      setConfigureNow(pendingDraftData.formData.configureNow ?? true)
-      setCurrentStep(pendingDraftData.currentStep)
-      setPrefilledData(pendingDraftData.prefilledData || null)
-
-      if (pendingDraftData.prefilledData) {
-        const fieldsSet = new Set<string>()
-        Object.keys(pendingDraftData.prefilledData.empresa || {}).forEach((key) => fieldsSet.add(`empresa.${key}`))
-        pendingDraftData.prefilledData.admins?.forEach((_: any, idx: number) => fieldsSet.add(`admins.${idx}`))
-        pendingDraftData.prefilledData.trabajadores?.forEach((_: any, idx: number) =>
-          fieldsSet.add(`trabajadores.${idx}`),
-        )
-        setPrefilledFields(fieldsSet)
-      }
-      setIsEditing(true) // Si se continúa un borrador, se asume que se quiere editar
-    }
+    console.log("[v0] Onboarding: handleContinueDraft ejecutado", { pendingDraftData })
+    // Los datos ya están cargados, solo cerramos el diálogo
     setShowDraftDialog(false)
   }
 
@@ -2775,8 +2702,12 @@ export default function OnboardingTurnosCliente({
       setHasToken(sessionData.hasToken || false)
       setIdZoho(sessionData.id_zoho || null)
 
-      if (sessionData.hasDraft && sessionData.currentStep >= PRIMER_PASO) {
-        console.log("[v0] Onboarding: Hay borrador con progreso, mostrando diálogo")
+      // CHANGE: Corregido: Solo mostrar diálogo si el usuario avanzó más allá del paso inicial (currentStep > 0)
+      if (sessionData.hasDraft && sessionData.currentStep > 0) {
+        console.log("[v0] Onboarding: Hay borrador con progreso, mostrando diálogo", {
+          currentStep: sessionData.currentStep,
+          formData: sessionData.formData,
+        })
 
         // Guardar datos del borrador temporalmente hasta que el usuario decida
         setPendingDraftData({
@@ -2795,8 +2726,9 @@ export default function OnboardingTurnosCliente({
           setPrefilledFields(fieldsSet)
         }
 
-        // Cargar los datos del borrador inmediatamente (por si el usuario cierra el diálogo)
+        // Cargar los datos del borrador inmediatamente
         if (sessionData.formData) {
+          console.log("[v0] Onboarding: Cargando datos del borrador", sessionData.formData)
           setEmpresa(sessionData.formData.empresa || getEmptyEmpresa())
           setAdmins(sessionData.formData.admins || [])
           setTrabajadores(sessionData.formData.trabajadores || [])
@@ -2806,10 +2738,32 @@ export default function OnboardingTurnosCliente({
           setConfigureNow(sessionData.formData.configureNow ?? true)
           setCurrentStep(sessionData.currentStep)
         }
-        setIsEditing(true) // Asumimos que si hay borrador, el usuario podría querer editar
+        setIsEditing(true)
 
         // Mostrar diálogo
         setShowDraftDialog(true)
+      } else if (sessionData.hasDraft && sessionData.currentStep === 0) {
+        // CHANGE: Hay borrador pero en paso 0, cargar datos sin mostrar diálogo
+        console.log("[v0] Onboarding: Hay borrador en paso 0, cargando sin diálogo")
+        if (sessionData.formData) {
+          setEmpresa(sessionData.formData.empresa || getEmptyEmpresa())
+          setAdmins(sessionData.formData.admins || [])
+          setTrabajadores(sessionData.formData.trabajadores || [])
+          setTurnos(sessionData.formData.turnos?.length > 0 ? sessionData.formData.turnos : DEFAULT_TURNOS)
+          setPlanificaciones(sessionData.formData.planificaciones || [])
+          setAsignaciones(sessionData.formData.asignaciones || [])
+          setConfigureNow(sessionData.formData.configureNow ?? true)
+        }
+        if (sessionData.prefilledData) {
+          setPrefilledData(sessionData.prefilledData)
+          const fieldsSet = new Set<string>()
+          Object.keys(sessionData.prefilledData.empresa || {}).forEach((key) => fieldsSet.add(`empresa.${key}`))
+          sessionData.prefilledData.admins?.forEach((_: any, idx: number) => fieldsSet.add(`admins.${idx}`))
+          sessionData.prefilledData.trabajadores?.forEach((_: any, idx: number) => fieldsSet.add(`trabajadores.${idx}`))
+          setPrefilledFields(fieldsSet)
+        }
+        setIsEditing(true)
+        setCurrentStep(0)
       } else if (sessionData.prefilledData) {
         // Hay token pero no hay borrador, cargar datos prellenados
         console.log("[v0] Onboarding: Cargando datos prellenados desde token")
