@@ -1795,7 +1795,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           Total de trabajadores: <span className="font-semibold text-slate-800">{totalTrabajadores}</span>
         </p>
         <p className="text-[11px] text-slate-700">
-          Trabajadores sin planificación válida:{" "}
+          Trabajadores sin planificar:{" "}
           <span className={trabajadoresSinPlan > 0 ? "font-semibold text-red-600" : "font-semibold text-emerald-700"}>
             {trabajadoresSinPlan}
           </span>
@@ -2680,36 +2680,95 @@ function getEmptyEmpresa() {
   }
 }
 
-// Placeholder for fetchTokenData function
-// Replace with actual implementation
+// CHANGE: Reemplazando función mock por llamada real a API decrypt-token
 const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
-  console.log("Fetching data for token:", token)
-  // Simulate fetching data
-  if (token === "mock-token") {
-    return {
-      empresa: {
-        razonSocial: "Mock Empresa S.A.",
-        nombreFantasia: "Mock Empresa",
-        rut: "12345678-9",
-        giro: "Mock Giro",
-        direccion: "Mock Street 123",
-        comuna: "Mock Comuna",
-        emailFacturacion: "billing@mockempresa.com",
-        telefonoContacto: "+1234567890",
-        sistema: ["GeoVictoria APP"],
-        rubro: "TECNOLOGÍA",
-        grupos: [{ id: 101, nombre: "Mock Group", descripcion: "A mock group" }],
-        id_zoho: 12345,
+  console.log("[v0] fetchTokenData: Iniciando con token:", token.substring(0, 20) + "...")
+
+  // Import the toast function from useToast hook for local use
+  const { toast } = await import("@/hooks/use-toast")
+
+  try {
+    const response = await fetch("/api/decrypt-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      admins: [],
-      trabajadores: [],
-      turnos: [],
-      planificaciones: [],
-      asignaciones: [],
-      configureNow: true,
+      body: JSON.stringify({ token }),
+    })
+
+    console.log("[v0] fetchTokenData: Response status:", response.status)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error("[v0] fetchTokenData: Error en respuesta:", errorData)
+      toast({
+        title: "Error al cargar datos",
+        description: errorData.error || "No se pudo desencriptar el token",
+        variant: "destructive",
+      })
+      return null
     }
+
+    const result = await response.json()
+    console.log("[v0] fetchTokenData: Respuesta exitosa:", {
+      success: result.success,
+      hasEmpresaData: !!result.empresaData,
+      razonSocial: result.empresaData?.razonSocial,
+      rut: result.empresaData?.rut,
+    })
+
+    if (!result.success || !result.empresaData) {
+      console.error("[v0] fetchTokenData: Token inválido o sin datos")
+      toast({
+        title: "Token inválido",
+        description: "El enlace no contiene datos válidos",
+        variant: "destructive",
+      })
+      return null
+    }
+
+    const empresaData = result.empresaData
+
+    const formattedData: Partial<OnboardingFormData> = {
+      empresa: {
+        razonSocial: empresaData.razonSocial || "",
+        nombreFantasia: empresaData.nombreFantasia || "",
+        rut: empresaData.rut || "",
+        giro: empresaData.giro || "",
+        direccion: empresaData.direccion || "",
+        comuna: empresaData.comuna || "",
+        emailFacturacion: empresaData.emailFacturacion || "",
+        telefonoContacto: empresaData.telefonoContacto || "",
+        sistema: empresaData.sistema || [],
+        rubro: empresaData.rubro || "",
+        grupos: [],
+        id_zoho: empresaData.id_zoho ? Number(empresaData.id_zoho) : null,
+      },
+      admins: Array.isArray(empresaData.admins) ? empresaData.admins : [],
+      trabajadores: Array.isArray(empresaData.trabajadores) ? empresaData.trabajadores : [],
+      turnos: Array.isArray(empresaData.turnos) ? empresaData.turnos : [],
+      planificaciones: Array.isArray(empresaData.planificaciones) ? empresaData.planificaciones : [],
+      asignaciones: Array.isArray(empresaData.asignaciones) ? empresaData.asignaciones : [],
+    }
+
+    console.log("[v0] fetchTokenData: Datos formateados exitosamente:", {
+      razonSocial: formattedData.empresa?.razonSocial,
+      rut: formattedData.empresa?.rut,
+      rubro: formattedData.empresa?.rubro,
+      adminsCount: formattedData.admins?.length,
+      trabajadoresCount: formattedData.trabajadores?.length,
+    })
+
+    return formattedData
+  } catch (error) {
+    console.error("[v0] fetchTokenData: Error de red:", error)
+    toast({
+      title: "Error de conexión",
+      description: "No se pudo conectar con el servidor",
+      variant: "destructive",
+    })
+    return null
   }
-  return null
 }
 
 export function OnboardingTurnosCliente() {
