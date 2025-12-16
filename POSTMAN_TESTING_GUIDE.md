@@ -45,7 +45,7 @@ En la pestaña **Headers**, agrega estos dos headers y asegúrate de que estén 
 
 **Pega el siguiente JSON de ejemplo:**
 
-\`\`\`json
+```json
 {
   "empresaData": {
     "razonSocial": "EDALTEC LTDA",
@@ -60,7 +60,7 @@ En la pestaña **Headers**, agrega estos dos headers y asegúrate de que estén 
     "rubro": "5.- DISTRIBUCIÓN"
   }
 }
-\`\`\`
+```
 
 ### Paso 5: Enviar la Petición
 
@@ -71,14 +71,14 @@ En la pestaña **Headers**, agrega estos dos headers y asegúrate de que estén 
 
 Si todo funciona correctamente, recibirás una respuesta similar a:
 
-\`\`\`json
+```json
 {
   "success": true,
   "link": "https://tu-app.vercel.app?token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0...",
   "token": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0...",
   "message": "Link generado exitosamente. El token contiene los datos encriptados de forma segura."
 }
-\`\`\`
+```
 
 ### Paso 7: Probar el Link
 
@@ -96,7 +96,7 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
 
 ### Ejemplo 1: Empresa Básica
 
-\`\`\`json
+```json
 {
   "empresaData": {
     "razonSocial": "INNOVATECH SPA",
@@ -111,11 +111,11 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
     "rubro": "22.- CONSULTORÍA"
   }
 }
-\`\`\`
+```
 
 ### Ejemplo 2: Empresa de Salud
 
-\`\`\`json
+```json
 {
   "empresaData": {
     "razonSocial": "CLÍNICA MÉDICA DEL SUR SA",
@@ -130,11 +130,11 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
     "rubro": "1.- SALUD"
   }
 }
-\`\`\`
+```
 
 ### Ejemplo 3: Empresa de Retail
 
-\`\`\`json
+```json
 {
   "empresaData": {
     "razonSocial": "SUPERMERCADOS CENTRALES LTDA",
@@ -149,7 +149,7 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
     "rubro": "16.- RETAIL PEQUEÑO"
   }
 }
-\`\`\`
+```
 
 ---
 
@@ -219,10 +219,10 @@ Si todo funciona correctamente, recibirás una respuesta similar a:
 Antes de hacer clic en "Send", verifica:
 
 **En Headers:**
-\`\`\`
+```
 ✅ Content-Type: application/json (checkbox marcado)
 ✅ Host: v0-v0onboardingturnosmvp2main.vercel.app (checkbox marcado)
-\`\`\`
+```
 
 **En Body:**
 - ✅ Radio button "raw" seleccionado
@@ -260,8 +260,8 @@ Una vez que confirmes que la API funciona correctamente:
 
 ### Ejemplo de Variables de Entorno en Postman:
 
-\`\`\`
+```
 base_url: http://localhost:3000
-\`\`\`
+```
 
 Luego en la URL usa: `{{base_url}}/api/generate-link`

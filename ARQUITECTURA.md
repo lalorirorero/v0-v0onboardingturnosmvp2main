@@ -56,7 +56,7 @@ Todos los envíos a Zoho Flow incluyen un parámetro `accion` que indica qué op
 
 ### Estructura del Payload enviado a Zoho
 
-\`\`\`json
+```json
 {
   "accion": "crear | actualizar",
   "timestamp": "2024-01-15T10:30:00Z",
@@ -70,13 +70,13 @@ Todos los envíos a Zoho Flow incluyen un parámetro `accion` que indica qué op
   },
   "formData": { ... }  // Solo en evento "complete"
 }
-\`\`\`
+```
 
 ### Procesamiento en Zoho Flow
 
 En Zoho Flow, puedes usar el parámetro `accion` para decidir qué hacer:
 
-\`\`\`javascript
+```javascript
 // En Zoho Deluge
 if (payload.get("accion") == "crear") {
     // Crear nuevo registro en Zoho CRM
@@ -86,7 +86,7 @@ if (payload.get("accion") == "crear") {
     rut = payload.get("metadata").get("rut");
     response = zoho.crm.updateRecord("Onboardings", recordId, dataMap);
 }
-\`\`\`
+```
 
 ---
 
@@ -112,7 +112,7 @@ if (payload.get("accion") == "crear") {
 
 ### Algoritmo de cálculo del primer paso incompleto
 
-\`\`\`
+```
 1. Si empresa no tiene razón social o RUT → Paso 0 (Empresa)
 2. Si no hay admins con datos completos → Paso 1 (Admin)
 3. Si no hay trabajadores (no admin) → Paso 2 (Trabajadores)
@@ -122,7 +122,7 @@ if (payload.get("accion") == "crear") {
 7. Si no hay planificaciones → Paso 5 (Planificaciones)
 8. Si paso 6 no está en completedSteps → Paso 6 (Asignación)
 9. Default → Paso 7 (Resumen)
-\`\`\`
+```
 
 ### Prioridad de fuentes de datos
 1. localStorage (datos más recientes del usuario)
@@ -133,7 +133,7 @@ if (payload.get("accion") == "crear") {
 
 ## 5. Estructura de Archivos
 
-\`\`\`
+```
 lib/
   onboarding-persistence.ts  # Tipos, funciones de persistencia, helpers
   zoho-tracking.ts           # Funciones de sincronización con Zoho
@@ -149,7 +149,7 @@ app/api/
   generate-link/route.ts     # Genera links con token encriptado
   decrypt-token/route.ts     # Desencripta tokens
   submit-to-zoho/route.ts    # Envía datos a Zoho Flow
-\`\`\`
+```
 
 ---
 
@@ -179,13 +179,13 @@ app/api/
 
 La estructura actual ya soporta extensión:
 
-\`\`\`typescript
+```typescript
 // Futuro: empresa puede ser un array
 interface OnboardingData {
   onboardingId: string
   empresas: EmpresaData[]  // Cambiar de 'empresa' a 'empresas'
   // ... resto igual
 }
-\`\`\`
+```
 
 La clave está en que `onboardingId` es independiente de los datos de empresa, permitiendo múltiples razones sociales bajo un mismo onboarding.

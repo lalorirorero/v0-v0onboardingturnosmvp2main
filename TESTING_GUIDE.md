@@ -89,7 +89,7 @@ Todos los payloads se validan contra este schema antes de enviar.
 
 ## Ejecutar Tests Localmente
 
-\`\`\`bash
+```bash
 # Instalar dependencias
 pnpm install
 
@@ -110,7 +110,7 @@ pnpm test:coverage
 
 # E2E con UI interactiva
 pnpm test:e2e:ui
-\`\`\`
+```
 
 ## CI/CD en Vercel
 
