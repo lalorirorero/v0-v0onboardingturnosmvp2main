@@ -21,8 +21,6 @@ import {
   Heart,
   Zap,
   Info,
-  FileText,
-  AlertTriangle,
 } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" // Import added
 import { Button } from "@/components/ui/button" // Import added
@@ -39,8 +37,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
-import { PersistenceManager } from "@/lib/persistence-manager"
-import type { OnboardingFormData, PersistenceMetadata } from "@/lib/persistence-manager"
+// REMOVED: PersistenceManager and persistence types
 
 const steps = [
   { id: 0, label: "Bienvenida", description: "Comienza aquí" },
@@ -2603,6 +2600,69 @@ const DEFAULT_TURNOS = [
   },
 ]
 
+// Define OnboardingFormData type
+type OnboardingFormData = {
+  empresa: {
+    razonSocial: string
+    nombreFantasia: string
+    rut: string
+    giro: string
+    direccion: string
+    comuna: string
+    emailFacturacion: string
+    telefonoContacto: string
+    sistema: string[]
+    rubro: string
+    grupos: { id: number; nombre: string; descripcion: string }[]
+    id_zoho: number | null
+  }
+  admins: {
+    id: number
+    nombre: string
+    apellido: string
+    rut: string
+    email: string
+    telefono: string
+    grupoId: string
+    grupoNombre: string
+  }[]
+  trabajadores: {
+    id: number
+    nombre: string
+    rut: string
+    correo: string
+    grupoId: string
+    telefono1: string
+    telefono2: string
+    telefono3: string
+    tipo: "usuario" | "administrador"
+  }[]
+  turnos: {
+    id: number
+    nombre: string
+    horaInicio: string
+    horaFin: string
+    colacionMinutos: number
+    tooltip: string
+  }[]
+  planificaciones: {
+    id: number
+    nombre: string
+    diasTurnos: (number | null)[]
+  }[]
+  asignaciones: {
+    id: number
+    trabajadorId: string | number
+    planificacionId: string | number
+    desde: string
+    hasta: string
+  }[]
+  configureNow: boolean
+}
+
+// Define editedFields type
+type EditedFields = Record<string, { originalValue: any; currentValue: any }>
+
 function getEmptyEmpresa() {
   return {
     razonSocial: "",
@@ -2620,15 +2680,42 @@ function getEmptyEmpresa() {
   }
 }
 
+// Placeholder for fetchTokenData function
+// Replace with actual implementation
+const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
+  console.log("Fetching data for token:", token)
+  // Simulate fetching data
+  if (token === "mock-token") {
+    return {
+      empresa: {
+        razonSocial: "Mock Empresa S.A.",
+        nombreFantasia: "Mock Empresa",
+        rut: "12345678-9",
+        giro: "Mock Giro",
+        direccion: "Mock Street 123",
+        comuna: "Mock Comuna",
+        emailFacturacion: "billing@mockempresa.com",
+        telefonoContacto: "+1234567890",
+        sistema: ["GeoVictoria APP"],
+        rubro: "TECNOLOGÍA",
+        grupos: [{ id: 101, nombre: "Mock Group", descripcion: "A mock group" }],
+        id_zoho: 12345,
+      },
+      admins: [],
+      trabajadores: [],
+      turnos: [],
+      planificaciones: [],
+      asignaciones: [],
+      configureNow: true,
+    }
+  }
+  return null
+}
+
 export function OnboardingTurnosCliente() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const hasInitialized = useRef(false)
-
-  // Added editedFields state
-  const [editedFields, setEditedFields] = useState<{
-    [fieldKey: string]: { originalValue: any; currentValue: any }
-  }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
     empresa: getEmptyEmpresa(),
@@ -2657,155 +2744,35 @@ export function OnboardingTurnosCliente() {
   const [prefilledData, setPrefilledData] = useState<Partial<OnboardingFormData> | null>(null)
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [isEditing, setIsEditing] = useState(true)
+  const [editedFields, setEditedFields] = useState<EditedFields>({}) // State for tracking edited fields
 
-  // Estados de diálogos
-  const [showDraftDialog, setShowDraftDialog] = useState(false)
-  const [showConflictDialog, setShowConflictDialog] = useState(false)
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
-
-  const handleKeepDraftData = () => {
-    console.log("[v0] User chose: Keep current draft data")
-    // Data is already loaded, just close the dialog
-    setShowConflictDialog(false)
-  }
-
-  const handleUseTokenData = () => {
-    console.log("[v0] User chose: Use token data")
-    if (prefilledData) {
-      loadDataFromPrefill(prefilledData)
-      // Reset edited fields if we're overwriting with token data
-      setEditedFields({})
-      // Ensure we are on the correct step after loading prefill data
-      setCurrentStep(PRIMER_PASO) // Usually reset to step 0 or relevant step
-      setCompletedSteps([])
-      setShowConflictDialog(false)
-    }
-  }
-
-  useEffect(() => {
-    // No guardar si no está inicializado
-    if (!isInitialized) return
-
-    if (currentStep === PRIMER_PASO) {
-      console.log("[v0] Skipping autosave: currently at Paso 0 (Bienvenida)")
-      return
-    }
-
-    // Debounce de 500ms
-    const saveTimeout = setTimeout(async () => {
-      console.log("[v0] Auto-saving draft at step", currentStep)
-      await PersistenceManager.saveDraft(
-        formData,
-        {
-          timestamp: Date.now(),
-          version: "2.0",
-          currentStep,
-          completedSteps,
-          hasToken,
-          idZoho,
-        },
-        idZoho || undefined, // Pasar idZoho para generar tokenHash
-      )
-    }, 500)
-
-    return () => clearTimeout(saveTimeout)
-  }, [formData, currentStep, completedSteps, hasToken, idZoho, isInitialized])
 
   useEffect(() => {
     if (hasInitialized.current) return
 
     const initializeData = async () => {
-      console.log("[v0] ========================================")
-      console.log("[v0] INICIALIZANDO APP - REGLAS DE NEGOCIO")
-      console.log("[v0] ========================================")
-
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get("token")
 
-      let tokenData: Partial<OnboardingFormData> | null = null
-      let currentIdZoho: string | null = null
-
       if (token) {
-        console.log("[v0] PASO 1: Procesando token...")
-        tokenData = await fetchTokenData(token)
+        const tokenData = await fetchTokenData(token)
 
         if (tokenData) {
-          currentIdZoho = (tokenData.empresa as any)?.id_zoho || null
-          console.log("[v0] Token procesado exitosamente:", {
-            razonSocial: tokenData.empresa?.razonSocial,
-            id_zoho: currentIdZoho,
-          })
+          const currentIdZoho = (tokenData.empresa as any)?.id_zoho || null
 
-          PersistenceManager.savePrefill(tokenData, currentIdZoho || "")
           setPrefilledData(tokenData)
           setHasToken(true)
           setIdZoho(currentIdZoho)
-        } else {
-          console.error("[v0] Token inválido o error al desencriptar")
-        }
-      } else {
-        console.log("[v0] PASO 1: No hay token en URL")
-      }
 
-      console.log("[v0] PASO 2: Evaluando borrador con validación estricta...")
-      const draft = await PersistenceManager.loadDraft(currentIdZoho || undefined)
-
-      const hasDraftWithProgress = draft !== null && draft.metadata.currentStep > 0
-
-      console.log("[v0] Resultado evaluación borrador:", {
-        draftExists: draft !== null,
-        currentStep: draft?.metadata?.currentStep,
-        hasDraftWithProgress,
-        tokenHash: draft?.metadata?.tokenHash?.substring(0, 8),
-      })
-
-      console.log("[v0] PASO 3: Configurando UI inicial...")
-
-      if (tokenData) {
-        // Caso: HAY TOKEN
-        if (hasDraftWithProgress) {
-          console.log("[v0] Caso: Token + Borrador válido → Mostrar modal")
-          loadDataFromDraft(draft!, tokenData)
-          setShowDraftDialog(true) // Modal se muestra aquí
-        } else {
-          console.log("[v0] Caso: Token sin borrador → Paso 0 con prefill")
+          // Cargar datos prellenados
           loadDataFromPrefill(tokenData)
-          setCurrentStep(PRIMER_PASO) // SIEMPRE Paso 0
-          setCompletedSteps([])
-          PersistenceManager.clearDraft() // Limpiar cualquier residuo
-        }
-      } else {
-        // Caso: NO HAY TOKEN
-        if (hasDraftWithProgress) {
-          console.log("[v0] Caso: Sin token + Borrador → Mostrar modal")
-          loadDataFromDraft(draft!, null)
-          setShowDraftDialog(true)
-        } else {
-          console.log("[v0] Caso: Sin token ni borrador → Paso 0 vacío")
-          setCurrentStep(PRIMER_PASO)
-          setCompletedSteps([])
-          setFormData({
-            empresa: getEmptyEmpresa(),
-            admins: [],
-            trabajadores: [],
-            turnos: DEFAULT_TURNOS,
-            planificaciones: [],
-            asignaciones: [],
-            configureNow: true,
-          })
-          PersistenceManager.clearDraft()
         }
       }
 
-      console.log("[v0] ========================================")
-      console.log("[v0] INICIALIZACIÓN COMPLETADA")
-      console.log("[v0] Estado inicial: Paso", PRIMER_PASO)
-      console.log("[v0] ========================================")
-
+      setCurrentStep(PRIMER_PASO)
+      setCompletedSteps([])
       setIsInitialized(true)
       hasInitialized.current = true
     }
@@ -2814,7 +2781,6 @@ export function OnboardingTurnosCliente() {
   }, [])
 
   const loadDataFromPrefill = (data: Partial<OnboardingFormData>) => {
-    console.log("[v0] Cargando datos desde prefill (token)...")
     setFormData((prev) => {
       const newEmpresa = { ...prev.empresa }
 
@@ -2839,8 +2805,6 @@ export function OnboardingTurnosCliente() {
       }
     })
 
-    setPrefilledData(data)
-
     // Marcar campos prellenados
     const fieldsSet = new Set<string>()
     if (data.empresa) {
@@ -2853,102 +2817,6 @@ export function OnboardingTurnosCliente() {
     }
     setPrefilledFields(fieldsSet)
     setIsEditing(false)
-  }
-
-  const loadDataFromDraft = (
-    draft: { data: OnboardingFormData; metadata: PersistenceMetadata },
-    tokenData: Partial<OnboardingFormData> | null,
-  ) => {
-    console.log("[v0] Cargando datos desde borrador...")
-
-    if (tokenData) {
-      const merged = PersistenceManager.mergeData(tokenData, draft.data)
-      setFormData(merged)
-      setPrefilledData(tokenData)
-    } else {
-      // No hay token: solo usar draft
-      const prefill = PersistenceManager.loadPrefill()
-      if (prefill) {
-        const merged = PersistenceManager.mergeData(prefill.data, draft.data)
-        setFormData(merged)
-        setPrefilledData(prefill.data)
-        setHasToken(true)
-        setIdZoho(prefill.idZoho)
-      } else {
-        setFormData(draft.data)
-      }
-    }
-
-    // setCurrentStep(draft.metadata.currentStep)
-    // setCompletedSteps(draft.metadata.completedSteps)
-  }
-
-  const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
-    try {
-      const response = await fetch("/api/decrypt-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      })
-
-      const result = await response.json()
-
-      if (result.success && result.empresaData) {
-        return result.empresaData as Partial<OnboardingFormData>
-      }
-
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos prellenados",
-        variant: "destructive",
-      })
-      return null
-    } catch (error) {
-      console.error("[v0] Error fetching token data:", error)
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos prellenados",
-        variant: "destructive",
-      })
-      return null
-    }
-  }
-
-  const handleContinueDraft = () => {
-    console.log("[v0] Usuario eligió: Continuar donde quedé")
-    // Los datos ya están cargados desde loadDataFromDraft
-    // Solo necesitamos restaurar el paso y cerrar modal
-    const draft = PersistenceManager.loadDraft(idZoho || undefined)
-    if (draft) {
-      setCurrentStep(draft.metadata.currentStep)
-      setCompletedSteps(draft.metadata.completedSteps)
-    }
-    setShowDraftDialog(false)
-  }
-
-  const handleRestartFromDraft = () => {
-    console.log("[v0] Usuario eligió: Empezar de nuevo")
-
-    PersistenceManager.clearDraft()
-
-    // Recargar desde prefill si existe
-    if (prefilledData) {
-      loadDataFromPrefill(prefilledData)
-    } else {
-      setFormData({
-        empresa: getEmptyEmpresa(),
-        admins: [],
-        trabajadores: [],
-        turnos: DEFAULT_TURNOS,
-        planificaciones: [],
-        asignaciones: [],
-        configureNow: true,
-      })
-    }
-
-    setCurrentStep(PRIMER_PASO)
-    setCompletedSteps([])
-    setShowDraftDialog(false)
   }
 
   const handleNext = () => {
@@ -2985,39 +2853,48 @@ export function OnboardingTurnosCliente() {
   // Handler for the final submission
   const handleFinalizar = async () => {
     setIsSubmitting(true)
+
+    const finalData = {
+      empresa: { ...formData.empresa, id_zoho: idZoho },
+      admins: formData.admins,
+      trabajadores: formData.trabajadores,
+      turnos: formData.turnos,
+      planificaciones: formData.planificaciones,
+      asignaciones: formData.asignaciones,
+      configureNow: formData.configureNow,
+    }
+
     try {
-      const finalData = {
-        ...formData,
-        id_zoho: idZoho, // Include Zoho ID if available
-      }
+      const response = await fetch("/api/submit-to-zoho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formData: finalData,
+          idZoho: idZoho,
+        }),
+      })
 
-      // Assuming PersistenceManager.saveComplete handles the final API call
-      const webhookResponse = await PersistenceManager.saveComplete(finalData)
+      const result = await response.json()
 
-      if (webhookResponse.success) {
+      if (result.success) {
         toast({
           title: "¡Completado!",
           description: "Tu configuración ha sido enviada correctamente.",
-          variant: "success",
         })
-        setZohoSubmissionResult(webhookResponse.data)
-        PersistenceManager.clearDraft()
-        PersistenceManager.clearPrefill()
+        setZohoSubmissionResult(result.data)
+        // PersistenceManager.clearDraft() // Assuming PersistenceManager exists
+        // PersistenceManager.clearPrefill() // Assuming PersistenceManager exists
         // Optionally redirect or show a success message/component
         // Example: Redirect to a confirmation page or dashboard
         // window.location.href = "/onboarding-success";
       } else {
-        toast({
-          title: "Error al enviar",
-          description: webhookResponse.error || "Hubo un problema al enviar tu configuración.",
-          variant: "destructive",
-        })
+        throw new Error(result.error || "Error al enviar datos")
       }
     } catch (error) {
-      console.error("Error during final submission:", error)
+      console.error("[v0] Error en handleFinalizar:", error)
       toast({
-        title: "Error inesperado",
-        description: "Ocurrió un error al finalizar el proceso.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error al enviar los datos",
         variant: "destructive",
       })
     } finally {
@@ -3030,7 +2907,6 @@ export function OnboardingTurnosCliente() {
   }
 
   const isFieldEdited = (fieldKey: string): boolean => {
-    // Check if the field exists in editedFields and has a different current value
     const fieldEntry = editedFields[fieldKey]
     if (!fieldEntry) return false
 
@@ -3042,7 +2918,13 @@ export function OnboardingTurnosCliente() {
     // Only track changes if the field was prefilled
     if (!isFieldPrefilled(fieldKey)) return
 
-    const originalValue = (formData as any)[fieldKey.split(".")[0]][fieldKey.split(".")[1]] || "" // Adjusting to get original value from current formData state
+    // Dynamically get the current value from formData
+    const keys = fieldKey.split(".")
+    let originalValue: any = formData
+    for (const key of keys) {
+      originalValue = originalValue?.[key]
+      if (originalValue === undefined || originalValue === null) break
+    }
 
     setEditedFields((prev) => {
       const updated = { ...prev }
@@ -3072,45 +2954,42 @@ export function OnboardingTurnosCliente() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+      <AlertDialog open={showConfirmRestart} onOpenChange={setShowConfirmRestart}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <FileText className="h-6 w-6 text-blue-500 mb-2" />
-            <AlertDialogTitle>Tienes un borrador guardado</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro de que quieres reiniciar?</AlertDialogTitle>
             <AlertDialogDescription>
-              Encontramos un borrador de tu onboarding guardado hace un momento. Puedes continuar donde lo dejaste o
-              empezar de nuevo{hasToken ? " (manteniendo los datos prellenados)" : ""}.
+              Perderás todos los cambios no guardados y volverás al primer paso.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleRestartFromDraft}>Empezar de nuevo</AlertDialogCancel>
-            <AlertDialogAction onClick={handleContinueDraft}>Continuar donde lo dejé</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowConfirmRestart(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setCurrentStep(PRIMER_PASO)
+                setCompletedSteps([])
+                setFormData({
+                  empresa: getEmptyEmpresa(),
+                  admins: [],
+                  trabajadores: [],
+                  turnos: DEFAULT_TURNOS,
+                  planificaciones: [],
+                  asignaciones: [],
+                  configureNow: true,
+                })
+                setPrefilledFields(new Set())
+                setEditedFields({})
+                setIsEditing(true)
+                setIdZoho(null)
+                setHasToken(false)
+                setShowConfirmRestart(false)
+              }}
+            >
+              Reiniciar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertTriangle className="h-6 w-6 text-amber-500 mb-2" />
-            <AlertDialogTitle>Nuevos datos disponibles</AlertDialogTitle>
-            <AlertDialogDescription>
-              Detectamos nuevos datos desde el enlace, pero también tienes un borrador guardado. ¿Qué prefieres hacer?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleKeepDraftData}>Mantener mis cambios</AlertDialogCancel>
-            <AlertDialogAction onClick={handleUseTokenData}>Actualizar con nuevos datos</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {isSaving && (
-        <div className="fixed bottom-4 right-4 z-50 bg-white dark:bg-slate-800 shadow-lg rounded-lg px-4 py-2 flex items-center gap-2">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-r-transparent rounded-full" />
-          <span className="text-sm text-slate-600 dark:text-slate-400">Guardando...</span>
-        </div>
-      )}
 
       {/* Contenedor principal */}
       <div className="mx-auto w-full max-w-[1700px] px-4">
