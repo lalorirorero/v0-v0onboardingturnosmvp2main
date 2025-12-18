@@ -2900,12 +2900,9 @@ export function OnboardingTurnosCliente() {
   const handleNext = () => {
     const nextStep = currentStep + 1
     if (nextStep < steps.length) {
-      setCurrentStep(nextStep)
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
-        pasoActual: nextStep,
-        pasoNombre: steps[nextStep]?.label || "Paso desconocido",
+        pasoCompletado: currentStep,
+        pasoNombre: steps[currentStep]?.label || "Paso desconocido",
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut,
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
@@ -2914,13 +2911,16 @@ export function OnboardingTurnosCliente() {
       })
 
       sendProgressWebhook({
-        pasoActual: nextStep,
-        pasoNombre: steps[nextStep]?.label || "Paso desconocido",
+        pasoActual: currentStep,
+        pasoNombre: steps[currentStep]?.label || "Paso desconocido",
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut || "Sin RUT",
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-        idZoho: idZoho,
+        idZoho: idZoho || null,
       })
+
+      setCurrentStep(nextStep)
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
 
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
@@ -2929,8 +2929,6 @@ export function OnboardingTurnosCliente() {
   const handlePrev = () => {
     const prevStep = currentStep - 1
     if (prevStep >= 0) {
-      setCurrentStep(prevStep)
-
       console.log("[v0] handlePrev: Preparando envío de webhook de progreso", {
         pasoActual: prevStep,
         pasoNombre: steps[prevStep]?.label || "Paso desconocido",
@@ -2942,10 +2940,10 @@ export function OnboardingTurnosCliente() {
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut || "Sin RUT",
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-        idZoho: idZoho,
+        idZoho: idZoho || null,
       })
 
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      setCurrentStep(prevStep)
     }
   }
 
