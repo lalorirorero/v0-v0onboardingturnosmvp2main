@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const payload: ZohoPayload = await request.json()
 
-    if (payload.eventType === "complete" && payload.formData) {
+    if (payload.eventType === "complete" && payload.formData && payload.formData.empresa.razonSocial) {
       const workbook = XLSX.utils.book_new()
 
       // Hoja 1: Empresa
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       status: result.success ? 200 : 500,
     })
   } catch (error) {
+    console.error("[v0] API submit-to-zoho: ERROR", error)
     return NextResponse.json(
       {
         success: false,

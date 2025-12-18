@@ -329,7 +329,7 @@ export async function sendProgressWebhook(params: {
   const porcentajeProgreso = Math.round((params.pasoActual / params.totalPasos) * 100)
 
   const payload: ZohoPayload = {
-    accion: "progreso", // Ahora usa "progreso" para webhooks de avance de pasos
+    accion: "progreso",
     fechaHoraEnvio: new Date().toISOString(),
     eventType: "progress",
     id_zoho: params.idZoho,
@@ -365,24 +365,24 @@ export async function sendProgressWebhook(params: {
     excelFile: null,
   }
 
-  console.log("[v0] sendProgressWebhook: Payload construido", payload)
+  console.log("[v0] sendProgressWebhook: Payload construido")
   console.log("[v0] sendProgressWebhook: Enviando a través de API...")
 
-  fetch("/api/submit-to-zoho", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-    .then((response) => response.json())
-    .then((result) => {
-      if (result.success) {
-        console.log(`[v0] sendProgressWebhook: ✅ ÉXITO - Paso ${params.pasoActual}`)
-        console.log(`[v0] sendProgressWebhook: Respuesta de Zoho:`, result.data)
-      } else {
-        console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):`, result.error)
-      }
+  try {
+    const response = await fetch("/api/submit-to-zoho", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     })
-    .catch((error) => {
-      console.warn("[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):", error)
-    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      console.log(`[v0] sendProgressWebhook: ✅ ÉXITO - Paso ${params.pasoActual}`)
+    } else {
+      console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):`, result.error)
+    }
+  } catch (error) {
+    console.warn("[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):", error)
+  }
 }
