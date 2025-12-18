@@ -2905,7 +2905,7 @@ export function OnboardingTurnosCliente() {
 
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
         pasoActual: nextStep,
-        pasoNombre: steps[nextStep]?.title || "Paso desconocido",
+        pasoNombre: steps[nextStep]?.label || "Paso desconocido",
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut,
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
@@ -2915,7 +2915,7 @@ export function OnboardingTurnosCliente() {
 
       sendProgressWebhook({
         pasoActual: nextStep,
-        pasoNombre: steps[nextStep]?.title || "Paso desconocido",
+        pasoNombre: steps[nextStep]?.label || "Paso desconocido",
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut || "Sin RUT",
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
@@ -2928,22 +2928,17 @@ export function OnboardingTurnosCliente() {
 
   const handlePrev = () => {
     const prevStep = currentStep - 1
-    if (prevStep >= PRIMER_PASO) {
+    if (prevStep >= 0) {
       setCurrentStep(prevStep)
 
       console.log("[v0] handlePrev: Preparando envío de webhook de progreso", {
         pasoActual: prevStep,
-        pasoNombre: steps[prevStep]?.title || "Paso desconocido",
-        totalPasos: steps.length,
-        empresaRut: formData.empresa.rut,
-        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
-        idZoho: idZoho,
-        tieneIdZoho: !!idZoho,
+        pasoNombre: steps[prevStep]?.label || "Paso desconocido",
       })
 
       sendProgressWebhook({
         pasoActual: prevStep,
-        pasoNombre: steps[prevStep]?.title || "Paso desconocido",
+        pasoNombre: steps[prevStep]?.label || "Paso desconocido",
         totalPasos: steps.length,
         empresaRut: formData.empresa.rut || "Sin RUT",
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
@@ -3004,8 +2999,16 @@ export function OnboardingTurnosCliente() {
         totalPasos: steps.length,
         porcentajeProgreso: 100,
       },
-      excelFile: null, // Se generará en el backend si es necesario
+      excelFile: null, // Se generará en el backend
     }
+
+    console.log("[v0] handleFinalizar: Payload unificado construido", {
+      accion: payload.accion,
+      eventType: payload.eventType,
+      id_zoho: payload.id_zoho,
+      tieneFormData: !!payload.formData,
+      tieneMetadata: !!payload.metadata,
+    })
 
     try {
       const response = await fetch("/api/submit-to-zoho", {
@@ -3018,23 +3021,22 @@ export function OnboardingTurnosCliente() {
 
       if (result.success) {
         toast({
-          title: "¡Completado!",
-          description: "Tu configuración ha sido enviada correctamente.",
+          title: "¡Onboarding completado!",
+          description: "Los datos se enviaron correctamente a Zoho Flow",
         })
-        setZohoSubmissionResult(result.data)
-        // PersistenceManager.clearDraft() // Assuming PersistenceManager exists
-        // PersistenceManager.clearPrefill() // Assuming PersistenceManager exists
-        // Optionally redirect or show a success message/component
-        // Example: Redirect to a confirmation page or dashboard
-        // window.location.href = "/onboarding-success";
+        setCurrentStep(steps.length - 1)
       } else {
-        throw new Error(result.error || "Error al enviar datos")
+        toast({
+          title: "Error al enviar datos",
+          description: result.error || "Error desconocido",
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      console.error("[v0] Error en handleFinalizar:", error)
+      console.error("[v0] handleFinalizar: Error:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al enviar los datos",
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor",
         variant: "destructive",
       })
     } finally {

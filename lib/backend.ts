@@ -190,9 +190,9 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
 
 export interface ZohoPayload {
   accion: "crear" | "actualizar"
-  fechaHoraEnvio: string // Timestamp ISO del envío
+  fechaHoraEnvio: string
   eventType: "progress" | "complete"
-  id_zoho: string | null // Cambiado de opcional a nullable
+  id_zoho: string | null
   formData: {
     empresa: {
       id_zoho: string | null
