@@ -256,3 +256,59 @@ export async function sendToZohoFlow(payload: ZohoPayload): Promise<{
     }
   }
 }
+
+/**
+ * Envía un webhook de progreso a Zoho Flow (fire-and-forget)
+ * NO bloquea la navegación si hay error
+ */
+export async function sendProgressWebhook(params: {
+  pasoActual: number
+  pasoNombre: string
+  totalPasos: number
+  empresaRut: string
+  empresaNombre: string
+  idZoho: string | null
+}): Promise<void> {
+  // Solo enviar si hay id_zoho (usuario con token)
+  if (!params.idZoho) {
+    console.log("[v0] sendProgressWebhook: Skipped (no id_zoho)")
+    return
+  }
+
+  // No enviar en paso 0 (Bienvenida)
+  if (params.pasoActual === 0) {
+    console.log("[v0] sendProgressWebhook: Skipped (paso 0)")
+    return
+  }
+
+  const porcentajeProgreso = Math.round((params.pasoActual / params.totalPasos) * 100)
+
+  const payload: ZohoPayload = {
+    accion: "actualizar",
+    fechaHoraEnvio: new Date().toISOString(),
+    eventType: "progress",
+    id_zoho: params.idZoho,
+    formData: null, // No enviamos datos completos en progreso
+    metadata: {
+      empresaRut: params.empresaRut,
+      empresaNombre: params.empresaNombre,
+      pasoActual: params.pasoActual,
+      pasoNombre: params.pasoNombre,
+      totalPasos: params.totalPasos,
+      porcentajeProgreso,
+    },
+  }
+
+  // Fire-and-forget: no esperamos respuesta ni bloqueamos navegación
+  sendToZohoFlow(payload)
+    .then((result) => {
+      if (result.success) {
+        console.log(`[v0] sendProgressWebhook: Enviado correctamente (paso ${params.pasoActual})`)
+      } else {
+        console.warn(`[v0] sendProgressWebhook: Error (no bloqueante):`, result.error)
+      }
+    })
+    .catch((error) => {
+      console.warn("[v0] sendProgressWebhook: Error (no bloqueante):", error)
+    })
+}

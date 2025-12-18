@@ -37,6 +37,7 @@ import {
 
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
+import { sendProgressWebhook } from "@/lib/backend"
 // REMOVED: PersistenceManager and persistence types
 
 const steps = [
@@ -437,7 +438,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "CONSTRUCCIÓN",
   ]
 
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(true)
   const hasPrefilled = prefilledFields.size > 0
 
   const handleEmpresaChange = (e) => {
@@ -2883,7 +2884,16 @@ export function OnboardingTurnosCliente() {
     if (nextStep < steps.length) {
       setCurrentStep(nextStep)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-      // sendProgressWebhook(nextStep) // Removed for now, can be re-integrated
+
+      sendProgressWebhook({
+        pasoActual: nextStep,
+        pasoNombre: steps[nextStep]?.title || "Paso desconocido",
+        totalPasos: steps.length,
+        empresaRut: formData.empresa.rut || "Sin RUT",
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
+        idZoho: idZoho,
+      })
+
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
@@ -2892,7 +2902,16 @@ export function OnboardingTurnosCliente() {
     const prevStep = currentStep - 1
     if (prevStep >= PRIMER_PASO) {
       setCurrentStep(prevStep)
-      // sendProgressWebhook(prevStep) // Removed for now, can be re-integrated
+
+      sendProgressWebhook({
+        pasoActual: prevStep,
+        pasoNombre: steps[prevStep]?.title || "Paso desconocido",
+        totalPasos: steps.length,
+        empresaRut: formData.empresa.rut || "Sin RUT",
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
+        idZoho: idZoho,
+      })
+
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
