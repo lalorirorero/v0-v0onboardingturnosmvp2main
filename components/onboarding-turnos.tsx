@@ -100,6 +100,103 @@ const isValidEmail = (email) => {
   return re.test(email.trim())
 }
 
+const validateEmpresa = (empresa) => {
+  const required = [
+    "razonSocial",
+    "nombreFantasia",
+    "rut",
+    "giro",
+    "direccion",
+    "comuna",
+    "emailFacturacion",
+    "telefonoContacto",
+    "rubro",
+  ]
+  const missing = required.filter((field) => !empresa[field] || empresa[field].trim() === "")
+
+  if (missing.length > 0) {
+    return { valid: false, missing }
+  }
+
+  if (!empresa.sistema || empresa.sistema.length === 0) {
+    return { valid: false, missing: ["sistema"] }
+  }
+
+  if (!isValidRut(empresa.rut)) {
+    return { valid: false, error: "RUT inválido" }
+  }
+
+  if (!isValidEmail(empresa.emailFacturacion)) {
+    return { valid: false, error: "Email de facturación inválido" }
+  }
+
+  return { valid: true }
+}
+
+const validateAdmins = (admins) => {
+  if (admins.length === 0) {
+    return { valid: false, error: "Debe agregar al menos un administrador" }
+  }
+
+  for (const admin of admins) {
+    if (!admin.nombre || !admin.nombre.trim()) {
+      return { valid: false, error: "Todos los administradores deben tener nombre" }
+    }
+    if (!admin.email || !admin.email.trim()) {
+      return { valid: false, error: "Todos los administradores deben tener email" }
+    }
+    if (!isValidEmail(admin.email)) {
+      return { valid: false, error: `Email inválido: ${admin.email}` }
+    }
+  }
+
+  return { valid: true }
+}
+
+const validateTurnos = (turnos) => {
+  if (turnos.length === 0) {
+    return { valid: false, error: "Debe crear al menos un turno" }
+  }
+
+  for (const turno of turnos) {
+    if (!turno.nombre || !turno.nombre.trim()) {
+      return { valid: false, error: "Todos los turnos deben tener nombre" }
+    }
+    if (!turno.horaInicio || !turno.horaFin) {
+      return { valid: false, error: `El turno "${turno.nombre}" debe tener hora de inicio y fin` }
+    }
+    if (turno.colacionMinutos === undefined || turno.colacionMinutos === null) {
+      return { valid: false, error: `El turno "${turno.nombre}" debe tener tiempo de colación (puede ser 0)` }
+    }
+  }
+
+  return { valid: true }
+}
+
+const validatePlanificaciones = (planificaciones) => {
+  if (planificaciones.length === 0) {
+    return { valid: false, error: "Debe crear al menos una planificación" }
+  }
+
+  for (const plan of planificaciones) {
+    if (!plan.nombre || !plan.nombre.trim()) {
+      return { valid: false, error: "Todas las planificaciones deben tener nombre" }
+    }
+    if (!plan.diasTurnos || plan.diasTurnos.length !== 7) {
+      return { valid: false, error: `La planificación "${plan.nombre}" debe tener 7 días` }
+    }
+    const esCompleta = plan.diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
+    if (!esCompleta) {
+      return {
+        valid: false,
+        error: `La planificación "${plan.nombre}" debe tener turnos asignados para todos los días`,
+      }
+    }
+  }
+
+  return { valid: true }
+}
+
 const Stepper = ({ currentStep }) => {
   return (
     <div className="w-full overflow-hidden">
@@ -2897,7 +2994,73 @@ export function OnboardingTurnosCliente() {
     setIsEditing(false)
   }
 
+  const canProceedToNextStep = () => {
+    switch (currentStep) {
+      case 2: // Paso Empresa
+        const validacionEmpresa = validateEmpresa(formData.empresa)
+        if (!validacionEmpresa.valid) {
+          if (validacionEmpresa.missing) {
+            toast({
+              title: "Campos obligatorios faltantes",
+              description: `Por favor completa: ${validacionEmpresa.missing.join(", ")}`,
+              variant: "destructive",
+            })
+          } else if (validacionEmpresa.error) {
+            toast({
+              title: "Error de validación",
+              description: validacionEmpresa.error,
+              variant: "destructive",
+            })
+          }
+          return false
+        }
+        break
+
+      case 3: // Paso Admin
+        const validacionAdmin = validateAdmins(formData.admins)
+        if (!validacionAdmin.valid) {
+          toast({
+            title: "Validación de administradores",
+            description: validacionAdmin.error,
+            variant: "destructive",
+          })
+          return false
+        }
+        break
+
+      case 6: // Paso Turnos
+        const validacionTurnos = validateTurnos(formData.turnos)
+        if (!validacionTurnos.valid) {
+          toast({
+            title: "Validación de turnos",
+            description: validacionTurnos.error,
+            variant: "destructive",
+          })
+          return false
+        }
+        break
+
+      case 8: // Paso Planificaciones
+        const validacionPlanificaciones = validatePlanificaciones(formData.planificaciones)
+        if (!validacionPlanificaciones.valid) {
+          toast({
+            title: "Validación de planificaciones",
+            description: validacionPlanificaciones.error,
+            variant: "destructive",
+          })
+          return false
+        }
+        break
+    }
+
+    return true
+  }
+
   const handleNext = () => {
+    if (!canProceedToNextStep()) {
+      return
+    }
+
     const nextStep = currentStep + 1
     if (nextStep < steps.length) {
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
@@ -2921,7 +3084,6 @@ export function OnboardingTurnosCliente() {
 
       setCurrentStep(nextStep)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
@@ -3288,10 +3450,12 @@ export function OnboardingTurnosCliente() {
               </span>
 
               {currentStep < 9 ? (
+                // Actualizando botón Siguiente para mostrar estado deshabilitado
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                  disabled={!canProceedToNextStep()}
+                  className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
                   Siguiente →
                 </button>
