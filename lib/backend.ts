@@ -365,7 +365,6 @@ export async function sendProgressWebhook(params: {
     excelFile: null,
   }
 
-  console.log("[v0] sendProgressWebhook: Payload construido")
   console.log("[v0] sendProgressWebhook: Enviando a través de API...")
 
   try {
@@ -374,6 +373,12 @@ export async function sendProgressWebhook(params: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR HTTP ${response.status}:`, errorText)
+      return
+    }
 
     const result = await response.json()
 
@@ -384,5 +389,6 @@ export async function sendProgressWebhook(params: {
     }
   } catch (error) {
     console.warn("[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):", error)
+    // No re-lanzar el error para no bloquear la navegación
   }
 }

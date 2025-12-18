@@ -3057,6 +3057,7 @@ export function OnboardingTurnosCliente() {
   }
 
   const handleNext = () => {
+    // Validar antes de avanzar
     if (!canProceedToNextStep()) {
       return
     }
@@ -3066,11 +3067,6 @@ export function OnboardingTurnosCliente() {
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
         pasoCompletado: currentStep,
         pasoNombre: steps[currentStep]?.label || "Paso desconocido",
-        totalPasos: steps.length,
-        empresaRut: formData.empresa.rut,
-        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
-        idZoho: idZoho,
-        tieneIdZoho: !!idZoho,
       })
 
       sendProgressWebhook({
@@ -3080,6 +3076,8 @@ export function OnboardingTurnosCliente() {
         empresaRut: formData.empresa.rut || "Sin RUT",
         empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
         idZoho: idZoho || null,
+      }).catch((error) => {
+        console.warn("[v0] handleNext: Error enviando webhook (no bloqueante):", error)
       })
 
       setCurrentStep(nextStep)
@@ -3444,7 +3442,7 @@ export function OnboardingTurnosCliente() {
                 ← Atrás
               </button>
 
-              {/* Ajustar texto del paso */}
+              {/* Actualizar el texto del paso para que coincida con el índice actual */}
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Paso {currentStep} de {steps.length - 1}
               </span>
