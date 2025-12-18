@@ -191,24 +191,65 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
 export interface ZohoPayload {
   accion: "crear" | "actualizar"
   fechaHoraEnvio: string // Timestamp ISO del envío
-  eventType: "started" | "progress" | "complete"
+  eventType: "progress" | "complete"
   id_zoho: string | null // Cambiado de opcional a nullable
-  formData: FormData | null // Puede ser null en eventos de progreso
+  formData: {
+    empresa: {
+      id_zoho: string | null
+      razonSocial: string
+      nombreFantasia: string
+      rut: string
+      giro: string
+      direccion: string
+      comuna: string
+      emailFacturacion: string
+      telefonoContacto: string
+      sistema: string[]
+      rubro: string
+    }
+    admins: Array<{
+      nombre: string
+      apellido: string
+      email: string
+      telefono: string
+      cargo: string
+    }>
+    trabajadores: Array<{
+      nombre: string
+      rut: string
+      email: string
+      grupo: string
+    }>
+    turnos: Array<{
+      id: string
+      nombre: string
+      horaInicio: string
+      horaFin: string
+      diasSemana: number[]
+      color: string
+    }>
+    planificaciones: Array<{
+      id: string
+      nombre: string
+      fechaInicio: string
+      fechaFin: string
+      turnos: Array<{ turnoId: string; dias: string[] }>
+    }>
+    asignaciones: Array<{
+      trabajadorRut: string
+      planificacionId: string
+    }>
+    configureNow: boolean
+  }
   metadata: {
     empresaRut: string
     empresaNombre: string
-    pasoActual?: number
-    pasoNombre?: string
-    totalPasos?: number
-    porcentajeProgreso?: number
-    totalCambios?: number
-    editedFields?: Array<{
-      field: string
-      originalValue: any
-      currentValue: any
-    }>
+    pasoActual: number
+    pasoNombre: string
+    totalPasos: number
+    porcentajeProgreso: number
   }
-  excelFile?: {
+  excelFile: {
     filename: string
     base64: string
     mimeType: string
@@ -275,13 +316,11 @@ export async function sendProgressWebhook(params: {
     pasoActual: params.pasoActual,
   })
 
-  // Solo enviar si hay id_zoho (usuario con token)
   if (!params.idZoho) {
     console.log("[v0] sendProgressWebhook: SKIPPED - No hay id_zoho")
     return
   }
 
-  // No enviar en paso 0 (Bienvenida)
   if (params.pasoActual === 0) {
     console.log("[v0] sendProgressWebhook: SKIPPED - Paso 0 (Bienvenida)")
     return
@@ -294,7 +333,27 @@ export async function sendProgressWebhook(params: {
     fechaHoraEnvio: new Date().toISOString(),
     eventType: "progress",
     id_zoho: params.idZoho,
-    formData: null, // No enviamos datos completos en progreso
+    formData: {
+      empresa: {
+        id_zoho: params.idZoho,
+        razonSocial: "",
+        nombreFantasia: "",
+        rut: params.empresaRut,
+        giro: "",
+        direccion: "",
+        comuna: "",
+        emailFacturacion: "",
+        telefonoContacto: "",
+        sistema: [],
+        rubro: "",
+      },
+      admins: [],
+      trabajadores: [],
+      turnos: [],
+      planificaciones: [],
+      asignaciones: [],
+      configureNow: false,
+    },
     metadata: {
       empresaRut: params.empresaRut,
       empresaNombre: params.empresaNombre,
@@ -303,12 +362,12 @@ export async function sendProgressWebhook(params: {
       totalPasos: params.totalPasos,
       porcentajeProgreso,
     },
+    excelFile: null,
   }
 
   console.log("[v0] sendProgressWebhook: Payload construido", payload)
   console.log("[v0] sendProgressWebhook: Enviando a través de API...")
 
-  // Fire-and-forget: no esperamos respuesta ni bloqueamos navegación
   fetch("/api/submit-to-zoho", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -2574,6 +2574,24 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
+// Define ZohoPayload type
+type ZohoPayload = {
+  accion: "crear" | "actualizar"
+  fechaHoraEnvio: string
+  eventType: string
+  id_zoho: string | null
+  formData: Partial<OnboardingFormData>
+  metadata: {
+    empresaRut: string
+    empresaNombre: string
+    pasoActual: number
+    pasoNombre: string
+    totalPasos: number
+    porcentajeProgreso: number
+  }
+  excelFile: string | null // Assuming base64 or similar string representation
+}
+
 const DEFAULT_TURNOS = [
   {
     id: 1,
@@ -2952,24 +2970,48 @@ export function OnboardingTurnosCliente() {
   const handleFinalizar = async () => {
     setIsSubmitting(true)
 
-    const finalData = {
-      empresa: { ...formData.empresa, id_zoho: idZoho },
-      admins: formData.admins,
-      trabajadores: formData.trabajadores,
-      turnos: formData.turnos,
-      planificaciones: formData.planificaciones,
-      asignaciones: formData.asignaciones,
-      configureNow: formData.configureNow,
+    const payload: ZohoPayload = {
+      accion: idZoho ? "actualizar" : "crear",
+      fechaHoraEnvio: new Date().toISOString(),
+      eventType: "complete",
+      id_zoho: idZoho,
+      formData: {
+        empresa: {
+          id_zoho: idZoho,
+          razonSocial: formData.empresa.razonSocial || "",
+          nombreFantasia: formData.empresa.nombreFantasia || "",
+          rut: formData.empresa.rut || "",
+          giro: formData.empresa.giro || "",
+          direccion: formData.empresa.direccion || "",
+          comuna: formData.empresa.comuna || "",
+          emailFacturacion: formData.empresa.emailFacturacion || "",
+          telefonoContacto: formData.empresa.telefonoContacto || "",
+          sistema: formData.empresa.sistema || [],
+          rubro: formData.empresa.rubro || "",
+        },
+        admins: formData.admins || [],
+        trabajadores: formData.trabajadores || [],
+        turnos: formData.turnos || [],
+        planificaciones: formData.planificaciones || [],
+        asignaciones: formData.asignaciones || [],
+        configureNow: formData.configureNow || false,
+      },
+      metadata: {
+        empresaRut: formData.empresa.rut || "",
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "",
+        pasoActual: 10,
+        pasoNombre: "Completado",
+        totalPasos: steps.length,
+        porcentajeProgreso: 100,
+      },
+      excelFile: null, // Se generará en el backend si es necesario
     }
 
     try {
       const response = await fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formData: finalData,
-          idZoho: idZoho,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const result = await response.json()
