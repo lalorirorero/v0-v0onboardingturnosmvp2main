@@ -269,15 +269,21 @@ export async function sendProgressWebhook(params: {
   empresaNombre: string
   idZoho: string | null
 }): Promise<void> {
+  console.log("[v0] sendProgressWebhook: INICIO", {
+    params,
+    hasIdZoho: !!params.idZoho,
+    pasoActual: params.pasoActual,
+  })
+
   // Solo enviar si hay id_zoho (usuario con token)
   if (!params.idZoho) {
-    console.log("[v0] sendProgressWebhook: Skipped (no id_zoho)")
+    console.log("[v0] sendProgressWebhook: SKIPPED - No hay id_zoho")
     return
   }
 
   // No enviar en paso 0 (Bienvenida)
   if (params.pasoActual === 0) {
-    console.log("[v0] sendProgressWebhook: Skipped (paso 0)")
+    console.log("[v0] sendProgressWebhook: SKIPPED - Paso 0 (Bienvenida)")
     return
   }
 
@@ -299,16 +305,20 @@ export async function sendProgressWebhook(params: {
     },
   }
 
+  console.log("[v0] sendProgressWebhook: Payload construido", payload)
+  console.log("[v0] sendProgressWebhook: Enviando a Zoho Flow...")
+
   // Fire-and-forget: no esperamos respuesta ni bloqueamos navegación
   sendToZohoFlow(payload)
     .then((result) => {
       if (result.success) {
-        console.log(`[v0] sendProgressWebhook: Enviado correctamente (paso ${params.pasoActual})`)
+        console.log(`[v0] sendProgressWebhook: ✅ ÉXITO - Paso ${params.pasoActual}`)
+        console.log(`[v0] sendProgressWebhook: Respuesta de Zoho:`, result.data)
       } else {
-        console.warn(`[v0] sendProgressWebhook: Error (no bloqueante):`, result.error)
+        console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):`, result.error)
       }
     })
     .catch((error) => {
-      console.warn("[v0] sendProgressWebhook: Error (no bloqueante):", error)
+      console.warn("[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):", error)
     })
 }

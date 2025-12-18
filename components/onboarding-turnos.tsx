@@ -2885,6 +2885,16 @@ export function OnboardingTurnosCliente() {
       setCurrentStep(nextStep)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
 
+      console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
+        pasoActual: nextStep,
+        pasoNombre: steps[nextStep]?.title || "Paso desconocido",
+        totalPasos: steps.length,
+        empresaRut: formData.empresa.rut,
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
+        idZoho: idZoho,
+        tieneIdZoho: !!idZoho,
+      })
+
       sendProgressWebhook({
         pasoActual: nextStep,
         pasoNombre: steps[nextStep]?.title || "Paso desconocido",
@@ -2902,6 +2912,16 @@ export function OnboardingTurnosCliente() {
     const prevStep = currentStep - 1
     if (prevStep >= PRIMER_PASO) {
       setCurrentStep(prevStep)
+
+      console.log("[v0] handlePrev: Preparando envío de webhook de progreso", {
+        pasoActual: prevStep,
+        pasoNombre: steps[prevStep]?.title || "Paso desconocido",
+        totalPasos: steps.length,
+        empresaRut: formData.empresa.rut,
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia,
+        idZoho: idZoho,
+        tieneIdZoho: !!idZoho,
+      })
 
       sendProgressWebhook({
         pasoActual: prevStep,
