@@ -2576,7 +2576,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
 
 // Define ZohoPayload type
 type ZohoPayload = {
-  accion: "crear" | "actualizar"
+  accion: "crear" | "actualizar" | "completado" // Added "completado" option
   fechaHoraEnvio: string
   eventType: string
   id_zoho: string | null
@@ -2966,7 +2966,7 @@ export function OnboardingTurnosCliente() {
     setIsSubmitting(true)
 
     const payload: ZohoPayload = {
-      accion: idZoho ? "actualizar" : "crear",
+      accion: "completado", // Ahora usa "completado" para webhook final con todos los datos
       fechaHoraEnvio: new Date().toISOString(),
       eventType: "complete",
       id_zoho: idZoho,

@@ -189,7 +189,7 @@ export async function decryptToken(token: string): Promise<EmpresaData | null> {
 // ============================================================================
 
 export interface ZohoPayload {
-  accion: "crear" | "actualizar"
+  accion: "progreso" | "completado" // Renombrado para diferenciar tipo de evento en lugar de operación CRUD
   fechaHoraEnvio: string
   eventType: "progress" | "complete"
   id_zoho: string | null
@@ -329,7 +329,7 @@ export async function sendProgressWebhook(params: {
   const porcentajeProgreso = Math.round((params.pasoActual / params.totalPasos) * 100)
 
   const payload: ZohoPayload = {
-    accion: "actualizar",
+    accion: "progreso", // Ahora usa "progreso" para webhooks de avance de pasos
     fechaHoraEnvio: new Date().toISOString(),
     eventType: "progress",
     id_zoho: params.idZoho,
