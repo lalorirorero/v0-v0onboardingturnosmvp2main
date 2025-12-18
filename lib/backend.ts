@@ -306,10 +306,15 @@ export async function sendProgressWebhook(params: {
   }
 
   console.log("[v0] sendProgressWebhook: Payload construido", payload)
-  console.log("[v0] sendProgressWebhook: Enviando a Zoho Flow...")
+  console.log("[v0] sendProgressWebhook: Enviando a través de API...")
 
   // Fire-and-forget: no esperamos respuesta ni bloqueamos navegación
-  sendToZohoFlow(payload)
+  fetch("/api/submit-to-zoho", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.json())
     .then((result) => {
       if (result.success) {
         console.log(`[v0] sendProgressWebhook: ✅ ÉXITO - Paso ${params.pasoActual}`)
