@@ -437,8 +437,8 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "CONSTRUCCIÓN",
   ]
 
-  const [isEditing, setIsEditing] = useState(true)
-  const hasPrefilled = prefilledFields.size > 0 // Use prefilledFields Set
+  const [isEditing, setIsEditing] = useState(false)
+  const hasPrefilled = prefilledFields.size > 0
 
   const handleEmpresaChange = (e) => {
     const { name, value } = e.target
