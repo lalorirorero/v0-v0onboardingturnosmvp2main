@@ -100,6 +100,61 @@ const isValidEmail = (email) => {
   return re.test(email.trim())
 }
 
+const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = []
+
+  if (!empresa.razonSocial?.trim()) errors.push("Razón Social")
+  if (!empresa.nombreFantasia?.trim()) errors.push("Nombre de fantasía")
+  if (!empresa.rut?.trim()) errors.push("RUT")
+  if (!empresa.giro?.trim()) errors.push("Giro")
+  if (!empresa.direccion?.trim()) errors.push("Dirección")
+  if (!empresa.comuna?.trim()) errors.push("Comuna")
+  if (!empresa.emailFacturacion?.trim()) errors.push("Email de facturación")
+  if (!empresa.telefonoContacto?.trim()) errors.push("Teléfono de contacto")
+  if (!empresa.rubro?.trim()) errors.push("Rubro")
+  if (!empresa.sistema || empresa.sistema.length === 0) errors.push("Sistema")
+
+  // Validación de email
+  if (empresa.emailFacturacion?.trim()) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(empresa.emailFacturacion)) {
+      errors.push("Email de facturación (formato inválido)")
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
+const validateAdminsFields = (admins: any[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = []
+
+  if (!admins || admins.length === 0) {
+    errors.push("Debe agregar al menos un administrador")
+    return { isValid: false, errors }
+  }
+
+  admins.forEach((admin, index) => {
+    const adminNum = index + 1
+    if (!admin.nombre?.trim()) errors.push(`Administrador ${adminNum}: Nombre`)
+    if (!admin.email?.trim()) errors.push(`Administrador ${adminNum}: Email`)
+    else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(admin.email)) {
+        errors.push(`Administrador ${adminNum}: Email (formato inválido)`)
+      }
+    }
+    if (!admin.telefono?.trim()) errors.push(`Administrador ${adminNum}: Teléfono`)
+  })
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
 const Stepper = ({ currentStep }) => {
   return (
     <div className="w-full overflow-hidden">
@@ -161,8 +216,21 @@ const AdminStep = ({
   // CHANGE: Corrigiendo llamado a addAdmin para pasar los parámetros correctos
   const handleAddAdminClick = () => {
     console.log("[v0] ===== BOTÓN AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
-    if (!formData.nombre.trim() || !formData.apellido.trim()) {
-      alert("Por favor ingresa el nombre y apellido del administrador")
+
+    const errors = []
+    if (!formData.nombre.trim()) errors.push("Nombre")
+    if (!formData.apellido.trim()) errors.push("Apellido")
+    if (!formData.email.trim()) errors.push("Email")
+    else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        errors.push("Email (formato inválido)")
+      }
+    }
+    if (!formData.telefono.trim()) errors.push("Teléfono")
+
+    if (errors.length > 0) {
+      alert(`Por favor completa los siguientes campos obligatorios: ${errors.join(", ")}`)
       return
     }
 
@@ -210,10 +278,14 @@ const AdminStep = ({
 
       {/* Formulario de nuevo administrador */}
       <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-medium text-slate-700">Datos del administrador</h3>
+        <h3 className="text-sm font-medium text-slate-700">
+          Datos del administrador <span className="text-destructive">*</span>
+        </h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Nombre</label>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Nombre <span className="text-destructive">*</span>
+            </label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               type="text"
@@ -221,10 +293,13 @@ const AdminStep = ({
               onChange={(e) => handleFormChange("nombre", e.target.value)}
               placeholder="Ej: María"
               disabled={!isEditMode}
+              required
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Apellido</label>
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Apellido <span className="text-destructive">*</span>
+            </label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               type="text"
@@ -232,6 +307,7 @@ const AdminStep = ({
               onChange={(e) => handleFormChange("apellido", e.target.value)}
               placeholder="Ej: González"
               disabled={!isEditMode}
+              required
             />
           </div>
           <div>
@@ -252,7 +328,9 @@ const AdminStep = ({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              <span>Correo</span>
+              <span>
+                Correo <span className="text-destructive">*</span>
+              </span>
               <span className="ml-1 cursor-help text-slate-400" title="Será usado para inicio de sesión">
                 ⓘ
               </span>
@@ -264,11 +342,14 @@ const AdminStep = ({
               onChange={(e) => handleFormChange("email", e.target.value)}
               placeholder=" correo@empresa.cl"
               disabled={!isEditMode}
+              required
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              <span>Teléfono</span>
+              <span>
+                Teléfono <span className="text-destructive">*</span>
+              </span>
               <span className="ml-1 cursor-help text-slate-400" title="Con código de país">
                 ⓘ
               </span>
@@ -280,6 +361,7 @@ const AdminStep = ({
               onChange={(e) => handleFormChange("telefono", e.target.value)}
               placeholder="+56912345678"
               disabled={!isEditMode}
+              required
             />
           </div>
           <div>
@@ -363,11 +445,11 @@ const AdminStep = ({
         </div>
       )}
 
-      {admins.length === 0 && isEditMode && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-          <p className="text-sm text-slate-500">No hay administradores agregados aún</p>
-          <p className="text-xs text-slate-400 mt-1">
-            Completa el formulario arriba para agregar el primer administrador
+      {admins.length === 0 && (
+        <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-6 text-center">
+          <p className="text-sm font-medium text-amber-800">Debes agregar al menos un administrador</p>
+          <p className="text-xs text-amber-600 mt-1">
+            Completa el formulario arriba con todos los campos obligatorios (*)
           </p>
         </div>
       )}
@@ -2898,6 +2980,32 @@ export function OnboardingTurnosCliente() {
   }
 
   const handleNext = () => {
+    if (currentStep === 1) {
+      // Paso Empresa
+      const validation = validateEmpresaFields(formData.empresa)
+      if (!validation.isValid) {
+        toast({
+          title: "Campos obligatorios faltantes",
+          description: `Por favor completa los siguientes campos: ${validation.errors.join(", ")}`,
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    if (currentStep === 2) {
+      // Paso Administrador
+      const validation = validateAdminsFields(formData.admins)
+      if (!validation.isValid) {
+        toast({
+          title: "Administrador requerido",
+          description: validation.errors.join(", "),
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     const nextStep = currentStep + 1
     if (nextStep < steps.length) {
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
