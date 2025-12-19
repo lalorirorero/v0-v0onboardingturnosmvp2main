@@ -2980,7 +2980,7 @@ export function OnboardingTurnosCliente() {
   }
 
   const handleNext = () => {
-    if (currentStep === 1) {
+    if (currentStep === 2) {
       // Paso Empresa
       const validation = validateEmpresaFields(formData.empresa)
       if (!validation.isValid) {
@@ -2993,7 +2993,7 @@ export function OnboardingTurnosCliente() {
       }
     }
 
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       // Paso Administrador
       const validation = validateAdminsFields(formData.admins)
       if (!validation.isValid) {
