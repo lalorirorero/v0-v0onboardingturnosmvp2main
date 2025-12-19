@@ -1247,7 +1247,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
     horaInicio: "",
     horaFin: "",
     tipoColacion: "sin", // "sin", "libre", "fija"
-    colacionMinutos: 0,
+    colacionMinutos: "", // Cambiado de 0 a "" para permitir borrar
     colacionInicio: "",
     colacionFin: "",
     tooltip: "",
@@ -1266,6 +1266,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       {
         id: Date.now(),
         ...formTurno,
+        colacionMinutos: formTurno.colacionMinutos === "" ? 0 : Number(formTurno.colacionMinutos),
       },
     ])
 
@@ -1275,7 +1276,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       horaInicio: "",
       horaFin: "",
       tipoColacion: "sin",
-      colacionMinutos: 0,
+      colacionMinutos: "", // Cambiado de 0 a ""
       colacionInicio: "",
       colacionFin: "",
       tooltip: "",
@@ -1345,7 +1346,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
           <div className="grid gap-2 md:grid-cols-3">
             <button
               type="button"
-              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "sin", colacionMinutos: 0 })}
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "sin", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "sin"
                   ? "border-sky-500 bg-sky-50 text-sky-700"
@@ -1356,7 +1357,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
             </button>
             <button
               type="button"
-              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "libre" })}
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "libre", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "libre"
                   ? "border-sky-500 bg-sky-50 text-sky-700"
@@ -1367,7 +1368,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
             </button>
             <button
               type="button"
-              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "fija" })}
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "fija", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "fija"
                   ? "border-sky-500 bg-sky-50 text-sky-700"
@@ -1385,7 +1386,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                 className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 type="number"
                 value={formTurno.colacionMinutos}
-                onChange={(e) => setFormTurno({ ...formTurno, colacionMinutos: Number.parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormTurno({ ...formTurno, colacionMinutos: e.target.value })}
                 placeholder="Ej: 30, 60"
                 min="0"
               />
