@@ -292,7 +292,6 @@ const AdminStep = ({
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
               placeholder="Ej: María"
-              disabled={!isEditMode}
               required
             />
           </div>
@@ -306,7 +305,6 @@ const AdminStep = ({
               value={formData.apellido}
               onChange={(e) => handleFormChange("apellido", e.target.value)}
               placeholder="Ej: González"
-              disabled={!isEditMode}
               required
             />
           </div>
@@ -323,7 +321,6 @@ const AdminStep = ({
               value={formData.rut}
               onChange={(e) => handleFormChange("rut", e.target.value)}
               placeholder="12345678-9"
-              disabled={!isEditMode}
             />
           </div>
           <div>
@@ -341,7 +338,6 @@ const AdminStep = ({
               value={formData.email}
               onChange={(e) => handleFormChange("email", e.target.value)}
               placeholder=" correo@empresa.cl"
-              disabled={!isEditMode}
               required
             />
           </div>
@@ -360,7 +356,6 @@ const AdminStep = ({
               value={formData.telefono}
               onChange={(e) => handleFormChange("telefono", e.target.value)}
               placeholder="+56912345678"
-              disabled={!isEditMode}
               required
             />
           </div>
@@ -371,30 +366,22 @@ const AdminStep = ({
                 ⓘ
               </span>
             </label>
-            <select
+            <input
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              type="text"
               value={formData.grupo}
               onChange={(e) => handleFormChange("grupo", e.target.value)}
-              disabled={!isEditMode}
-            >
-              <option value="">Seleccionar grupo...</option>
-              {grupos.map((g) => (
-                <option key={g.id} value={g.nombre}>
-                  {g.nombre}
-                </option>
-              ))}
-            </select>
+              placeholder="Ej: Recursos Humanos, Operaciones, etc."
+            />
           </div>
         </div>
-        {isEditMode && (
-          <button
-            type="button"
-            onClick={handleAddAdminClick}
-            className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          >
-            + Agregar administrador
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleAddAdminClick}
+          className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+        >
+          + Agregar administrador
+        </button>
       </div>
 
       {/* Listado de administradores */}
@@ -404,7 +391,7 @@ const AdminStep = ({
           <div className="space-y-2">
             {admins.map((admin, index) => (
               <div
-                key={admin.id || index} // Use index as fallback if id is not available
+                key={admin.id || index}
                 className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
               >
                 <div className="flex-1">
@@ -422,23 +409,21 @@ const AdminStep = ({
                     {admin.telefono && <span>{admin.telefono}</span>}
                   </div>
                 </div>
-                {isEditMode && (
-                  <button
-                    type="button"
-                    onClick={() => onRemoveAdmin(index)}
-                    className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
-                    title="Eliminar administrador"
-                  >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => onRemoveAdmin(index)}
+                  className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
+                  title="Eliminar administrador"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
               </div>
             ))}
           </div>
