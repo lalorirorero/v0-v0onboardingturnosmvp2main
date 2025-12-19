@@ -2774,7 +2774,7 @@ type OnboardingFormData = {
     sistema: string[]
     rubro: string
     grupos: { id: number; nombre: string; descripcion: string }[]
-    id_zoho: number | null
+    id_zoho: string | null
   }
   admins: {
     id: number
@@ -2905,7 +2905,7 @@ const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData
         sistema: empresaData.sistema || [],
         rubro: empresaData.rubro || "",
         grupos: [],
-        id_zoho: empresaData.id_zoho ? Number(empresaData.id_zoho) : null,
+        id_zoho: empresaData.id_zoho || null,
       },
       admins: Array.isArray(empresaData.admins) ? empresaData.admins : [],
       trabajadores: Array.isArray(empresaData.trabajadores) ? empresaData.trabajadores : [],
@@ -2962,7 +2962,7 @@ export function OnboardingTurnosCliente() {
 
   // Estados de prellenado con token
   const [hasToken, setHasToken] = useState(false)
-  const [idZoho, setIdZoho] = useState<string | null>(null)
+  const [idZoho, setIdZoho] = useState<string | null>(null) // idZoho ahora es string
   const [prefilledData, setPrefilledData] = useState<Partial<OnboardingFormData> | null>(null)
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [isEditing, setIsEditing] = useState(true)
@@ -2982,11 +2982,10 @@ export function OnboardingTurnosCliente() {
         const tokenData = await fetchTokenData(token)
 
         if (tokenData) {
-          const currentIdZoho = (tokenData.empresa as any)?.id_zoho || null
-
-          setPrefilledData(tokenData)
-          setHasToken(true)
+          // Asegurarse de que idZoho se establezca como string en lugar de número
+          const currentIdZoho = typeof tokenData.empresa?.id_zoho === "string" ? tokenData.empresa.id_zoho : null
           setIdZoho(currentIdZoho)
+          setHasToken(true)
 
           // Cargar datos prellenados
           loadDataFromPrefill(tokenData)
