@@ -38,8 +38,10 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
 import { sendProgressWebhook } from "@/lib/backend"
-// REMOVED: PersistenceManager and persistence types
+import type { ZohoPayload } from "@/lib/types"
 
+// REMOVED: PersistenceManager and persistence types
+// quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
 const steps = [
   { id: 0, label: "Bienvenida", description: "Comienza aquí" },
   { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
@@ -2722,24 +2724,6 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
-// Define ZohoPayload type
-type ZohoPayload = {
-  accion: "crear" | "actualizar" | "completado" // Added "completado" option
-  fechaHoraEnvio: string
-  eventType: string
-  id_zoho: string | null
-  formData: Partial<OnboardingFormData>
-  metadata: {
-    empresaRut: string
-    empresaNombre: string
-    pasoActual: number
-    pasoNombre: string
-    totalPasos: number
-    porcentajeProgreso: number
-  }
-  excelFile: string | null // Assuming base64 or similar string representation
-}
-
 const DEFAULT_TURNOS = [
   {
     id: 1,
@@ -2839,7 +2823,7 @@ type OnboardingFormData = {
   configureNow: boolean
 }
 
-// Define editedFields type
+// Define EditedFields type
 type EditedFields = Record<string, { originalValue: any; currentValue: any }>
 
 function getEmptyEmpresa() {
@@ -3473,7 +3457,10 @@ export function OnboardingTurnosCliente() {
                 Paso {currentStep} de {steps.length - 1}
               </span>
 
-              {currentStep < 9 ? (
+              {currentStep === 5 ? (
+                // No mostrar botón Siguiente en el paso de decisión
+                <div className="w-[100px]" />
+              ) : currentStep < 9 ? (
                 <button
                   type="button"
                   onClick={handleNext}
