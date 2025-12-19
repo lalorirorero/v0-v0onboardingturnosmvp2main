@@ -15,8 +15,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const id_zoho = body.id_zoho ? String(body.id_zoho) : null
+
     const dataToEncrypt = body.empresaData || {
-      id_zoho: body.id_zoho,
+      id_zoho: id_zoho,
       razonSocial: body.empresa?.razonSocial || "",
       nombreFantasia: body.empresa?.nombreFantasia || "",
       rut: body.empresa?.rut || "",
@@ -36,6 +38,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] generate-link: Datos a encriptar:", {
       id_zoho: dataToEncrypt.id_zoho,
+      id_zoho_type: typeof dataToEncrypt.id_zoho,
       razonSocial: dataToEncrypt.razonSocial,
       rut: dataToEncrypt.rut,
       hasAdmins: Array.isArray(dataToEncrypt.admins) && dataToEncrypt.admins.length > 0,

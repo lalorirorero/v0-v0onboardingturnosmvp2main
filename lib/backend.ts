@@ -313,6 +313,7 @@ export async function sendProgressWebhook(params: {
   console.log("[v0] sendProgressWebhook: INICIO", {
     params,
     hasIdZoho: !!params.idZoho,
+    idZohoType: typeof params.idZoho,
     pasoActual: params.pasoActual,
   })
 
