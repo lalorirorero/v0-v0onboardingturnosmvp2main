@@ -365,6 +365,7 @@ export async function sendProgressWebhook(params: {
     excelFile: null,
   }
 
+  console.log("[v0] sendProgressWebhook: Payload construido", payload)
   console.log("[v0] sendProgressWebhook: Enviando a través de API...")
 
   try {
@@ -374,21 +375,15 @@ export async function sendProgressWebhook(params: {
       body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR HTTP ${response.status}:`, errorText)
-      return
-    }
-
     const result = await response.json()
 
     if (result.success) {
       console.log(`[v0] sendProgressWebhook: ✅ ÉXITO - Paso ${params.pasoActual}`)
+      console.log(`[v0] sendProgressWebhook: Respuesta de Zoho:`, result.data)
     } else {
       console.warn(`[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):`, result.error)
     }
   } catch (error) {
     console.warn("[v0] sendProgressWebhook: ⚠️ ERROR (no bloqueante):", error)
-    // No re-lanzar el error para no bloquear la navegación
   }
 }
