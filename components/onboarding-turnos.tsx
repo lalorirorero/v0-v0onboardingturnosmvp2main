@@ -1246,7 +1246,10 @@ const TurnosStep = ({ turnos, setTurnos }) => {
     nombre: "",
     horaInicio: "",
     horaFin: "",
+    tipoColacion: "sin", // "sin", "libre", "fija"
     colacionMinutos: 0,
+    colacionInicio: "",
+    colacionFin: "",
     tooltip: "",
   })
 
@@ -1271,7 +1274,10 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       nombre: "",
       horaInicio: "",
       horaFin: "",
+      tipoColacion: "sin",
       colacionMinutos: 0,
+      colacionInicio: "",
+      colacionFin: "",
       tooltip: "",
     })
   }
@@ -1334,16 +1340,80 @@ const TurnosStep = ({ turnos, setTurnos }) => {
           </div>
         </div>
 
-        <div className="space-y-1 text-sm">
-          <label className="font-medium">Tiempo de colación (minutos)</label>
-          <input
-            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            type="number"
-            value={formTurno.colacionMinutos}
-            onChange={(e) => setFormTurno({ ...formTurno, colacionMinutos: Number.parseInt(e.target.value) || 0 })}
-            placeholder="Ej: 30, 60"
-            min="0"
-          />
+        <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <label className="text-sm font-medium">Tipo de colación</label>
+          <div className="grid gap-2 md:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "sin", colacionMinutos: 0 })}
+              className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                formTurno.tipoColacion === "sin"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Sin Colación
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "libre" })}
+              className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                formTurno.tipoColacion === "libre"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Colación Libre
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTurno({ ...formTurno, tipoColacion: "fija" })}
+              className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                formTurno.tipoColacion === "fija"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Colación Fija
+            </button>
+          </div>
+
+          {formTurno.tipoColacion === "libre" && (
+            <div className="space-y-1 text-sm">
+              <label className="font-medium">Tiempo de colación (minutos)</label>
+              <input
+                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                type="number"
+                value={formTurno.colacionMinutos}
+                onChange={(e) => setFormTurno({ ...formTurno, colacionMinutos: Number.parseInt(e.target.value) || 0 })}
+                placeholder="Ej: 30, 60"
+                min="0"
+              />
+            </div>
+          )}
+
+          {formTurno.tipoColacion === "fija" && (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1 text-sm">
+                <label className="font-medium">Inicio colación</label>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  type="time"
+                  value={formTurno.colacionInicio}
+                  onChange={(e) => setFormTurno({ ...formTurno, colacionInicio: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1 text-sm">
+                <label className="font-medium">Término colación</label>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  type="time"
+                  value={formTurno.colacionFin}
+                  onChange={(e) => setFormTurno({ ...formTurno, colacionFin: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1 text-sm">
@@ -1386,9 +1456,19 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                         <strong>Horario:</strong> {turno.horaInicio} - {turno.horaFin}
                       </span>
                     )}
-                    {turno.colacionMinutos > 0 && (
+                    {turno.tipoColacion === "sin" && (
                       <span>
-                        <strong>Colación:</strong> {turno.colacionMinutos} min
+                        <strong>Colación:</strong> Sin colación
+                      </span>
+                    )}
+                    {turno.tipoColacion === "libre" && turno.colacionMinutos > 0 && (
+                      <span>
+                        <strong>Colación libre:</strong> {turno.colacionMinutos} min
+                      </span>
+                    )}
+                    {turno.tipoColacion === "fija" && turno.colacionInicio && turno.colacionFin && (
+                      <span>
+                        <strong>Colación fija:</strong> {turno.colacionInicio} - {turno.colacionFin}
                       </span>
                     )}
                   </div>
@@ -2667,6 +2747,9 @@ const DEFAULT_TURNOS = [
     horaFin: "",
     colacionMinutos: 0,
     tooltip: "Fin de Semana o Feriado",
+    tipoColacion: "sin", // Default to 'sin'
+    colacionInicio: "",
+    colacionFin: "",
   },
   {
     id: 2,
@@ -2675,6 +2758,9 @@ const DEFAULT_TURNOS = [
     horaFin: "",
     colacionMinutos: 0,
     tooltip: "No marca o Artículo 22",
+    tipoColacion: "sin", // Default to 'sin'
+    colacionInicio: "",
+    colacionFin: "",
   },
   {
     id: 3,
@@ -2683,6 +2769,9 @@ const DEFAULT_TURNOS = [
     horaFin: "",
     colacionMinutos: 0,
     tooltip: "Sin planificación",
+    tipoColacion: "sin", // Default to 'sin'
+    colacionInicio: "",
+    colacionFin: "",
   },
 ]
 
@@ -2728,7 +2817,10 @@ type OnboardingFormData = {
     nombre: string
     horaInicio: string
     horaFin: string
+    tipoColacion: "sin" | "libre" | "fija" // Added type for colacion
     colacionMinutos: number
+    colacionInicio: string
+    colacionFin: string
     tooltip: string
   }[]
   planificaciones: {
