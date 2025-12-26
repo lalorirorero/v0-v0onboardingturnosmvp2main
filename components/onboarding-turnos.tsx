@@ -2975,33 +2975,81 @@ export function OnboardingTurnosCliente() {
     if (hasInitialized.current) return
 
     const initializeData = async () => {
+      console.log("[v0] useEffect initializeData: INICIO")
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get("token")
 
+      console.log("[v0] useEffect initializeData: URL completa:", window.location.href)
+      console.log(
+        "[v0] useEffect initializeData: Token extraído:",
+        token ? token.substring(0, 30) + "..." : "NO HAY TOKEN",
+      )
+
       if (token) {
+        console.log("[v0] useEffect initializeData: Llamando a fetchTokenData...")
         const tokenData = await fetchTokenData(token)
+
+        console.log("[v0] useEffect initializeData: Respuesta de fetchTokenData:", {
+          hasData: !!tokenData,
+          hasEmpresa: !!tokenData?.empresa,
+          razonSocial: tokenData?.empresa?.razonSocial,
+          rut: tokenData?.empresa?.rut,
+          id_zoho: tokenData?.empresa?.id_zoho,
+        })
 
         if (tokenData) {
           // Asegurarse de que idZoho se establezca como string en lugar de número
           const currentIdZoho = typeof tokenData.empresa?.id_zoho === "string" ? tokenData.empresa.id_zoho : null
+          console.log("[v0] useEffect initializeData: Estableciendo idZoho:", currentIdZoho)
           setIdZoho(currentIdZoho)
           setHasToken(true)
 
           // Cargar datos prellenados
+          console.log("[v0] useEffect initializeData: Llamando a loadDataFromPrefill...")
           loadDataFromPrefill(tokenData)
+          console.log("[v0] useEffect initializeData: loadDataFromPrefill completado")
+        } else {
+          console.error("[v0] useEffect initializeData: fetchTokenData retornó null")
         }
+      } else {
+        console.log("[v0] useEffect initializeData: No hay token en la URL, iniciando sin datos")
       }
 
       setCurrentStep(PRIMER_PASO)
       setCompletedSteps([])
       setIsInitialized(true)
       hasInitialized.current = true
+      console.log("[v0] useEffect initializeData: Inicialización completada")
     }
 
     initializeData()
   }, [])
 
+  useEffect(() => {
+    if (currentStep === 2) {
+      console.log("[v0] Renderizando paso Empresa con datos:", {
+        razonSocial: formData.empresa.razonSocial,
+        nombreFantasia: formData.empresa.nombreFantasia,
+        rut: formData.empresa.rut,
+        id_zoho: formData.empresa.id_zoho,
+        sistema: formData.empresa.sistema,
+        rubro: formData.empresa.rubro,
+        prefilledFieldsCount: prefilledFields.size,
+        prefilledFieldsList: Array.from(prefilledFields),
+      })
+    }
+  }, [currentStep, formData.empresa, prefilledFields])
+
   const loadDataFromPrefill = (data: Partial<OnboardingFormData>) => {
+    console.log("[v0] loadDataFromPrefill: Iniciando carga de datos prellenados")
+    console.log("[v0] loadDataFromPrefill: Data recibida:", {
+      hasEmpresa: !!data.empresa,
+      razonSocial: data.empresa?.razonSocial,
+      rut: data.empresa?.rut,
+      id_zoho: data.empresa?.id_zoho,
+      adminsCount: data.admins?.length,
+    })
+
     setFormData((prev) => {
       const newEmpresa = { ...prev.empresa }
 
@@ -3014,7 +3062,7 @@ export function OnboardingTurnosCliente() {
         })
       }
 
-      return {
+      const updatedData = {
         ...prev,
         empresa: newEmpresa,
         admins: data.admins && data.admins.length > 0 ? data.admins : prev.admins,
@@ -3024,6 +3072,15 @@ export function OnboardingTurnosCliente() {
           data.planificaciones && data.planificaciones.length > 0 ? data.planificaciones : prev.planificaciones,
         asignaciones: data.asignaciones && data.asignaciones.length > 0 ? data.asignaciones : prev.asignaciones,
       }
+
+      console.log("[v0] loadDataFromPrefill: FormData actualizado:", {
+        razonSocial: updatedData.empresa?.razonSocial,
+        rut: updatedData.empresa?.rut,
+        id_zoho: updatedData.empresa?.id_zoho,
+        adminsCount: updatedData.admins?.length,
+      })
+
+      return updatedData
     })
 
     // Marcar campos prellenados
@@ -3036,8 +3093,11 @@ export function OnboardingTurnosCliente() {
         }
       })
     }
+
+    console.log("[v0] loadDataFromPrefill: Campos prellenados marcados:", Array.from(fieldsSet))
     setPrefilledFields(fieldsSet)
     setIsEditing(false)
+    console.log("[v0] loadDataFromPrefill: Carga completada exitosamente")
   }
 
   const handleNext = () => {
