@@ -441,6 +441,35 @@ const AdminStep = ({
   )
 }
 
+// START CHANGE: Definiendo ProtectedInput FUERA del componente principal para evitar re-creación
+const ProtectedInput = React.memo<{
+  name: string
+  label: string
+  type?: string
+  placeholder?: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}>(({ name, label, type = "text", placeholder = "", value, onChange }) => {
+  return (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
+        {label}
+      </label>
+      <input
+        type={type}
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+      />
+    </div>
+  )
+})
+
+ProtectedInput.displayName = "ProtectedInput"
+
 // START CHANGE: Definiendo EmpresaStep FUERA del componente principal para evitar re-creación
 const EmpresaStep = React.memo<{
   empresa: Empresa
@@ -541,29 +570,6 @@ const EmpresaStep = React.memo<{
     [setEmpresa, isFieldPrefilled, trackFieldChange],
   )
 
-  const ProtectedInput = ({ name, label, type = "text", placeholder = "" }) => {
-    const fieldKey = `empresa.${name}`
-    const isPrefilled = isFieldPrefilled(fieldKey)
-    const isEdited = isFieldEdited(fieldKey)
-
-    return (
-      <div>
-        <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
-          {label}
-        </label>
-        <input
-          type={type}
-          id={name}
-          name={name}
-          value={empresa[name as keyof typeof empresa] || ""}
-          onChange={handleEmpresaChange}
-          placeholder={placeholder}
-          className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        />
-      </div>
-    )
-  }
-
   return (
     <section className="space-y-6">
       <header>
@@ -574,19 +580,64 @@ const EmpresaStep = React.memo<{
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <ProtectedInput name="razonSocial" label="Razón Social" placeholder="Ej: Tech Solutions S.A." />
-        <ProtectedInput name="nombreFantasia" label="Nombre de fantasía" placeholder="Ej: TechSol" />
-        <ProtectedInput name="rut" label="RUT" placeholder="Ej: 12.345.678-9" />
-        <ProtectedInput name="giro" label="Giro" placeholder="Ej: Servicios de Tecnología" />
-        <ProtectedInput name="direccion" label="Dirección" placeholder="Ej: Av. Principal 123" />
-        <ProtectedInput name="comuna" label="Comuna" placeholder="Ej: Santiago" />
+        <ProtectedInput
+          name="razonSocial"
+          label="Razón Social"
+          placeholder="Ej: Tech Solutions S.A."
+          value={empresa.razonSocial || ""}
+          onChange={handleEmpresaChange}
+        />
+        <ProtectedInput
+          name="nombreFantasia"
+          label="Nombre de fantasía"
+          placeholder="Ej: TechSol"
+          value={empresa.nombreFantasia || ""}
+          onChange={handleEmpresaChange}
+        />
+        <ProtectedInput
+          name="rut"
+          label="RUT"
+          placeholder="Ej: 12.345.678-9"
+          value={empresa.rut || ""}
+          onChange={handleEmpresaChange}
+        />
+        <ProtectedInput
+          name="giro"
+          label="Giro"
+          placeholder="Ej: Servicios de Tecnología"
+          value={empresa.giro || ""}
+          onChange={handleEmpresaChange}
+        />
+        <ProtectedInput
+          name="direccion"
+          label="Dirección"
+          placeholder="Ej: Av. Principal 123"
+          value={empresa.direccion || ""}
+          onChange={handleEmpresaChange}
+        />
+        <ProtectedInput
+          name="comuna"
+          label="Comuna"
+          placeholder="Ej: Santiago"
+          value={empresa.comuna || ""}
+          onChange={handleEmpresaChange}
+        />
         <ProtectedInput
           name="emailFacturacion"
           label="Email de facturación"
           type="email"
           placeholder="facturacion@empresa.com"
+          value={empresa.emailFacturacion || ""}
+          onChange={handleEmpresaChange}
         />
-        <ProtectedInput name="telefonoContacto" label="Teléfono de contacto" type="tel" placeholder="+56912345678" />
+        <ProtectedInput
+          name="telefonoContacto"
+          label="Teléfono de contacto"
+          type="tel"
+          placeholder="+56912345678"
+          value={empresa.telefonoContacto || ""}
+          onChange={handleEmpresaChange}
+        />
       </div>
 
       <div>
@@ -2681,22 +2732,25 @@ const DEFAULT_TURNOS = [
   },
 ]
 
+// Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
+type Empresa = {
+  razonSocial: string
+  nombreFantasia: string
+  rut: string
+  giro: string
+  direccion: string
+  comuna: string
+  emailFacturacion: string
+  telefonoContacto: string
+  sistema: string[]
+  rubro: string
+  grupos: { id: number; nombre: string; descripcion: string }[]
+  id_zoho: string | null
+}
+
 // Define OnboardingFormData type
 type OnboardingFormData = {
-  empresa: {
-    razonSocial: string
-    nombreFantasia: string
-    rut: string
-    giro: string
-    direccion: string
-    comuna: string
-    emailFacturacion: string
-    telefonoContacto: string
-    sistema: string[]
-    rubro: string
-    grupos: { id: number; nombre: string; descripcion: string }[]
-    id_zoho: string | null
-  }
+  empresa: Empresa
   admins: {
     id: number
     nombre: string
@@ -2777,7 +2831,7 @@ const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token }),
+      body: JSON.JSON.stringify({ token }),
     })
 
     console.log("[v0] fetchTokenData: Response status:", response.status)
@@ -2853,22 +2907,6 @@ const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData
     })
     return null
   }
-}
-
-// Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
-type Empresa = {
-  razonSocial: string
-  nombreFantasia: string
-  rut: string
-  giro: string
-  direccion: string
-  comuna: string
-  emailFacturacion: string
-  telefonoContacto: string
-  sistema: string[]
-  rubro: string
-  grupos: { id: number; nombre: string; descripcion: string }[]
-  id_zoho: string | null
 }
 
 export function OnboardingTurnosCliente() {
