@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useEffect, useRef } from "react" // Import useRef
+import { useState, useEffect, useRef, useCallback } from "react" // Import useRef and useCallback
 import {
   Building2,
   Edit2,
@@ -211,12 +211,11 @@ const AdminStep = ({
     grupo: "",
   })
 
-  const handleFormChange = (field, value) => {
-    setFormData({ ...formData, [field]: value })
-  }
+  const handleFormChange = useCallback((field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }, [])
 
-  // CHANGE: Corrigiendo llamado a addAdmin para pasar los parámetros correctos
-  const handleAddAdminClick = () => {
+  const handleAddAdminClick = useCallback(() => {
     console.log("[v0] ===== BOTÓN AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
 
     const errors = []
@@ -263,7 +262,7 @@ const AdminStep = ({
       telefono: "",
       grupo: "",
     })
-  }
+  }, [formData, admins, setAdmins, ensureGrupoByName])
 
   return (
     <section className="space-y-6">
@@ -481,55 +480,63 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   }
 
   const RUBROS = [
-    "1. Agrícola", 
-    "2. Condominio", 
-    "3. Construcción", 
-    "4. Inmobiliaria", 
-    "5. Consultoria", 
-    "6. Banca y Finanzas", 
-    "7. Educación", 
-    "8. Municipio", 
-    "9. Gobierno", 
-    "10. Mineria", 
-    "11. Naviera", 
-    "12. Outsourcing Seguridad", 
-    "13. Outsourcing General", 
-    "14. Outsourcing Retail", 
-    "15. Planta Productiva", 
-    "16. Logistica", 
-    "17. Retail Enterprise", 
-    "18. Retail SMB", 
-    "19. Salud", 
-    "20. Servicios", 
-    "21. Transporte", 
+    "1. Agrícola",
+    "2. Condominio",
+    "3. Construcción",
+    "4. Inmobiliaria",
+    "5. Consultoria",
+    "6. Banca y Finanzas",
+    "7. Educación",
+    "8. Municipio",
+    "9. Gobierno",
+    "10. Mineria",
+    "11. Naviera",
+    "12. Outsourcing Seguridad",
+    "13. Outsourcing General",
+    "14. Outsourcing Retail",
+    "15. Planta Productiva",
+    "16. Logistica",
+    "17. Retail Enterprise",
+    "18. Retail SMB",
+    "19. Salud",
+    "20. Servicios",
+    "21. Transporte",
     "22. Turismo, Hotelería y Gastronomía",
-
   ]
 
   const [isEditing, setIsEditing] = useState(true)
   const hasPrefilled = prefilledFields.size > 0
 
-  const handleEmpresaChange = (e) => {
-    const { name, value } = e.target
-    setEmpresa({ ...empresa, [name]: value })
-    if (isFieldPrefilled(`empresa.${name}`)) {
-      trackFieldChange(`empresa.${name}`, value)
-    }
-  }
+  const handleEmpresaChange = useCallback(
+    (e) => {
+      const { name, value } = e.target
+      setEmpresa((prev) => ({ ...prev, [name]: value }))
+      if (isFieldPrefilled(`empresa.${name}`)) {
+        trackFieldChange(`empresa.${name}`, value)
+      }
+    },
+    [setEmpresa, isFieldPrefilled, trackFieldChange],
+  )
 
-  const handleSistemaChange = (sistemaValue) => {
-    const currentSistemas = empresa.sistema || []
-    const isSelected = currentSistemas.includes(sistemaValue)
+  const handleSistemaChange = useCallback(
+    (sistemaValue) => {
+      setEmpresa((prev) => {
+        const currentSistemas = prev.sistema || []
+        const isSelected = currentSistemas.includes(sistemaValue)
 
-    const newSistemas = isSelected
-      ? currentSistemas.filter((s) => s !== sistemaValue)
-      : [...currentSistemas, sistemaValue]
+        const newSistemas = isSelected
+          ? currentSistemas.filter((s) => s !== sistemaValue)
+          : [...currentSistemas, sistemaValue]
 
-    setEmpresa({ ...empresa, sistema: newSistemas })
-    if (isFieldPrefilled("empresa.sistema")) {
-      trackFieldChange("empresa.sistema", newSistemas)
-    }
-  }
+        if (isFieldPrefilled("empresa.sistema")) {
+          trackFieldChange("empresa.sistema", newSistemas)
+        }
+
+        return { ...prev, sistema: newSistemas }
+      })
+    },
+    [setEmpresa, isFieldPrefilled, trackFieldChange],
+  )
 
   const normalizeRubro = (rubro: string): string => {
     if (!rubro) return ""
@@ -1497,9 +1504,12 @@ const GruposStep = ({ grupos, setGrupos }) => {
     descripcion: "",
   })
 
-  const handleFormChange = (field, value) => {
-    setFormData({ ...formData, [field]: value })
-  }
+  const handleFormChange = useCallback(
+    (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    },
+    [setFormData],
+  ) // Added setFormData to dependencies
 
   const addGrupo = () => {
     if (!formData.nombre.trim()) {
@@ -1621,17 +1631,25 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
     diasTurnos: Array(7).fill(null),
   })
 
-  const handleFormChange = (field, value) => {
-    setFormData({ ...formData, [field]: value })
-  }
+  const handleFormChange = useCallback(
+    (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    },
+    [setFormData],
+  )
 
-  const updateDiaTurno = (dayIndex, turnoId) => {
-    const nuevosDias = [...formData.diasTurnos]
-    nuevosDias[dayIndex] = turnoId
-    setFormData({ ...formData, diasTurnos: nuevosDias })
-  }
+  const updateDiaTurno = useCallback(
+    (dayIndex, turnoId) => {
+      setFormData((prev) => {
+        const nuevosDias = [...prev.diasTurnos]
+        nuevosDias[dayIndex] = turnoId
+        return { ...prev, diasTurnos: nuevosDias }
+      })
+    },
+    [setFormData, setFormData],
+  ) // Added setFormData to dependencies
 
-  const addPlanificacion = () => {
+  const addPlanificacion = useCallback(() => {
     if (!formData.nombre.trim()) {
       alert("Por favor ingresa el nombre de la planificación")
       return
@@ -1661,15 +1679,18 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
       nombre: "",
       diasTurnos: Array(7).fill(defaultTurnoId),
     })
-  }
+  }, [formData, planificaciones, setPlanificaciones, turnos])
 
-  const removePlanificacion = (id) => {
-    setPlanificaciones(planificaciones.filter((p) => p.id !== id))
-  }
+  const removePlanificacion = useCallback(
+    (id) => {
+      setPlanificaciones((prev) => prev.filter((p) => p.id !== id))
+    },
+    [setPlanificaciones],
+  )
 
-  const verificarPlanificacionCompleta = (diasTurnos) => {
+  const verificarPlanificacionCompleta = useCallback((diasTurnos) => {
     return diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
-  }
+  }, [])
 
   return (
     <section className="space-y-6">
@@ -1835,19 +1856,27 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
   const [bulkHasta, setBulkHasta] = useState("")
   const [bulkError, setBulkError] = useState("")
 
-  const updateAsignacion = (id, field, value) => {
-    const updated = asignaciones.map((a) => (a.id === id ? { ...a, [field]: value } : a))
-    setAsignaciones(updated)
-  }
+  const updateAsignacion = useCallback(
+    (id, field, value) => {
+      setAsignaciones((prev) => prev.map((a) => (a.id === id ? { ...a, [field]: value } : a)))
+    },
+    [setAsignaciones],
+  )
 
-  const addAsignacion = () => {
-    setAsignaciones([...asignaciones, { id: Date.now(), trabajadorId: "", planificacionId: "", desde: "", hasta: "" }])
-  }
+  const addAsignacion = useCallback(() => {
+    setAsignaciones((prev) => [
+      ...prev,
+      { id: Date.now(), trabajadorId: "", planificacionId: "", desde: "", hasta: "" },
+    ])
+  }, [setAsignaciones])
 
-  const removeAsignacion = (id) => {
-    if (asignaciones.length === 1) return
-    setAsignaciones(asignaciones.filter((a) => a.id !== id))
-  }
+  const removeAsignacion = useCallback(
+    (id) => {
+      if (asignaciones.length === 1) return
+      setAsignaciones((prev) => prev.filter((a) => a.id !== id))
+    },
+    [asignaciones, setAsignaciones],
+  )
 
   const trabajadoresFiltrados = selectedGrupoId
     ? trabajadores.filter((t) => {
@@ -1863,20 +1892,23 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         return !tieneAsignacionValida
       })
 
-  const toggleTrabajadorSeleccionado = (id) => {
-    setSelectedTrabajadoresIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
+  const toggleTrabajadorSeleccionado = useCallback(
+    (id) => {
+      setSelectedTrabajadoresIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    },
+    [setSelectedTrabajadoresIds],
+  )
 
-  const seleccionarTodos = () => {
+  const seleccionarTodos = useCallback(() => {
     const ids = trabajadoresFiltrados.map((t) => t.id)
     setSelectedTrabajadoresIds(ids)
-  }
+  }, [trabajadoresFiltrados, setSelectedTrabajadoresIds])
 
-  const limpiarSeleccion = () => {
+  const limpiarSeleccion = useCallback(() => {
     setSelectedTrabajadoresIds([])
-  }
+  }, [setSelectedTrabajadoresIds])
 
-  const crearAsignacionesMasivas = () => {
+  const crearAsignacionesMasivas = useCallback(() => {
     setBulkError("")
 
     if (!bulkPlanificacionId) {
@@ -1900,19 +1932,30 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       hasta: bulkHasta,
     }))
 
-    setAsignaciones([...asignaciones, ...nuevas])
+    setAsignaciones((prev) => [...prev, ...nuevas])
     setBulkError("")
     setSelectedTrabajadoresIds([])
-  }
+  }, [
+    selectedTrabajadoresIds,
+    bulkPlanificacionId,
+    bulkDesde,
+    bulkHasta,
+    setAsignaciones,
+    setBulkError,
+    setSelectedTrabajadoresIds,
+  ])
 
-  const getPlanificacionLabelForTrabajador = (trabajadorId) => {
-    const asignacionValida = asignaciones.find(
-      (a) => a.trabajadorId === trabajadorId && a.planificacionId && a.desde && a.hasta,
-    )
-    if (!asignacionValida) return null
-    const plan = planificaciones.find((p) => p.id === asignacionValida.planificacionId)
-    return plan ? plan.nombre || "Sin nombre" : null
-  }
+  const getPlanificacionLabelForTrabajador = useCallback(
+    (trabajadorId) => {
+      const asignacionValida = asignaciones.find(
+        (a) => a.trabajadorId === trabajadorId && a.planificacionId && a.desde && a.hasta,
+      )
+      if (!asignacionValida) return null
+      const plan = planificaciones.find((p) => p.id === asignacionValida.planificacionId)
+      return plan ? plan.nombre || "Sin nombre" : null
+    },
+    [asignaciones, planificaciones],
+  )
 
   const totalTrabajadores = trabajadores.length
   const trabajadoresSinPlan = trabajadores.filter((t) => !getPlanificacionLabelForTrabajador(t.id)).length
@@ -2421,13 +2464,13 @@ const BienvenidaMarketingStep = ({
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % casosDeExitoVideos.length)
-  }
+  }, [setCurrentSlide])
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + casosDeExitoVideos.length) % casosDeExitoVideos.length)
-  }
+  }, [setCurrentSlide])
 
   return (
     <section className="space-y-8 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 md:p-8">
@@ -3039,67 +3082,70 @@ export function OnboardingTurnosCliente() {
     }
   }, [currentStep, formData.empresa, prefilledFields])
 
-  const loadDataFromPrefill = (data: Partial<OnboardingFormData>) => {
-    console.log("[v0] loadDataFromPrefill: Iniciando carga de datos prellenados")
-    console.log("[v0] loadDataFromPrefill: Data recibida:", {
-      hasEmpresa: !!data.empresa,
-      razonSocial: data.empresa?.razonSocial,
-      rut: data.empresa?.rut,
-      id_zoho: data.empresa?.id_zoho,
-      adminsCount: data.admins?.length,
-    })
+  const loadDataFromPrefill = useCallback(
+    (data: Partial<OnboardingFormData>) => {
+      console.log("[v0] loadDataFromPrefill: Iniciando carga de datos prellenados")
+      console.log("[v0] loadDataFromPrefill: Data recibida:", {
+        hasEmpresa: !!data.empresa,
+        razonSocial: data.empresa?.razonSocial,
+        rut: data.empresa?.rut,
+        id_zoho: data.empresa?.id_zoho,
+        adminsCount: data.admins?.length,
+      })
 
-    setFormData((prev) => {
-      const newEmpresa = { ...prev.empresa }
+      setFormData((prev) => {
+        const newEmpresa = { ...prev.empresa }
 
+        if (data.empresa) {
+          Object.keys(data.empresa).forEach((key) => {
+            const value = (data.empresa as any)[key]
+            if (value !== null && value !== undefined && value !== "") {
+              ;(newEmpresa as any)[key] = value
+            }
+          })
+        }
+
+        const updatedData = {
+          ...prev,
+          empresa: newEmpresa,
+          admins: data.admins && data.admins.length > 0 ? data.admins : prev.admins,
+          trabajadores: data.trabajadores && data.trabajadores.length > 0 ? data.trabajadores : prev.trabajadores,
+          turnos: data.turnos && data.turnos.length > 0 ? data.turnos : prev.turnos,
+          planificaciones:
+            data.planificaciones && data.planificaciones.length > 0 ? data.planificaciones : prev.planificaciones,
+          asignaciones: data.asignaciones && data.asignaciones.length > 0 ? data.asignaciones : prev.asignaciones,
+        }
+
+        console.log("[v0] loadDataFromPrefill: FormData actualizado:", {
+          razonSocial: updatedData.empresa?.razonSocial,
+          rut: updatedData.empresa?.rut,
+          id_zoho: updatedData.empresa?.id_zoho,
+          adminsCount: updatedData.admins?.length,
+        })
+
+        return updatedData
+      })
+
+      // Marcar campos prellenados
+      const fieldsSet = new Set<string>()
       if (data.empresa) {
         Object.keys(data.empresa).forEach((key) => {
           const value = (data.empresa as any)[key]
           if (value !== null && value !== undefined && value !== "") {
-            ;(newEmpresa as any)[key] = value
+            fieldsSet.add(`empresa.${key}`)
           }
         })
       }
 
-      const updatedData = {
-        ...prev,
-        empresa: newEmpresa,
-        admins: data.admins && data.admins.length > 0 ? data.admins : prev.admins,
-        trabajadores: data.trabajadores && data.trabajadores.length > 0 ? data.trabajadores : prev.trabajadores,
-        turnos: data.turnos && data.turnos.length > 0 ? data.turnos : prev.turnos,
-        planificaciones:
-          data.planificaciones && data.planificaciones.length > 0 ? data.planificaciones : prev.planificaciones,
-        asignaciones: data.asignaciones && data.asignaciones.length > 0 ? data.asignaciones : prev.asignaciones,
-      }
+      console.log("[v0] loadDataFromPrefill: Campos prellenados marcados:", Array.from(fieldsSet))
+      setPrefilledFields(fieldsSet)
+      setIsEditing(false)
+      console.log("[v0] loadDataFromPrefill: Carga completada exitosamente")
+    },
+    [setFormData, setPrefilledFields, setIsEditing, setHasToken, setIdZoho, idZoho, hasToken],
+  ) // Added dependencies
 
-      console.log("[v0] loadDataFromPrefill: FormData actualizado:", {
-        razonSocial: updatedData.empresa?.razonSocial,
-        rut: updatedData.empresa?.rut,
-        id_zoho: updatedData.empresa?.id_zoho,
-        adminsCount: updatedData.admins?.length,
-      })
-
-      return updatedData
-    })
-
-    // Marcar campos prellenados
-    const fieldsSet = new Set<string>()
-    if (data.empresa) {
-      Object.keys(data.empresa).forEach((key) => {
-        const value = (data.empresa as any)[key]
-        if (value !== null && value !== undefined && value !== "") {
-          fieldsSet.add(`empresa.${key}`)
-        }
-      })
-    }
-
-    console.log("[v0] loadDataFromPrefill: Campos prellenados marcados:", Array.from(fieldsSet))
-    setPrefilledFields(fieldsSet)
-    setIsEditing(false)
-    console.log("[v0] loadDataFromPrefill: Carga completada exitosamente")
-  }
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep === 2) {
       // Paso Empresa
       const validation = validateEmpresaFields(formData.empresa)
@@ -3152,9 +3198,19 @@ export function OnboardingTurnosCliente() {
 
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
-  }
+  }, [
+    currentStep,
+    steps,
+    formData.empresa,
+    formData.admins,
+    toast,
+    sendProgressWebhook,
+    setCurrentStep,
+    setCompletedSteps,
+    idZoho,
+  ]) // Added dependencies
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     const prevStep = currentStep - 1
     if (prevStep >= 0) {
       console.log("[v0] handlePrev: Preparando envío de webhook de progreso", {
@@ -3173,22 +3229,25 @@ export function OnboardingTurnosCliente() {
 
       setCurrentStep(prevStep)
     }
-  }
+  }, [currentStep, steps, formData.empresa, sendProgressWebhook, setCurrentStep, idZoho]) // Added dependencies
 
   // Function to handle the decision from DecisionStep
-  const handleConfigurationDecision = (decision: "now" | "later") => {
-    setFormData((prev) => ({ ...prev, configureNow: decision === "now" }))
-    if (decision === "now") {
-      handleNext() // Go to TurnosStep (Step 6)
-    } else {
-      // Skip to the Resumen step (Step 9)
-      setCurrentStep(9)
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-    }
-  }
+  const handleConfigurationDecision = useCallback(
+    (decision: "now" | "later") => {
+      setFormData((prev) => ({ ...prev, configureNow: decision === "now" }))
+      if (decision === "now") {
+        handleNext() // Go to TurnosStep (Step 6)
+      } else {
+        // Skip to the Resumen step (Step 9)
+        setCurrentStep(9)
+        setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+      }
+    },
+    [setFormData, handleNext, setCurrentStep, setCompletedSteps, currentStep],
+  ) // Added dependencies
 
   // Handler for the final submission
-  const handleFinalizar = async () => {
+  const handleFinalizar = useCallback(async () => {
     setIsSubmitting(true)
 
     const payload: ZohoPayload = {
@@ -3268,45 +3327,67 @@ export function OnboardingTurnosCliente() {
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [
+    setIsSubmitting,
+    idZoho,
+    formData.empresa,
+    formData.admins,
+    formData.trabajadores,
+    formData.turnos,
+    formData.planificaciones,
+    formData.asignaciones,
+    formData.configureNow,
+    steps.length,
+    toast,
+    setCurrentStep,
+  ]) // Added dependencies
 
-  const isFieldPrefilled = (fieldKey: string): boolean => {
-    return prefilledFields.has(fieldKey)
-  }
+  const isFieldPrefilled = useCallback(
+    (fieldKey: string): boolean => {
+      return prefilledFields.has(fieldKey)
+    },
+    [prefilledFields],
+  )
 
-  const isFieldEdited = (fieldKey: string): boolean => {
-    const fieldEntry = editedFields[fieldKey]
-    if (!fieldEntry) return false
+  const isFieldEdited = useCallback(
+    (fieldKey: string): boolean => {
+      const fieldEntry = editedFields[fieldKey]
+      if (!fieldEntry) return false
 
-    // Compare original and current values, handling potential deep comparisons
-    return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
-  }
+      // Compare original and current values, handling potential deep comparisons
+      return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
+    },
+    [editedFields],
+  )
 
-  const trackFieldChange = (fieldKey: string, newValue: any) => {
-    // Only track changes if the field was prefilled
-    if (!isFieldPrefilled(fieldKey)) return
+  const trackFieldChange = useCallback(
+    (fieldKey: string, newValue: any) => {
+      // Only track changes if the field was prefilled
+      if (!isFieldPrefilled(fieldKey)) return
 
-    // Dynamically get the current value from formData
-    const keys = fieldKey.split(".")
-    let originalValue: any = formData
-    for (const key of keys) {
-      originalValue = originalValue?.[key]
-      if (originalValue === undefined || originalValue === null) break
-    }
-
-    setEditedFields((prev) => {
-      const updated = { ...prev }
-      if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
-        updated[fieldKey] = {
-          originalValue: originalValue,
-          currentValue: newValue,
-        }
-      } else {
-        delete updated[fieldKey] // Remove if reverted to original value
+      // Dynamically get the current value from formData
+      const keys = fieldKey.split(".")
+      let originalValue: any = formData
+      for (const key of keys) {
+        originalValue = originalValue?.[key]
+        if (originalValue === undefined || originalValue === null) break
       }
-      return updated
-    })
-  }
+
+      setEditedFields((prev) => {
+        const updated = { ...prev }
+        if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
+          updated[fieldKey] = {
+            originalValue: originalValue,
+            currentValue: newValue,
+          }
+        } else {
+          delete updated[fieldKey] // Remove if reverted to original value
+        }
+        return updated
+      })
+    },
+    [formData, isFieldPrefilled, setEditedFields],
+  ) // Added dependencies
 
   // Render loading state until initialized
   if (!isInitialized) {
