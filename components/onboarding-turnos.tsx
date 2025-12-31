@@ -45,12 +45,14 @@ const steps = [
   { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
   { id: 2, label: "Empresa", description: "Datos base de la empresa" },
   { id: 3, label: "Admin", description: "Encargado de la plataforma" },
-  { id: 4, label: "Trabajadores", description: "Listado inicial" },
-  { id: 5, label: "Configuración", description: "Decidir qué configurar" },
-  { id: 6, label: "Turnos", description: "Definición de turnos" },
-  { id: 7, label: "Planificaciones", description: "Tipos de planificación semanal" },
-  { id: 8, label: "Asignaciones", description: "Asignar planificaciones a trabajadores" },
-  { id: 9, label: "Resumen", description: "Revisión final" },
+  { id: 4, label: "Decisión", description: "¿Cargar trabajadores?" }, // Actualizar array de steps
+  { id: 5, label: "Trabajadores", description: "Listado inicial" },
+  { id: 6, label: "Configuración", description: "Decidir qué configurar" },
+  { id: 7, label: "Turnos", description: "Definición de turnos" },
+  { id: 8, label: "Planificaciones", description: "Tipos de planificación semanal" },
+  { id: 9, label: "Asignaciones", description: "Asignar planificaciones a trabajadores" },
+  { id: 10, label: "Resumen", description: "Revisión final" },
+  { id: 11, label: "Agradecimiento", description: "¡Completado!" }, // Agregar paso de agradecimiento
 ]
 
 const PRIMER_PASO = 0
@@ -2323,6 +2325,70 @@ const DecisionStep = ({ onDecision }) => {
   )
 }
 
+const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "later") => void }) => {
+  return (
+    <section className="space-y-6">
+      <header className="text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">¿Deseas cargar trabajadores ahora?</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Puedes cargar los trabajadores ahora o hacerlo más tarde durante la capacitación de la plataforma.
+        </p>
+      </header>
+
+      <div className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onDecision("now")}
+          className="group relative overflow-hidden rounded-2xl border-2 border-sky-300 bg-white p-6 text-left transition-all hover:border-sky-500 hover:shadow-lg"
+        >
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-500 group-hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5" />
+            </svg>
+          </div>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Cargar ahora</h3>
+          <p className="text-sm text-slate-600">Continúa cargando los trabajadores en el siguiente paso.</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDecision("later")}
+          className="group relative overflow-hidden rounded-2xl border-2 border-emerald-300 bg-white p-6 text-left transition-all hover:border-emerald-500 hover:shadow-lg"
+        >
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Cargar en capacitación</h3>
+          <p className="text-sm text-slate-600">
+            Salta a la revisión final. Cargarás trabajadores durante la capacitación de la plataforma.
+          </p>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 const casosDeExitoVideos = [
   {
     empresa: "Starbucks",
@@ -2796,6 +2862,7 @@ type OnboardingFormData = {
     hasta: string
   }[]
   configureNow: boolean
+  loadWorkersNow?: boolean // Added loadWorkersNow to OnboardingFormData
 }
 
 // Define EditedFields type
@@ -3057,6 +3124,7 @@ export function OnboardingTurnosCliente() {
           planificaciones:
             data.planificaciones && data.planificaciones.length > 0 ? data.planificaciones : prev.planificaciones,
           asignaciones: data.asignaciones && data.asignaciones.length > 0 ? data.asignaciones : prev.asignaciones,
+          loadWorkersNow: data.loadWorkersNow ?? prev.loadWorkersNow, // Handle loadWorkersNow
         }
 
         console.log("[v0] loadDataFromPrefill: FormData actualizado:", {
@@ -3064,6 +3132,7 @@ export function OnboardingTurnosCliente() {
           rut: updatedData.empresa?.rut,
           id_zoho: updatedData.empresa?.id_zoho,
           adminsCount: updatedData.admins?.length,
+          loadWorkersNow: updatedData.loadWorkersNow,
         })
 
         return updatedData
@@ -3088,9 +3157,30 @@ export function OnboardingTurnosCliente() {
     [setFormData, setPrefilledFields, setIsEditing, setHasToken, setIdZoho, idZoho, hasToken],
   ) // Added dependencies
 
+  const canProceed = useCallback(() => {
+    switch (currentStep) {
+      case 2: // Empresa
+        return validateEmpresaFields(formData.empresa).isValid
+      case 3: // Admin
+        return validateAdminsFields(formData.admins).isValid
+      case 5: // Trabajadores
+        // Allow proceeding even with errors, users might want to fix later
+        return true
+      case 7: // Turnos
+        return formData.turnos.length > 0 // Must have at least one turn
+      case 8: // Planificaciones
+        return formData.planificaciones.length > 0 // Must have at least one planning
+      case 9: // Asignaciones
+        // Check if all assignments have required fields filled
+        return formData.asignaciones.every((a) => a.trabajadorId && a.planificacionId && a.desde && a.hasta)
+      default:
+        return true // For steps where there are no specific checks
+    }
+  }, [currentStep, formData.empresa, formData.admins, formData.turnos, formData.planificaciones, formData.asignaciones])
+
   const handleNext = useCallback(() => {
+    // Validation for specific steps before proceeding
     if (currentStep === 2) {
-      // Paso Empresa
       const validation = validateEmpresaFields(formData.empresa)
       if (!validation.isValid) {
         toast({
@@ -3100,10 +3190,7 @@ export function OnboardingTurnosCliente() {
         })
         return
       }
-    }
-
-    if (currentStep === 3) {
-      // Paso Administrador
+    } else if (currentStep === 3) {
       const validation = validateAdminsFields(formData.admins)
       if (!validation.isValid) {
         toast({
@@ -3113,8 +3200,37 @@ export function OnboardingTurnosCliente() {
         })
         return
       }
+    } else if (currentStep === 7 && formData.turnos.length === 0) {
+      toast({
+        title: "Turnos requeridos",
+        description: "Debes crear al menos un turno para continuar.",
+        variant: "destructive",
+      })
+      return
+    } else if (currentStep === 8 && formData.planificaciones.length === 0) {
+      toast({
+        title: "Planificaciones requeridas",
+        description: "Debes crear al menos una planificación para continuar.",
+        variant: "destructive",
+      })
+      return
+    } else if (currentStep === 9) {
+      // Check if all assignments have required fields filled
+      const incompleteAssignments = formData.asignaciones.filter(
+        (a) => !a.trabajadorId || !a.planificacionId || !a.desde || (a.hasta !== "permanente" && !a.hasta),
+      )
+      if (incompleteAssignments.length > 0) {
+        toast({
+          title: "Asignaciones incompletas",
+          description:
+            "Asegúrate de que todas las asignaciones tengan un trabajador, una planificación y un periodo válido (Desde/Hasta o Permanente).",
+          variant: "destructive",
+        })
+        return
+      }
     }
 
+    // Proceed to the next step
     const nextStep = currentStep + 1
     if (nextStep < steps.length) {
       console.log("[v0] handleNext: Preparando envío de webhook de progreso", {
@@ -3146,11 +3262,15 @@ export function OnboardingTurnosCliente() {
     steps,
     formData.empresa,
     formData.admins,
+    formData.turnos.length,
+    formData.planificaciones.length,
+    formData.asignaciones,
     toast,
     sendProgressWebhook,
     setCurrentStep,
     setCompletedSteps,
     idZoho,
+    canProceed, // Include canProceed if it's used directly for logic
   ]) // Added dependencies
 
   const handlePrev = useCallback(() => {
@@ -3179,22 +3299,36 @@ export function OnboardingTurnosCliente() {
     (decision: "now" | "later") => {
       setFormData((prev) => ({ ...prev, configureNow: decision === "now" }))
       if (decision === "now") {
-        handleNext() // Go to TurnosStep (Step 6)
+        handleNext() // Go to TurnosStep (Step 7)
       } else {
-        // Skip to the Resumen step (Step 9)
-        setCurrentStep(9)
+        // Skip to the Resumen step (Step 10)
+        setCurrentStep(10)
         setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
       }
     },
     [setFormData, handleNext, setCurrentStep, setCompletedSteps, currentStep],
   ) // Added dependencies
 
+  const handleWorkersDecision = useCallback(
+    (decision: "now" | "later") => {
+      setFormData((prev) => ({ ...prev, loadWorkersNow: decision === "now" })) // Store the decision
+      if (decision === "now") {
+        handleNext() // Go to TrabajadoresStep (Step 5)
+      } else {
+        // Skip to DecisionStep for turnos (Step 6)
+        setCurrentStep(6)
+        setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+      }
+    },
+    [handleNext, setCurrentStep, setCompletedSteps, currentStep, setFormData], // Added setFormData dependency
+  )
+
   // Handler for the final submission
   const handleFinalizar = useCallback(async () => {
     setIsSubmitting(true)
 
     const payload: ZohoPayload = {
-      accion: "completado", // Ahora usa "completado" para webhook final con todos los datos
+      accion: "completado",
       fechaHoraEnvio: new Date().toISOString(),
       eventType: "complete",
       id_zoho: idZoho,
@@ -3218,6 +3352,7 @@ export function OnboardingTurnosCliente() {
         planificaciones: formData.planificaciones || [],
         asignaciones: formData.asignaciones || [],
         configureNow: formData.configureNow || false,
+        loadWorkersNow: formData.loadWorkersNow || false,
       },
       metadata: {
         empresaRut: formData.empresa.rut || "",
@@ -3227,63 +3362,32 @@ export function OnboardingTurnosCliente() {
         totalPasos: steps.length,
         porcentajeProgreso: 100,
       },
-      excelFile: null, // Se generará en el backend
+      excelFile: null,
     }
 
-    console.log("[v0] handleFinalizar: Payload unificado construido", {
+    console.log("[v0] handleFinalizar: Payload construido", {
       accion: payload.accion,
       eventType: payload.eventType,
       id_zoho: payload.id_zoho,
-      tieneFormData: !!payload.formData,
-      tieneMetadata: !!payload.metadata,
     })
 
-    try {
-      const response = await fetch("/api/submit-to-zoho", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+    fetch("/api/submit-to-zoho", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        console.log("[v0] handleFinalizar: Envío exitoso", result)
+      })
+      .catch((error) => {
+        console.error("[v0] handleFinalizar: Error en envío (silencioso):", error)
       })
 
-      const result = await response.json()
-
-      if (result.success) {
-        toast({
-          title: "¡Onboarding completado!",
-          description: "Los datos se enviaron correctamente a Zoho Flow",
-        })
-        setCurrentStep(steps.length - 1)
-      } else {
-        toast({
-          title: "Error al enviar datos",
-          description: result.error || "Error desconocido",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("[v0] handleFinalizar: Error:", error)
-      toast({
-        title: "Error de conexión",
-        description: "No se pudo conectar con el servidor",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }, [
-    setIsSubmitting,
-    idZoho,
-    formData.empresa,
-    formData.admins,
-    formData.trabajadores,
-    formData.turnos,
-    formData.planificaciones,
-    formData.asignaciones,
-    formData.configureNow,
-    steps.length,
-    toast,
-    setCurrentStep,
-  ]) // Added dependencies
+    console.log("[v0] handleFinalizar: Navegando al paso 11 (página de agradecimiento)")
+    setCurrentStep(11)
+    setIsSubmitting(false)
+  }, [formData, idZoho, steps.length, toast])
 
   const isFieldPrefilled = useCallback(
     (fieldKey: string): boolean => {
@@ -3344,7 +3448,7 @@ export function OnboardingTurnosCliente() {
     )
   }
 
-  const renderStep = () => {
+  const renderStepContent = () => {
     switch (currentStep) {
       case 0:
         return (
@@ -3386,19 +3490,21 @@ export function OnboardingTurnosCliente() {
               console.log("[v0] Admin removido (desde el paso principal):", index)
               setFormData((prev) => ({ ...prev, admins: prev.admins.filter((_, i) => i !== index) }))
             }}
-            isEditMode={isEditing} // Pasar el estado de edición
+            isEditMode={isEditing}
           />
         )
       case 4:
+        return <WorkersDecisionStep onDecision={handleWorkersDecision} />
+      case 5:
         return (
           <TrabajadoresStep
             trabajadores={formData.trabajadores}
             setTrabajadores={(newTrabajadores) => setFormData((prev) => ({ ...prev, trabajadores: newTrabajadores }))}
-            grupos={formData.empresa.grupos} // Pass groups
+            grupos={formData.empresa.grupos}
             setGrupos={(newGrupos) =>
               setFormData((prev) => ({ ...prev, empresa: { ...prev.empresa, grupos: newGrupos } }))
-            } // Update groups in company state
-            errorGlobal={validationErrors.join(", ")} // Use validationErrors for global errors
+            }
+            errorGlobal={validationErrors.join(", ")}
             ensureGrupoByName={(nombre) => {
               const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
               if (existing) return existing.id
@@ -3411,16 +3517,16 @@ export function OnboardingTurnosCliente() {
             }}
           />
         )
-      case 5:
-        return <DecisionStep onDecision={handleConfigurationDecision} />
       case 6:
+        return <DecisionStep onDecision={handleConfigurationDecision} />
+      case 7:
         return (
           <TurnosStep
             turnos={formData.turnos}
             setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
           />
         )
-      case 7:
+      case 8:
         return (
           <PlanificacionesStep
             planificaciones={formData.planificaciones}
@@ -3430,18 +3536,18 @@ export function OnboardingTurnosCliente() {
             turnos={formData.turnos}
           />
         )
-      case 8:
+      case 9:
         return (
           <AsignacionStep
             asignaciones={formData.asignaciones}
             setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
             trabajadores={formData.trabajadores}
             planificaciones={formData.planificaciones}
-            grupos={formData.empresa.grupos} // Pass groups
-            errorGlobal={validationErrors.join(", ")} // Use validationErrors for global errors
+            grupos={formData.empresa.grupos}
+            errorGlobal={validationErrors.join(", ")}
           />
         )
-      case 9:
+      case 10:
         return (
           <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6 dark:bg-emerald-900/30 dark:border-emerald-900/50">
             <h2 className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">Resumen del Onboarding</h2>
@@ -3485,6 +3591,41 @@ export function OnboardingTurnosCliente() {
             </div>
           </section>
         )
+
+      case 11:
+        return (
+          <section className="flex flex-col items-center justify-center space-y-6 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-12 text-center dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-900/50">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500 text-white dark:bg-emerald-600">
+              <svg
+                className="h-10 w-10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold text-emerald-900 dark:text-emerald-300">
+                ¡Gracias por completar el onboarding!
+              </h2>
+              <p className="text-lg text-emerald-800 dark:text-emerald-200">Tus datos han sido enviados exitosamente</p>
+            </div>
+
+            <div className="max-w-md space-y-3 text-sm text-slate-700 dark:text-slate-300">
+              <p>El equipo de GeoVictoria se pondrá en contacto contigo pronto para coordinar los siguientes pasos.</p>
+              <p>Recibirás un correo de confirmación con los detalles de tu registro.</p>
+            </div>
+
+            <div className="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-800">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">¿Necesitas ayuda?</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Contáctanos en soporte@geovictoria.com</p>
+            </div>
+          </section>
+        )
+
       default:
         return <div>Paso no encontrado</div>
     }
@@ -3514,6 +3655,7 @@ export function OnboardingTurnosCliente() {
                   planificaciones: [],
                   asignaciones: [],
                   configureNow: true,
+                  loadWorkersNow: false, // Reset loadWorkersNow
                 })
                 setPrefilledFields(new Set())
                 setEditedFields({})
@@ -3536,56 +3678,57 @@ export function OnboardingTurnosCliente() {
           <Stepper currentStep={currentStep} />
         </div>
 
-        {/* Contenido de cada paso */}
-        <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-800 dark:shadow-xl">
-          {renderStep()}
+        {renderStepContent()}
 
-          {currentStep > 1 && (
-            <div className="mt-8 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                ← Atrás
-              </button>
+        {/* Botones de navegación genéricos */}
+        {(currentStep === 2 ||
+          currentStep === 3 ||
+          currentStep === 5 ||
+          currentStep === 7 ||
+          currentStep === 8 ||
+          currentStep === 9) && (
+          <div className="mt-8 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              ← Atrás
+            </button>
 
-              {/* Ajustar texto del paso */}
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Paso {currentStep} de {steps.length - 1}
-              </span>
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
 
-              {currentStep === 5 ? (
-                // No mostrar botón Siguiente en el paso de decisión
-                <div className="w-[100px]" />
-              ) : currentStep < 9 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                >
-                  Siguiente →
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleFinalizar}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
-                      Enviando...
-                    </>
-                  ) : (
-                    "Completar y enviar"
-                  )}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Botones específicos para el paso de resumen (paso 10) */}
+        {currentStep === 10 && (
+          <div className="mt-8 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              ← Atrás
+            </button>
+
+            <button
+              type="button"
+              onClick={handleFinalizar}
+              disabled={isSubmitting}
+              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            >
+              {isSubmitting ? "Procesando..." : "Confirmar y Enviar →"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -284,7 +284,13 @@ export async function sendToZohoFlow(payload: ZohoPayload): Promise<{
       }
     }
 
-    const data = await response.json().catch(() => response.text())
+    let data
+    try {
+      data = await response.json()
+    } catch (jsonError) {
+      // Si no es JSON válido, intentar leer como texto
+      data = await response.text()
+    }
 
     return {
       success: true,
