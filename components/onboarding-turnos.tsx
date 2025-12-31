@@ -441,7 +441,15 @@ const AdminStep = ({
   )
 }
 
-const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
+// START CHANGE: Definiendo EmpresaStep FUERA del componente principal para evitar re-creación
+const EmpresaStep = React.memo<{
+  empresa: Empresa
+  setEmpresa: (updater: Empresa | ((prev: Empresa) => Empresa)) => void
+  prefilledFields: Set<string>
+  isFieldPrefilled: (fieldKey: string) => boolean
+  isFieldEdited: (fieldKey: string) => boolean
+  trackFieldChange: (fieldKey: string, newValue: any) => void
+}>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
   const SISTEMAS_INFO = {
@@ -503,7 +511,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   ]
 
   const handleEmpresaChange = useCallback(
-    (e) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target
       setEmpresa((prev) => ({ ...prev, [name]: value }))
       if (isFieldPrefilled(`empresa.${name}`)) {
@@ -514,7 +522,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   )
 
   const handleSistemaChange = useCallback(
-    (sistemaValue) => {
+    (sistemaValue: string) => {
       setEmpresa((prev) => {
         const currentSistemas = prev.sistema || []
         const isSelected = currentSistemas.includes(sistemaValue)
@@ -533,15 +541,7 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     [setEmpresa, isFieldPrefilled, trackFieldChange],
   )
 
-  const normalizeRubro = (rubro: string): string => {
-    if (!rubro) return ""
-    const normalized = rubro.toUpperCase().trim()
-    const exists = RUBROS.find((r) => r.toUpperCase() === normalized)
-    return exists || ""
-  }
-
-  // Modified ProtectedInput to accept value and omit type, id, name props for generality
-  const ProtectedInput = ({ name, label, value, placeholder, type = "text" }) => {
+  const ProtectedInput = ({ name, label, value, type = "text", placeholder = "" }) => {
     const fieldKey = `empresa.${name}`
     const isPrefilled = isFieldPrefilled(fieldKey)
     const isEdited = isFieldEdited(fieldKey)
@@ -667,7 +667,9 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
       </div>
     </section>
   )
-}
+})
+
+EmpresaStep.displayName = "EmpresaStep"
 
 const TrabajadoresStep = ({
   trabajadores,
