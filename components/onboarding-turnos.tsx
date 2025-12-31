@@ -541,7 +541,7 @@ const EmpresaStep = React.memo<{
     [setEmpresa, isFieldPrefilled, trackFieldChange],
   )
 
-  const ProtectedInput = ({ name, label, value, type = "text", placeholder = "" }) => {
+  const ProtectedInput = ({ name, label, type = "text", placeholder = "" }) => {
     const fieldKey = `empresa.${name}`
     const isPrefilled = isFieldPrefilled(fieldKey)
     const isEdited = isFieldEdited(fieldKey)
@@ -555,7 +555,7 @@ const EmpresaStep = React.memo<{
           type={type}
           id={name}
           name={name}
-          value={value || ""}
+          value={empresa[name as keyof typeof empresa] || ""}
           onChange={handleEmpresaChange}
           placeholder={placeholder}
           className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -574,41 +574,19 @@ const EmpresaStep = React.memo<{
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <ProtectedInput
-          name="razonSocial"
-          label="Razón Social"
-          value={empresa.razonSocial}
-          placeholder="Ej: Tech Solutions S.A."
-        />
-        <ProtectedInput
-          name="nombreFantasia"
-          label="Nombre de fantasía"
-          value={empresa.nombreFantasia}
-          placeholder="Ej: TechSol"
-        />
-        <ProtectedInput name="rut" label="RUT" value={empresa.rut} placeholder="Ej: 12.345.678-9" />
-        <ProtectedInput name="giro" label="Giro" value={empresa.giro} placeholder="Ej: Servicios de Tecnología" />
-        <ProtectedInput
-          name="direccion"
-          label="Dirección"
-          value={empresa.direccion}
-          placeholder="Ej: Av. Principal 123"
-        />
-        <ProtectedInput name="comuna" label="Comuna" value={empresa.comuna} placeholder="Ej: Santiago" />
+        <ProtectedInput name="razonSocial" label="Razón Social" placeholder="Ej: Tech Solutions S.A." />
+        <ProtectedInput name="nombreFantasia" label="Nombre de fantasía" placeholder="Ej: TechSol" />
+        <ProtectedInput name="rut" label="RUT" placeholder="Ej: 12.345.678-9" />
+        <ProtectedInput name="giro" label="Giro" placeholder="Ej: Servicios de Tecnología" />
+        <ProtectedInput name="direccion" label="Dirección" placeholder="Ej: Av. Principal 123" />
+        <ProtectedInput name="comuna" label="Comuna" placeholder="Ej: Santiago" />
         <ProtectedInput
           name="emailFacturacion"
           label="Email de facturación"
-          value={empresa.emailFacturacion}
           type="email"
           placeholder="facturacion@empresa.com"
         />
-        <ProtectedInput
-          name="telefonoContacto"
-          label="Teléfono de contacto"
-          value={empresa.telefonoContacto}
-          type="tel"
-          placeholder="+56912345678"
-        />
+        <ProtectedInput name="telefonoContacto" label="Teléfono de contacto" type="tel" placeholder="+56912345678" />
       </div>
 
       <div>
@@ -2928,6 +2906,11 @@ export function OnboardingTurnosCliente() {
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
+  const formDataRef = useRef(formData)
+  useEffect(() => {
+    formDataRef.current = formData
+  }, [formData])
+
   const setEmpresa = useCallback((updater: Empresa | ((prev: Empresa) => Empresa)) => {
     setFormData((prev) => ({
       ...prev,
@@ -3285,11 +3268,11 @@ export function OnboardingTurnosCliente() {
   const trackFieldChange = useCallback(
     (fieldKey: string, newValue: any) => {
       // Only track changes if the field was prefilled
-      if (!isFieldPrefilled(fieldKey)) return
+      if (!prefilledFields.has(fieldKey)) return
 
-      // Dynamically get the current value from formData
+      // Dynamically get the current value from formDataRef
       const keys = fieldKey.split(".")
-      let originalValue: any = formData
+      let originalValue: any = formDataRef.current
       for (const key of keys) {
         originalValue = originalValue?.[key]
         if (originalValue === undefined || originalValue === null) break
@@ -3308,8 +3291,8 @@ export function OnboardingTurnosCliente() {
         return updated
       })
     },
-    [formData, isFieldPrefilled, setEditedFields],
-  ) // Added dependencies
+    [prefilledFields, setEditedFields],
+  )
 
   // Render loading state until initialized
   if (!isInitialized) {
