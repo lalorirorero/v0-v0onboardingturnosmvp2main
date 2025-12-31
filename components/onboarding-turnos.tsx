@@ -504,8 +504,8 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "22. Turismo, Hotelería y Gastronomía",
   ]
 
-  const [isEditing, setIsEditing] = useState(true)
   const hasPrefilled = prefilledFields.size > 0
+  const [isEditing, setIsEditing] = useState(!hasPrefilled)
 
   const handleEmpresaChange = useCallback(
     (e) => {
