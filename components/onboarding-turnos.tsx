@@ -5,7 +5,6 @@ import React from "react"
 import { useState, useEffect, useRef, useCallback } from "react" // Import useRef and useCallback
 import {
   Building2,
-  Edit2,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -20,9 +19,8 @@ import {
   Award,
   Heart,
   Zap,
-  Info,
+  Check,
 } from "lucide-react"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" // Import added
 import { Button } from "@/components/ui/button" // Import added
 import {
   AlertDialog,
@@ -504,9 +502,6 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
     "22. Turismo, Hotelería y Gastronomía",
   ]
 
-  const hasPrefilled = prefilledFields.size > 0
-  const [isEditing, setIsEditing] = useState(!hasPrefilled)
-
   const handleEmpresaChange = useCallback(
     (e) => {
       const { name, value } = e.target
@@ -541,230 +536,134 @@ const EmpresaStep = ({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, i
   const normalizeRubro = (rubro: string): string => {
     if (!rubro) return ""
     const normalized = rubro.toUpperCase().trim()
-    // Verificar si el rubro normalizado existe en la lista
     const exists = RUBROS.find((r) => r.toUpperCase() === normalized)
     return exists || ""
   }
 
-  const ProtectedInput = ({
-    name,
-    label,
-    type = "text",
-    placeholder,
-  }: {
-    name: string
-    label: string
-    type?: string
-    placeholder?: string
-  }) => {
+  // Modified ProtectedInput to accept value and omit type, id, name props for generality
+  const ProtectedInput = ({ name, label, value, placeholder, type = "text" }) => {
     const fieldKey = `empresa.${name}`
     const isPrefilled = isFieldPrefilled(fieldKey)
-    const wasEdited = isFieldEdited(fieldKey)
-    const value = empresa[name] || ""
-    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
+    const isEdited = isFieldEdited(fieldKey)
 
     return (
-      <div className="space-y-1 text-sm">
-        <label className="font-medium flex items-center gap-2">
+      <div>
+        <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
           {label}
-          {isPrefilled && wasEdited && (
-            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
-          )}
         </label>
-        {isLocked ? (
-          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
-            {value || <span className="text-slate-400 italic">Sin valor</span>}
-          </div>
-        ) : (
-          <input
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-1 focus:ring-info"
-            type={type}
-            name={name}
-            value={value}
-            onChange={handleEmpresaChange}
-            placeholder={placeholder}
-            disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
-          />
-        )}
-      </div>
-    )
-  }
-
-  const ProtectedRubroSelect = () => {
-    const fieldKey = "empresa.rubro"
-    const isPrefilled = isFieldPrefilled(fieldKey)
-    const wasEdited = isFieldEdited(fieldKey)
-    const value = normalizeRubro(empresa.rubro)
-    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
-
-    return (
-      <div className="space-y-1 text-sm">
-        <label className="font-medium flex items-center gap-2">
-          Rubro
-          {isPrefilled && wasEdited && (
-            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
-          )}
-        </label>
-        {isLocked ? (
-          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
-            {value || <span className="text-slate-400 italic">Sin valor</span>}
-          </div>
-        ) : (
-          <select
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-1 focus:ring-info"
-            name="rubro"
-            value={value}
-            onChange={handleEmpresaChange}
-            disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
-          >
-            <option value="">Seleccionar rubro...</option>
-            {RUBROS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-    )
-  }
-
-  const ProtectedSistemas = () => {
-    const fieldKey = "empresa.sistema"
-    const isPrefilled = isFieldPrefilled(fieldKey)
-    const wasEdited = isFieldEdited(fieldKey)
-    const selectedSistemas = empresa.sistema || []
-    const isLocked = hasPrefilled && !isEditing && isPrefilled && !wasEdited
-
-    return (
-      <div className="space-y-2 text-sm col-span-2">
-        <label className="font-medium flex items-center gap-2">
-          Sistema de marcaje
-          {isPrefilled && wasEdited && (
-            <span className="text-xs bg-warning-muted text-warning-foreground px-1.5 py-0.5 rounded">Editado</span>
-          )}
-        </label>
-        {isLocked ? (
-          <div className="rounded-xl border border-info-border bg-info-muted px-3 py-2 text-sm text-slate-700">
-            {selectedSistemas.length > 0 ? (
-              selectedSistemas.join(", ")
-            ) : (
-              <span className="text-slate-400 italic">Sin sistemas seleccionados</span>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {SISTEMAS.map((s) => {
-              const info = SISTEMAS_INFO[s]
-              const isSelected = selectedSistemas.includes(s)
-              const shortName = s.replace("GeoVictoria ", "")
-
-              return (
-                <HoverCard key={s} openDelay={200} closeDelay={100}>
-                  <HoverCardTrigger asChild>
-                    <label
-                      className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all whitespace-nowrap ${
-                        isSelected
-                          ? "border-sky-500 bg-sky-50"
-                          : "border-slate-200 hover:border-sky-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleSistemaChange(s)}
-                        className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                        disabled={!isEditing && hasPrefilled && isPrefilled && !wasEdited}
-                      />
-                      <span className="text-sm font-medium">{shortName}</span>
-                      <Info className="h-3.5 w-3.5 text-slate-400" />
-                    </label>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-72" side="top">
-                    <div className="space-y-3">
-                      <img
-                        src={info.imagen || "/placeholder.svg"}
-                        alt={info.titulo}
-                        className="w-full h-32 object-contain rounded-lg bg-slate-50"
-                      />
-                      <div>
-                        <h4 className="font-semibold text-sm">{info.titulo}</h4>
-                        <p className="text-xs text-slate-600">{info.descripcion}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              )
-            })}
-          </div>
-        )}
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={value || ""}
+          onChange={handleEmpresaChange}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        />
       </div>
     )
   }
 
   return (
     <section className="space-y-6">
-      {hasPrefilled && !isEditing && (
-        <div className="rounded-xl border border-info-border bg-info-muted p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-info-foreground">Datos de su empresa</h4>
-                <p className="text-sm text-info-foreground mt-1">
-                  {isEditing
-                    ? "Puede modificar los campos que necesite. Los cambios quedarán registrados."
-                    : 'Verifique que la información sea correcta. Si necesita hacer cambios, haga clic en "Editar datos".'}
-                </p>
-              </div>
-            </div>
-            {!isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-sky-300 bg-white hover:bg-sky-100 text-sky-700 text-sm font-medium transition-colors flex-shrink-0"
-              >
-                <Edit2 className="h-4 w-4" />
-                Editar datos
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="flex items-center gap-2 text-base font-semibold">
-          <Building2 className="h-5 w-5 text-sky-600" />
+      <header>
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <Building2 className="h-5 w-5 text-sky-500" />
           Datos de la empresa
-        </h3>
+        </h2>
+      </header>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <ProtectedInput name="razonSocial" label="Razón Social" placeholder="Ej: EDALTEC LTDA" />
-          <ProtectedInput name="nombreFantasia" label="Nombre de fantasía" placeholder="Ej: EDALTEC" />
-          <ProtectedInput name="rut" label="RUT" placeholder="Ej: 76.201.998-1" />
-          <ProtectedInput name="giro" label="Giro" placeholder="Ej: Comercializadora de equipos" />
-          <ProtectedInput name="direccion" label="Dirección" placeholder="Ej: Chiloé 5138" />
-          <ProtectedInput name="comuna" label="Comuna" placeholder="Ej: San Miguel" />
-          <ProtectedInput
-            name="emailFacturacion"
-            label="Email de facturación"
-            type="email"
-            placeholder="Ej: marcelo.vargas@edaltec.cl"
-          />
-          <ProtectedInput
-            name="telefonoContacto"
-            label="Teléfono de contacto"
-            type="tel"
-            placeholder="Ej: 56995925655"
-          />
-          <ProtectedSistemas />
-          <ProtectedRubroSelect />
+      <div className="grid gap-6 md:grid-cols-2">
+        <ProtectedInput
+          name="razonSocial"
+          label="Razón Social"
+          value={empresa.razonSocial}
+          placeholder="Ej: Tech Solutions S.A."
+        />
+        <ProtectedInput
+          name="nombreFantasia"
+          label="Nombre de fantasía"
+          value={empresa.nombreFantasia}
+          placeholder="Ej: TechSol"
+        />
+        <ProtectedInput name="rut" label="RUT" value={empresa.rut} placeholder="Ej: 12.345.678-9" />
+        <ProtectedInput name="giro" label="Giro" value={empresa.giro} placeholder="Ej: Servicios de Tecnología" />
+        <ProtectedInput
+          name="direccion"
+          label="Dirección"
+          value={empresa.direccion}
+          placeholder="Ej: Av. Principal 123"
+        />
+        <ProtectedInput name="comuna" label="Comuna" value={empresa.comuna} placeholder="Ej: Santiago" />
+        <ProtectedInput
+          name="emailFacturacion"
+          label="Email de facturación"
+          value={empresa.emailFacturacion}
+          type="email"
+          placeholder="facturacion@empresa.com"
+        />
+        <ProtectedInput
+          name="telefonoContacto"
+          label="Teléfono de contacto"
+          value={empresa.telefonoContacto}
+          type="tel"
+          placeholder="+56912345678"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-3">Sistema de marcaje</label>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SISTEMAS.map((sistema) => {
+            const info = SISTEMAS_INFO[sistema]
+            const isSelected = empresa.sistema?.includes(sistema)
+
+            return (
+              <button
+                key={sistema}
+                type="button"
+                onClick={() => handleSistemaChange(sistema)}
+                className={`relative rounded-xl border-2 p-4 text-left transition-all ${
+                  isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900 text-sm">{info.titulo}</h3>
+                    <p className="mt-1 text-xs text-slate-600">{info.descripcion}</p>
+                  </div>
+                  <div
+                    className={`ml-3 flex h-5 w-5 items-center justify-center rounded border-2 ${
+                      isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
+                    }`}
+                  >
+                    {isSelected && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between" />
-        <div className="space-y-2" />
+      <div>
+        <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
+          Rubro
+        </label>
+        <select
+          id="rubro"
+          name="rubro"
+          value={empresa.rubro || ""}
+          onChange={handleEmpresaChange}
+          className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        >
+          <option value="">Selecciona un rubro</option>
+          {RUBROS.map((rubro) => (
+            <option key={rubro} value={rubro}>
+              {rubro}
+            </option>
+          ))}
+        </select>
       </div>
     </section>
   )
@@ -2868,7 +2767,7 @@ type OnboardingFormData = {
 // Define EditedFields type
 type EditedFields = Record<string, { originalValue: any; currentValue: any }>
 
-function getEmptyEmpresa() {
+function getEmptyEmpresa(): Empresa {
   return {
     razonSocial: "",
     nombreFantasia: "",
@@ -2976,6 +2875,22 @@ const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData
   }
 }
 
+// Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
+type Empresa = {
+  razonSocial: string
+  nombreFantasia: string
+  rut: string
+  giro: string
+  direccion: string
+  comuna: string
+  emailFacturacion: string
+  telefonoContacto: string
+  sistema: string[]
+  rubro: string
+  grupos: { id: number; nombre: string; descripcion: string }[]
+  id_zoho: string | null
+}
+
 export function OnboardingTurnosCliente() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -2998,20 +2913,25 @@ export function OnboardingTurnosCliente() {
   const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
 
   // Estados de validación
-  const [errors, setErrors] = useState({ byId: {}, global: [] })
-  const [trabajadoresErrors, setTrabajadoresErrors] = useState({ byId: {}, global: [] })
-  const [errorGlobalAsignaciones, setErrorGlobalAsignaciones] = useState("")
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   // Estados de prellenado con token
   const [hasToken, setHasToken] = useState(false)
-  const [idZoho, setIdZoho] = useState<string | null>(null) // idZoho ahora es string
+  const [idZoho, setIdZoho] = useState<string | null>(null)
   const [prefilledData, setPrefilledData] = useState<Partial<OnboardingFormData> | null>(null)
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [isEditing, setIsEditing] = useState(true)
-  const [editedFields, setEditedFields] = useState<EditedFields>({}) // State for tracking edited fields
+  const [editedFields, setEditedFields] = useState<EditedFields>({})
 
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+
+  const setEmpresa = useCallback((updater: Empresa | ((prev: Empresa) => Empresa)) => {
+    setFormData((prev) => ({
+      ...prev,
+      empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
+    }))
+  }, [])
 
   useEffect(() => {
     if (hasInitialized.current) return
@@ -3401,6 +3321,152 @@ export function OnboardingTurnosCliente() {
     )
   }
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <BienvenidaMarketingStep
+            nombreEmpresa={formData.empresa.nombreFantasia || formData.empresa.razonSocial || undefined}
+            onContinue={handleNext}
+          />
+        )
+      case 1:
+        return <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />
+      case 2:
+        return (
+          <EmpresaStep
+            empresa={formData.empresa}
+            setEmpresa={setEmpresa}
+            prefilledFields={prefilledFields}
+            isFieldPrefilled={isFieldPrefilled}
+            isFieldEdited={isFieldEdited}
+            trackFieldChange={trackFieldChange}
+          />
+        )
+      case 3:
+        return (
+          <AdminStep
+            admins={formData.admins}
+            setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
+            grupos={formData.empresa.grupos}
+            ensureGrupoByName={(nombre) => {
+              const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
+              if (existing) return existing.id
+              const newGroup = { id: Date.now(), nombre, descripcion: "" }
+              setFormData((prev) => ({
+                ...prev,
+                empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
+              }))
+              return newGroup.id
+            }}
+            onRemoveAdmin={(index) => {
+              console.log("[v0] Admin removido (desde el paso principal):", index)
+              setFormData((prev) => ({ ...prev, admins: prev.admins.filter((_, i) => i !== index) }))
+            }}
+            isEditMode={isEditing} // Pasar el estado de edición
+          />
+        )
+      case 4:
+        return (
+          <TrabajadoresStep
+            trabajadores={formData.trabajadores}
+            setTrabajadores={(newTrabajadores) => setFormData((prev) => ({ ...prev, trabajadores: newTrabajadores }))}
+            grupos={formData.empresa.grupos} // Pass groups
+            setGrupos={(newGrupos) =>
+              setFormData((prev) => ({ ...prev, empresa: { ...prev.empresa, grupos: newGrupos } }))
+            } // Update groups in company state
+            errorGlobal={validationErrors.join(", ")} // Use validationErrors for global errors
+            ensureGrupoByName={(nombre) => {
+              const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
+              if (existing) return existing.id
+              const newGroup = { id: Date.now(), nombre, descripcion: "" }
+              setFormData((prev) => ({
+                ...prev,
+                empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
+              }))
+              return newGroup.id
+            }}
+          />
+        )
+      case 5:
+        return <DecisionStep onDecision={handleConfigurationDecision} />
+      case 6:
+        return (
+          <TurnosStep
+            turnos={formData.turnos}
+            setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
+          />
+        )
+      case 7:
+        return (
+          <PlanificacionesStep
+            planificaciones={formData.planificaciones}
+            setPlanificaciones={(newPlanificaciones) =>
+              setFormData((prev) => ({ ...prev, planificaciones: newPlanificaciones }))
+            }
+            turnos={formData.turnos}
+          />
+        )
+      case 8:
+        return (
+          <AsignacionStep
+            asignaciones={formData.asignaciones}
+            setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
+            trabajadores={formData.trabajadores}
+            planificaciones={formData.planificaciones}
+            grupos={formData.empresa.grupos} // Pass groups
+            errorGlobal={validationErrors.join(", ")} // Use validationErrors for global errors
+          />
+        )
+      case 9:
+        return (
+          <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6 dark:bg-emerald-900/30 dark:border-emerald-900/50">
+            <h2 className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">Resumen del Onboarding</h2>
+            <div className="space-y-3 text-sm text-emerald-800 dark:text-emerald-200">
+              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                <p className="font-medium">
+                  Empresa: {formData.empresa.nombreFantasia || formData.empresa.razonSocial}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">RUT: {formData.empresa.rut}</p>
+              </div>
+              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                <p className="font-medium">Administradores: {formData.admins.length}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {formData.admins.map((a) => a.nombre).join(", ")}
+                </p>
+              </div>
+              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                <p className="font-medium">Trabajadores registrados: {formData.trabajadores.length}</p>
+              </div>
+              {!formData.configureNow && (
+                <>
+                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                    <p className="font-medium">Turnos configurados: {formData.turnos.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                    <p className="font-medium">Planificaciones creadas: {formData.planificaciones.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
+                    <p className="font-medium">Asignaciones realizadas: {formData.asignaciones.length}</p>
+                  </div>
+                </>
+              )}
+              {!formData.configureNow && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 dark:bg-amber-900/30 dark:border-amber-900/50">
+                  <p className="font-medium text-amber-900 dark:text-amber-300">
+                    ⏭️ Configuración de turnos y planificaciones omitida
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-200">Se configurará durante la capacitación</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )
+      default:
+        return <div>Paso no encontrado</div>
+    }
+  }
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <AlertDialog open={showConfirmRestart} onOpenChange={setShowConfirmRestart}>
@@ -3449,137 +3515,7 @@ export function OnboardingTurnosCliente() {
 
         {/* Contenido de cada paso */}
         <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-800 dark:shadow-xl">
-          {currentStep === 0 && (
-            <BienvenidaMarketingStep
-              nombreEmpresa={formData.empresa.nombreFantasia || formData.empresa.razonSocial || undefined}
-              onContinue={handleNext}
-            />
-          )}
-
-          {currentStep === 1 && <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />}
-
-          {currentStep === 2 && (
-            <EmpresaStep
-              empresa={formData.empresa}
-              setEmpresa={(newEmpresa) => setFormData((prev) => ({ ...prev, empresa: newEmpresa }))}
-              prefilledFields={prefilledFields} // Pass the Set directly
-              isFieldPrefilled={isFieldPrefilled}
-              isFieldEdited={isFieldEdited}
-              trackFieldChange={trackFieldChange}
-            />
-          )}
-          {currentStep === 3 && (
-            <AdminStep
-              admins={formData.admins}
-              setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
-              grupos={formData.empresa.grupos}
-              ensureGrupoByName={(nombre) => {
-                const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
-                if (existing) return existing.id
-                const newGroup = { id: Date.now(), nombre, descripcion: "" }
-                setFormData((prev) => ({
-                  ...prev,
-                  empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
-                }))
-                return newGroup.id
-              }}
-              onRemoveAdmin={(index) => {
-                console.log("[v0] Admin removido (desde el paso principal):", index)
-                setFormData((prev) => ({ ...prev, admins: prev.admins.filter((_, i) => i !== index) }))
-              }}
-              isEditMode={isEditing} // Pasar el estado de edición
-            />
-          )}
-          {currentStep === 4 && (
-            <TrabajadoresStep
-              trabajadores={formData.trabajadores}
-              setTrabajadores={(newTrabajadores) => setFormData((prev) => ({ ...prev, trabajadores: newTrabajadores }))}
-              grupos={formData.empresa.grupos} // Pass groups
-              setGrupos={(newGrupos) =>
-                setFormData((prev) => ({ ...prev, empresa: { ...prev.empresa, grupos: newGrupos } }))
-              } // Update groups in company state
-              errorGlobal={errorGlobalAsignaciones}
-              ensureGrupoByName={(nombre) => {
-                const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
-                if (existing) return existing.id
-                const newGroup = { id: Date.now(), nombre, descripcion: "" }
-                setFormData((prev) => ({
-                  ...prev,
-                  empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
-                }))
-                return newGroup.id
-              }}
-            />
-          )}
-          {currentStep === 5 && <DecisionStep onDecision={handleConfigurationDecision} />}
-          {currentStep === 6 && (
-            <TurnosStep
-              turnos={formData.turnos}
-              setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
-            />
-          )}
-          {currentStep === 7 && (
-            <PlanificacionesStep
-              planificaciones={formData.planificaciones}
-              setPlanificaciones={(newPlanificaciones) =>
-                setFormData((prev) => ({ ...prev, planificaciones: newPlanificaciones }))
-              }
-              turnos={formData.turnos}
-            />
-          )}
-          {currentStep === 8 && (
-            <AsignacionStep
-              asignaciones={formData.asignaciones}
-              setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
-              trabajadores={formData.trabajadores}
-              planificaciones={formData.planificaciones}
-              grupos={formData.empresa.grupos} // Pass groups
-              errorGlobal={errorGlobalAsignaciones}
-            />
-          )}
-          {currentStep === 9 && (
-            <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6 dark:bg-emerald-900/30 dark:border-emerald-900/50">
-              <h2 className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">Resumen del Onboarding</h2>
-              <div className="space-y-3 text-sm text-emerald-800 dark:text-emerald-200">
-                <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                  <p className="font-medium">
-                    Empresa: {formData.empresa.nombreFantasia || formData.empresa.razonSocial}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">RUT: {formData.empresa.rut}</p>
-                </div>
-                <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                  <p className="font-medium">Administradores: {formData.admins.length}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {formData.admins.map((a) => a.nombre).join(", ")}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                  <p className="font-medium">Trabajadores registrados: {formData.trabajadores.length}</p>
-                </div>
-                {!formData.configureNow && (
-                  <>
-                    <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                      <p className="font-medium">Turnos configurados: {formData.turnos.length}</p>
-                    </div>
-                    <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                      <p className="font-medium">Planificaciones creadas: {formData.planificaciones.length}</p>
-                    </div>
-                    <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                      <p className="font-medium">Asignaciones realizadas: {formData.asignaciones.length}</p>
-                    </div>
-                  </>
-                )}
-                {!formData.configureNow && (
-                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 dark:bg-amber-900/30 dark:border-amber-900/50">
-                    <p className="font-medium text-amber-900 dark:text-amber-300">
-                      ⏭️ Configuración de turnos y planificaciones omitida
-                    </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-200">Se configurará durante la capacitación</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
+          {renderStep()}
 
           {currentStep > 1 && (
             <div className="mt-8 flex items-center justify-between gap-2">
