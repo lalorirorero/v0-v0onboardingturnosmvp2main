@@ -194,14 +194,7 @@ const Stepper = ({ currentStep }) => {
   )
 }
 
-const AdminStep = ({
-  admins,
-  setAdmins,
-  grupos,
-  ensureGrupoByName,
-  onRemoveAdmin,
-  isEditMode, // Agregado isEditMode
-}) => {
+const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin, isEditMode }) => {
   const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
@@ -211,27 +204,72 @@ const AdminStep = ({
     grupo: "",
   })
 
-  const handleFormChange = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }, [])
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
+
+  const handleFormChange = useCallback(
+    (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+      if (fieldErrors[field]) {
+        setFieldErrors((prev) => {
+          const newErrors = { ...prev }
+          delete newErrors[field]
+          return newErrors
+        })
+      }
+    },
+    [fieldErrors],
+  )
+
+  const validateAdminForm = useCallback(() => {
+    const errors: { [key: string]: string } = {}
+
+    if (!formData.nombre.trim()) {
+      errors.nombre = "El nombre es obligatorio"
+    }
+
+    if (!formData.apellido.trim()) {
+      errors.apellido = "El apellido es obligatorio"
+    }
+
+    if (!formData.rut.trim()) {
+      errors.rut = "El RUT es obligatorio"
+    } else {
+      // Validar formato de RUT chileno
+      const rutRegex = /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9Kk]$/
+      if (!rutRegex.test(formData.rut)) {
+        errors.rut = "Formato inválido (ej: 12.345.678-9)"
+      }
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "El correo es obligatorio"
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        errors.email = "Formato de correo inválido (ej: correo@empresa.cl)"
+      }
+    }
+
+    if (!formData.telefono.trim()) {
+      errors.telefono = "El teléfono es obligatorio"
+    } else {
+      // Validar formato de teléfono (debe empezar con + y tener al menos 8 dígitos)
+      const phoneRegex = /^\+?[0-9]{8,15}$/
+      if (!phoneRegex.test(formData.telefono.replace(/\s/g, ""))) {
+        errors.telefono = "Formato inválido (ej: +56912345678)"
+      }
+    }
+
+    return errors
+  }, [formData])
 
   const handleAddAdminClick = useCallback(() => {
     console.log("[v0] ===== BOTÓN AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
 
-    const errors = []
-    if (!formData.nombre.trim()) errors.push("Nombre")
-    if (!formData.apellido.trim()) errors.push("Apellido")
-    if (!formData.email.trim()) errors.push("Email")
-    else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.email)) {
-        errors.push("Email (formato inválido)")
-      }
-    }
-    if (!formData.telefono.trim()) errors.push("Teléfono")
+    const errors = validateAdminForm()
 
-    if (errors.length > 0) {
-      alert(`Por favor completa los siguientes campos obligatorios: ${errors.join(", ")}`)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
       return
     }
 
@@ -249,7 +287,7 @@ const AdminStep = ({
       email: formData.email,
       telefono: formData.telefono,
       grupoId: grupoId,
-      grupoNombre: formData.grupo, // Guardar el nombre del grupo para mostrar
+      grupoNombre: formData.grupo,
     }
 
     setAdmins([...admins, newAdmin])
@@ -262,7 +300,8 @@ const AdminStep = ({
       telefono: "",
       grupo: "",
     })
-  }, [formData, admins, setAdmins, ensureGrupoByName])
+    setFieldErrors({})
+  }, [formData, admins, setAdmins, ensureGrupoByName, validateAdminForm])
 
   return (
     <section className="space-y-6">
@@ -288,41 +327,71 @@ const AdminStep = ({
               Nombre <span className="text-destructive">*</span>
             </label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.nombre
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
+              }`}
               type="text"
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
               placeholder="Ej: María"
-              required
             />
+            {fieldErrors.nombre && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <span>⚠</span>
+                {fieldErrors.nombre}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
               Apellido <span className="text-destructive">*</span>
             </label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.apellido
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
+              }`}
               type="text"
               value={formData.apellido}
               onChange={(e) => handleFormChange("apellido", e.target.value)}
               placeholder="Ej: González"
-              required
             />
+            {fieldErrors.apellido && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <span>⚠</span>
+                {fieldErrors.apellido}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              <span>RUT</span>
+              <span>
+                RUT <span className="text-destructive">*</span>
+              </span>
               <span className="ml-1 cursor-help text-slate-400" title="Ingresa el RUT sin puntos y con guión">
                 ⓘ
               </span>
             </label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.rut
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
+              }`}
               type="text"
               value={formData.rut}
               onChange={(e) => handleFormChange("rut", e.target.value)}
-              placeholder="12345678-9"
+              placeholder="12.345.678-9"
             />
+            {fieldErrors.rut && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <span>⚠</span>
+                {fieldErrors.rut}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
@@ -334,13 +403,22 @@ const AdminStep = ({
               </span>
             </label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.email
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
+              }`}
               type="email"
               value={formData.email}
               onChange={(e) => handleFormChange("email", e.target.value)}
               placeholder=" correo@empresa.cl"
-              required
             />
+            {fieldErrors.email && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <span>⚠</span>
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
@@ -352,13 +430,22 @@ const AdminStep = ({
               </span>
             </label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.telefono
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
+              }`}
               type="tel"
               value={formData.telefono}
               onChange={(e) => handleFormChange("telefono", e.target.value)}
               placeholder="+56912345678"
-              required
             />
+            {fieldErrors.telefono && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <span>⚠</span>
+                {fieldErrors.telefono}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
@@ -379,9 +466,10 @@ const AdminStep = ({
         <button
           type="button"
           onClick={handleAddAdminClick}
-          className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
         >
-          + Agregar administrador
+          <span>+</span>
+          Agregar administrador
         </button>
       </div>
 
@@ -443,15 +531,16 @@ const AdminStep = ({
   )
 }
 
-// START CHANGE: Definiendo ProtectedInput FUERA del componente principal para evitar re-creación
+// START CHANGE: Modificar ProtectedInput para mostrar errores
 const ProtectedInput = React.memo<{
   name: string
   label: string
-  type?: string
-  placeholder?: string
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-}>(({ name, label, type = "text", placeholder = "", value, onChange }) => {
+  type?: string
+  placeholder?: string
+  error?: string // Nueva prop para mostrar error
+}>(({ name, label, value, onChange, type = "text", placeholder, error }) => {
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
@@ -464,8 +553,24 @@ const ProtectedInput = React.memo<{
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        className={`w-full rounded-lg border ${
+          error
+            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+            : "border-slate-300 focus:border-sky-500 focus:ring-sky-500"
+        } px-4 py-2.5 focus:outline-none focus:ring-1`}
       />
+      {error && (
+        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {error}
+        </p>
+      )}
     </div>
   )
 })
@@ -480,7 +585,8 @@ const EmpresaStep = React.memo<{
   isFieldPrefilled: (fieldKey: string) => boolean
   isFieldEdited: (fieldKey: string) => boolean
   trackFieldChange: (fieldKey: string, newValue: any) => void
-}>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange }) => {
+  fieldErrors?: Record<string, string> // Nueva prop
+}>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange, fieldErrors = {} }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
   const SISTEMAS_INFO = {
@@ -588,6 +694,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Tech Solutions S.A."
           value={empresa.razonSocial || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.razónsocial"]}
         />
         <ProtectedInput
           name="nombreFantasia"
@@ -595,6 +702,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: TechSol"
           value={empresa.nombreFantasia || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.nombredefantasía"]}
         />
         <ProtectedInput
           name="rut"
@@ -602,6 +710,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: 12.345.678-9"
           value={empresa.rut || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.rut"]}
         />
         <ProtectedInput
           name="giro"
@@ -609,6 +718,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Servicios de Tecnología"
           value={empresa.giro || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.giro"]}
         />
         <ProtectedInput
           name="direccion"
@@ -616,6 +726,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Av. Principal 123"
           value={empresa.direccion || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.dirección"]}
         />
         <ProtectedInput
           name="comuna"
@@ -623,6 +734,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Santiago"
           value={empresa.comuna || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.comuna"]}
         />
         <ProtectedInput
           name="emailFacturacion"
@@ -631,6 +743,9 @@ const EmpresaStep = React.memo<{
           placeholder="facturacion@empresa.com"
           value={empresa.emailFacturacion || ""}
           onChange={handleEmpresaChange}
+          error={
+            fieldErrors["empresa.emaildefacturación"] || fieldErrors["empresa.emaildefacturación(formatoinválido)"]
+          }
         />
         <ProtectedInput
           name="telefonoContacto"
@@ -639,6 +754,7 @@ const EmpresaStep = React.memo<{
           placeholder="+56912345678"
           value={empresa.telefonoContacto || ""}
           onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.teléfonodecontacto"]}
         />
       </div>
 
@@ -686,7 +802,9 @@ const EmpresaStep = React.memo<{
           name="rubro"
           value={empresa.rubro || ""}
           onChange={handleEmpresaChange}
-          className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className={`w-full rounded-lg border ${
+            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
+          } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
         >
           <option value="">Selecciona un rubro</option>
           {RUBROS.map((rubro) => (
@@ -695,7 +813,23 @@ const EmpresaStep = React.memo<{
             </option>
           ))}
         </select>
+        {fieldErrors["empresa.rubro"] && <p className="mt-1 text-sm text-red-600">{fieldErrors["empresa.rubro"]}</p>}
       </div>
+
+      {fieldErrors["empresa.sistema"] && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-sm text-red-600 flex items-center gap-2">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {fieldErrors["empresa.sistema"]}
+          </p>
+        </div>
+      )}
     </section>
   )
 })
@@ -2999,6 +3133,8 @@ export function OnboardingTurnosCliente() {
 
   // Estados de validación
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [noAdminsError, setNoAdminsError] = useState(false)
 
   // Estados de prellenado con token
   const [hasToken, setHasToken] = useState(false)
@@ -3157,32 +3293,74 @@ export function OnboardingTurnosCliente() {
     [setFormData, setPrefilledFields, setIsEditing, setHasToken, setIdZoho, idZoho, hasToken],
   ) // Added dependencies
 
-  const canProceed = useCallback(() => {
-    switch (currentStep) {
-      case 2: // Empresa
-        return validateEmpresaFields(formData.empresa).isValid
-      case 3: // Admin
-        return validateAdminsFields(formData.admins).isValid
-      case 5: // Trabajadores
-        // Allow proceeding even with errors, users might want to fix later
-        return true
-      case 7: // Turnos
-        return formData.turnos.length > 0 // Must have at least one turn
-      case 8: // Planificaciones
-        return formData.planificaciones.length > 0 // Must have at least one planning
-      case 9: // Asignaciones
-        // Check if all assignments have required fields filled
-        return formData.asignaciones.every((a) => a.trabajadorId && a.planificacionId && a.desde && a.hasta)
-      default:
-        return true // For steps where there are no specific checks
+  const validateField = useCallback((fieldName: string, value: any, fieldLabel: string): string | null => {
+    // Campos de texto obligatorios
+    if (typeof value === "string" && !value.trim()) {
+      return `${fieldLabel} es obligatorio`
     }
-  }, [currentStep, formData.empresa, formData.admins, formData.turnos, formData.planificaciones, formData.asignaciones])
+
+    // Validación de email
+    if (fieldName.includes("email") && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(value)) {
+        return "Formato de email inválido"
+      }
+    }
+
+    // Validación de RUT chileno
+    if (fieldName.includes("rut") && value) {
+      const rutRegex = /^\d{1,2}\.\d{3}\.\d{3}[-][0-9Kk]{1}$/
+      if (!rutRegex.test(value)) {
+        return "Formato de RUT inválido (Ej: 12.345.678-9)"
+      }
+    }
+
+    // Validación de teléfono
+    if (fieldName.includes("telefono") && value) {
+      const phoneRegex = /^\+?[0-9]{8,15}$/
+      if (!phoneRegex.test(value.replace(/\s/g, ""))) {
+        return "Formato de teléfono inválido"
+      }
+    }
+
+    return null
+  }, [])
+
+  // En su lugar, las validaciones se ejecutan al hacer clic en handleNext
 
   const handleNext = useCallback(() => {
+    // Limpiar errores previos
+    setFieldErrors({})
+    setNoAdminsError(false)
+
     // Validation for specific steps before proceeding
     if (currentStep === 2) {
       const validation = validateEmpresaFields(formData.empresa)
       if (!validation.isValid) {
+        const errors: Record<string, string> = {}
+        validation.errors.forEach((error) => {
+          // Simple mapping for now, might need more robust parsing if field names differ
+          // Note: These keys are based on the labels in the UI and might need adjustment
+          if (error === "Razón Social") errors["empresa.razónsocial"] = error
+          else if (error === "Nombre de fantasía") errors["empresa.nombredefantasía"] = error
+          else if (error === "RUT") errors["empresa.rut"] = error
+          else if (error === "Giro") errors["empresa.giro"] = error
+          else if (error === "Dirección") errors["empresa.dirección"] = error
+          else if (error === "Comuna") errors["empresa.comuna"] = error
+          else if (error === "Email de facturación") errors["empresa.emaildefacturación"] = error
+          else if (error === "Email de facturación (formato inválido)")
+            errors["empresa.emaildefacturación(formatoinválido)"] = error
+          else if (error === "Teléfono de contacto") errors["empresa.teléfonodecontacto"] = error
+          else if (error === "Rubro") errors["empresa.rubro"] = error
+        })
+
+        // Handle "Sistema" separately as it's a multi-select
+        if (!formData.empresa.sistema || formData.empresa.sistema.length === 0) {
+          errors["empresa.sistema"] = "Sistema es obligatorio"
+        }
+
+        setFieldErrors(errors)
+
         toast({
           title: "Campos obligatorios faltantes",
           description: `Por favor completa los siguientes campos: ${validation.errors.join(", ")}`,
@@ -3193,6 +3371,7 @@ export function OnboardingTurnosCliente() {
     } else if (currentStep === 3) {
       const validation = validateAdminsFields(formData.admins)
       if (!validation.isValid) {
+        setNoAdminsError(true)
         toast({
           title: "Administrador requerido",
           description: validation.errors.join(", "),
@@ -3270,7 +3449,10 @@ export function OnboardingTurnosCliente() {
     setCurrentStep,
     setCompletedSteps,
     idZoho,
-    canProceed, // Include canProceed if it's used directly for logic
+    fieldErrors, // Include fieldErrors here
+    validateEmpresaFields, // Include validation functions
+    validateAdminsFields,
+    formData.empresa.sistema, // Add formData.empresa.sistema dependency
   ]) // Added dependencies
 
   const handlePrev = useCallback(() => {
@@ -3365,29 +3547,21 @@ export function OnboardingTurnosCliente() {
       excelFile: null,
     }
 
-    console.log("[v0] handleFinalizar: Payload construido", {
-      accion: payload.accion,
-      eventType: payload.eventType,
-      id_zoho: payload.id_zoho,
-    })
-
-    fetch("/api/submit-to-zoho", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        console.log("[v0] handleFinalizar: Envío exitoso", result)
-      })
-      .catch((error) => {
-        console.error("[v0] handleFinalizar: Error en envío (silencioso):", error)
-      })
-
-    console.log("[v0] handleFinalizar: Navegando al paso 11 (página de agradecimiento)")
     setCurrentStep(11)
     setIsSubmitting(false)
-  }, [formData, idZoho, steps.length, toast])
+
+    try {
+      const response = await fetch("/api/submit-to-zoho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const result = await response.json()
+      console.log("[v0] Resultado del envío a Zoho:", result)
+    } catch (error) {
+      console.error("[v0] Error al enviar a Zoho (silencioso):", error)
+    }
+  }, [formData, idZoho, steps.length])
 
   const isFieldPrefilled = useCallback(
     (fieldKey: string): boolean => {
@@ -3468,6 +3642,7 @@ export function OnboardingTurnosCliente() {
             isFieldPrefilled={isFieldPrefilled}
             isFieldEdited={isFieldEdited}
             trackFieldChange={trackFieldChange}
+            fieldErrors={fieldErrors}
           />
         )
       case 3:
@@ -3681,30 +3856,36 @@ export function OnboardingTurnosCliente() {
         {renderStepContent()}
 
         {/* Botones de navegación genéricos */}
+        {/* Mostrar botones solo en pasos con formularios (2, 3, 5, 7, 8, 9) */}
         {(currentStep === 2 ||
           currentStep === 3 ||
           currentStep === 5 ||
           currentStep === 7 ||
           currentStep === 8 ||
           currentStep === 9) && (
-          <div className="mt-8 flex items-center justify-between gap-2">
+          <div className="flex justify-between pt-6">
             <button
               type="button"
               onClick={handlePrev}
-              disabled={currentStep === 0}
-              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="inline-flex items-center rounded-full border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              ← Atrás
+              ← Anterior
             </button>
-
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-600 dark:hover:bg-emerald-700"
-            >
-              Siguiente →
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              {currentStep === 3 && noAdminsError && (
+                <p className="flex items-center gap-1 text-sm text-red-600">
+                  <span>⚠</span>
+                  Debe agregar al menos un administrador antes de continuar
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleNext}
+                className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+              >
+                Siguiente →
+              </button>
+            </div>
           </div>
         )}
 
