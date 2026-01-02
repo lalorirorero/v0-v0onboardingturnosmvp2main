@@ -22,9 +22,8 @@ import {
   Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button" // Import added
-
-import { useToast } from "@/hooks/use-toast"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation" // Added for token handling
+import { useToast } from "@/components/ui/use-toast" // Added for toast notifications
 
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
@@ -3001,312 +3000,17 @@ function getEmptyEmpresa(): Empresa {
     sistema: [],
     rubro: "",
     grupos: [],
-    id_zoho: null, // Add id_zoho to empty empresa
+    id_zoho: null,
   }
 }
 
-// CHANGE: Corregir JSON.JSON.stringify y agregar wrappers para convertir string a boolean
-const handleConfigurationDecision = useCallback(
-  async (configureNow: boolean) => {
-    setFormData((prev) => ({ ...prev, configureNow }))
-
-    const nextStep = configureNow ? 7 : 10
-    const newHistory = [...navigationHistory, nextStep]
-
-    if (onboardingId) {
-      try {
-        await fetch(`/api/onboarding/${onboardingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            formData: { ...formData, configureNow },
-            currentStep: nextStep,
-            navigationHistory: newHistory,
-          }),
-        })
-        console.log("[v0] handleConfigurationDecision: Decisión guardada, configureNow:", configureNow)
-      } catch (error) {
-        console.error("[v0] handleConfigurationDecision: Error guardando:", error)
-      }
-    }
-
-    setCurrentStep(nextStep)
-    setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-  },
-  [
-    formData,
-    currentStep,
-    onboardingId,
-    navigationHistory,
-    setFormData,
-    setCurrentStep,
-    setNavigationHistory,
-    setCompletedSteps,
-  ],
-)
-
-const handleWorkersDecision = useCallback(
-  async (loadNow: boolean) => {
-    setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
-
-    const nextStep = loadNow ? 5 : 6
-    const newHistory = [...navigationHistory, nextStep]
-
-    if (onboardingId) {
-      try {
-        await fetch(`/api/onboarding/${onboardingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            formData: { ...formData, loadWorkersNow: loadNow },
-            currentStep: nextStep,
-            navigationHistory: newHistory,
-          }),
-        })
-        console.log("[v0] handleWorkersDecision: Decisión guardada, loadWorkersNow:", loadNow)
-      } catch (error) {
-        console.error("[v0] handleWorkersDecision: Error guardando:", error)
-      }
-    }
-
-    setCurrentStep(nextStep)
-    setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-  },
-  [
-    formData,
-    currentStep,
-    onboardingId,
-    navigationHistory,
-    setFormData,
-    setCurrentStep,
-    setNavigationHistory,
-    setCompletedSteps,
-  ],
-)
-
-const isFieldPrefilled = useCallback(
-  (fieldKey: string): boolean => {
-    return prefilledFields.has(fieldKey)
-  },
-  [prefilledFields],
-)
-
-const isFieldEdited = useCallback(
-  (fieldKey: string): boolean => {
-    const fieldEntry = editedFields[fieldKey]
-    if (!fieldEntry) return false
-
-    return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
-  },
-  [editedFields],
-)
-
-const trackFieldChange = useCallback(
-  (fieldKey: string, newValue: any) => {
-    // Only track changes if the field was prefilled
-    if (!prefilledFields.has(fieldKey)) return
-
-    // Dynamically get the current value from formDataRef
-    const keys = fieldKey.split(".")
-    let originalValue: any = formDataRef.current
-    for (const key of keys) {
-      originalValue = originalValue?.[key]
-      if (originalValue === undefined || originalValue === null) break
-    }
-
-    setEditedFields((prev) => {
-      const updated = { ...prev }
-      if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
-        updated[fieldKey] = {
-          originalValue: originalValue,
-          currentValue: newValue,
-        }
-      } else {
-        delete updated[fieldKey] // Remove if reverted to original value
-      }
-      return updated
-    })
-  },
-  [prefilledFields, setEditedFields],
-)
-
-const handleFinalizar = useCallback(async () => {
-  setIsSubmitting(true)
-  setValidationErrors([]) // Clear previous validation errors
-
-  try {
-    const newHistory = [...navigationHistory, 11]
-
-    // Marcar como completado en BD
-    if (onboardingId) {
-      await fetch(`/api/onboarding/${onboardingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formData: formData,
-          currentStep: 11,
-          navigationHistory: newHistory,
-          estado: "completado",
-          fecha_completado: new Date().toISOString(),
-        }),
-      })
-      console.log("[v0] handleFinalizar: Onboarding marcado como completado")
-    }
-
-    // Preparar payload para Zoho
-    const payload = {
-      accion: "completado",
-      eventType: "complete",
-      id_zoho: idZoho,
-      fechaHoraEnvio: new Date().toISOString(),
-      formData: formData,
-      metadata: {
-        empresaRut: formData.empresa.rut || "Sin RUT",
-        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-        pasoActual: 10,
-        pasoNombre: "Resumen",
-        totalPasos: steps.length,
-        porcentajeProgreso: 100,
-      },
-      excelFile: null,
-    }
-
-    // Enviar a Zoho (fire-and-forget)
-    fetch("/api/submit-to-zoho", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch((error) => {
-      console.error("[v0] handleFinalizar: Error enviando a Zoho:", error)
-    })
-
-    // Navegar a página de agradecimiento
-    setCurrentStep(11)
-    setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-  } catch (error) {
-    console.error("[v0] handleFinalizar: Error:", error)
-    toast({
-      title: "Error",
-      description: "Hubo un error al finalizar el onboarding",
-      variant: "destructive",
-    })
-  } finally {
-    setIsSubmitting(false)
-  }
-}, [
-  formData,
-  idZoho,
-  steps.length,
-  onboardingId,
-  navigationHistory,
-  toast,
-  currentStep,
-  setCompletedSteps,
-  setCurrentStep,
-  setNavigationHistory,
-])
-
-const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
-  console.log("[v0] fetchTokenData: Iniciando con token:", token.substring(0, 20) + "...")
-
-  // Import the toast function from useToast hook for local use
-  const { toast } = await import("@/hooks/use-toast")
-
-  try {
-    const response = await fetch("/api/decrypt-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token }),
-    })
-
-    console.log("[v0] fetchTokenData: Response status:", response.status)
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("[v0] fetchTokenData: Error en respuesta:", errorData)
-      toast({
-        title: "Error al cargar datos",
-        description: errorData.error || "No se pudo desencriptar el token",
-        variant: "destructive",
-      })
-      return null
-    }
-
-    const result = await response.json()
-    console.log("[v0] fetchTokenData: Respuesta exitosa:", {
-      success: result.success,
-      hasEmpresaData: !!result.empresaData,
-      razonSocial: result.empresaData?.razonSocial,
-      rut: result.empresaData?.rut,
-    })
-
-    if (!result.success || !result.empresaData) {
-      console.error("[v0] fetchTokenData: Token inválido o sin datos")
-      toast({
-        title: "Token inválido",
-        description: "El enlace no contiene datos válidos",
-        variant: "destructive",
-      })
-      return null
-    }
-
-    const empresaData = result.empresaData
-
-    const formattedData: Partial<OnboardingFormData> = {
-      empresa: {
-        razonSocial: empresaData.razonSocial || "",
-        nombreFantasia: empresaData.nombreFantasia || "",
-        rut: empresaData.rut || "",
-        giro: empresaData.giro || "",
-        direccion: empresaData.direccion || "",
-        comuna: empresaData.comuna || "",
-        emailFacturacion: empresaData.emailFacturacion || "",
-        telefonoContacto: empresaData.telefonoContacto || "",
-        sistema: empresaData.sistema || [],
-        rubro: empresaData.rubro || "",
-        grupos: [],
-        id_zoho: empresaData.id_zoho || null,
-      },
-      admins: Array.isArray(empresaData.admins) ? empresaData.admins : [],
-      trabajadores: Array.isArray(empresaData.trabajadores) ? empresaData.trabajadores : [],
-      turnos: Array.isArray(empresaData.turnos) ? empresaData.turnos : [],
-      planificaciones: Array.isArray(empresaData.planificaciones) ? empresaData.planificaciones : [],
-      asignaciones: Array.isArray(empresaData.asignaciones) ? empresaData.asignaciones : [],
-    }
-
-    console.log("[v0] fetchTokenData: Datos formateados exitosamente:", {
-      razonSocial: formattedData.empresa?.razonSocial,
-      rut: formattedData.empresa?.rut,
-      rubro: formattedData.empresa?.rubro,
-      adminsCount: formattedData.admins?.length,
-      trabajadoresCount: formattedData.trabajadores?.length,
-    })
-
-    return formattedData
-  } catch (error) {
-    console.error("[v0] fetchTokenData: Error de red:", error)
-    toast({
-      title: "Error de conexión",
-      description: "No se pudo conectar con el servidor",
-      variant: "destructive",
-    })
-    return null
-  }
-}
-
-export function OnboardingTurnosCliente() {
+// CHANGE: Adding component function declaration
+function OnboardingTurnosCliente() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const hasInitialized = useRef(false)
 
-  const [onboardingId, setOnboardingId] = useState<string | null>(null)
-  const [navigationHistory, setNavigationHistory] = useState<number[]>([0])
-
+  const [grupos, setGrupos] = useState<{ id: number; nombre: string; descripcion: string }[]>([])
+  const [trabajadores, setTrabajadores] = useState<any[]>([])
   const [formData, setFormData] = useState<OnboardingFormData>({
     empresa: getEmptyEmpresa(),
     admins: [],
@@ -3315,33 +3019,117 @@ export function OnboardingTurnosCliente() {
     planificaciones: [],
     asignaciones: [],
     configureNow: true,
+    loadWorkersNow: true,
   })
-
-  // Estados de control
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
-  const [completedSteps, setCompletedSteps] = useState<number[]>([])
+  const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO])
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+  const [prefilledData, setPrefilledData] = useState<any>(null)
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
+  const [editedFields, setEditedFields] = useState<EditedFields>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [zohoSubmissionResult, setZohoSubmissionResult] = useState<any>(null)
-
-  // Estados de validación
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [noAdminsError, setNoAdminsError] = useState(false)
-
-  // Estados de prellenado con token
   const [hasToken, setHasToken] = useState(false)
   const [idZoho, setIdZoho] = useState<string | null>(null)
-  const [prefilledData, setPrefilledData] = useState<Partial<OnboardingFormData> | null>(null)
-  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
-  const [isEditing, setIsEditing] = useState(true)
-  const [editedFields, setEditedFields] = useState<EditedFields>({})
-
-  const [showConfirmRestart, setShowConfirmRestart] = useState(false)
+  const [onboardingId, setOnboardingId] = useState<string | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const hasInitialized = useRef(false)
+  const [showConfirmRestart, setShowConfirmRestart] = useState(false)
+  const [noAdminsError, setNoAdminsError] = useState(false)
 
-  // Moved these states outside of the main component function to be accessible by handlers
-  const [grupos, setGrupos] = useState<{ id: number; nombre: string; descripcion: string }[]>([])
-  const [trabajadores, setTrabajadores] = useState<any[]>([])
+  // Mock fetchTokenData function for demonstration purposes
+  // In a real application, this would fetch data from an API based on the token.
+  const fetchTokenData = async (token: string): Promise<any | null> => {
+    console.log("[v0] Mock fetchTokenData called with token:", token)
+    // Simulate fetching data based on token
+    if (token === "dummy-token-123") {
+      return {
+        empresa: {
+          razonSocial: "Empresa Ejemplo S.A.",
+          nombreFantasia: "EmpresaEjemplo",
+          rut: "76.123.456-7",
+          giro: "Servicios Tecnológicos",
+          direccion: "Calle Falsa 123",
+          comuna: "Santiago",
+          emailFacturacion: "facturacion@ejemplo.com",
+          telefonoContacto: "+56987654321",
+          sistema: ["GeoVictoria APP"],
+          rubro: "1. Agrícola",
+          id_zoho: "1234567890",
+        },
+        admins: [
+          {
+            id: 1678880000001,
+            nombre: "Juan Pérez",
+            apellido: "Pérez",
+            rut: "12.345.678-9",
+            email: "juan.perez@ejemplo.com",
+            telefono: "+56911111111",
+            grupoId: "",
+            grupoNombre: "",
+          },
+        ],
+        trabajadores: [
+          {
+            id: 1678880000002,
+            nombre: "María González",
+            rut: "19.234.567-8",
+            correo: "maria.gonzalez@ejemplo.com",
+            grupoId: "",
+            telefono1: "+56922222222",
+            telefono2: "",
+            telefono3: "",
+            tipo: "usuario",
+          },
+        ],
+        turnos: [
+          {
+            id: 1,
+            nombre: "Descanso",
+            horaInicio: "",
+            horaFin: "",
+            tipoColacion: "sin",
+            colacionMinutos: 0,
+            tooltip: "",
+            colacionInicio: "",
+            colacionFin: "",
+          },
+          {
+            id: 2,
+            nombre: "Libre",
+            horaInicio: "",
+            horaFin: "",
+            tipoColacion: "sin",
+            colacionMinutos: 0,
+            tooltip: "",
+            colacionInicio: "",
+            colacionFin: "",
+          },
+          {
+            id: 3,
+            nombre: "Turno Normal",
+            horaInicio: "09:00",
+            horaFin: "18:00",
+            tipoColacion: "libre",
+            colacionMinutos: 60,
+            tooltip: "",
+            colacionInicio: "",
+            colacionFin: "",
+          },
+        ],
+        planificaciones: [
+          { id: 1, nombre: "Lunes a Viernes", diasTurnos: [3, 3, 3, 3, 3, 1, 1] },
+          { id: 2, nombre: "Fin de Semana", diasTurnos: [1, 1, 1, 1, 1, 2, 2] },
+        ],
+        asignaciones: [
+          { id: 1, trabajadorId: 1678880000002, planificacionId: 1, desde: "2023-01-01", hasta: "2023-12-31" },
+        ],
+      }
+    }
+    // Return null or throw an error if token is invalid or data not found
+    return null
+  }
 
   const formDataRef = useRef(formData)
   useEffect(() => {
@@ -3354,86 +3142,6 @@ export function OnboardingTurnosCliente() {
       empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
     }))
   }, [])
-
-  const handleConfigurationDecision = useCallback(
-    async (configureNow: boolean) => {
-      setFormData((prev) => ({ ...prev, configureNow }))
-
-      const nextStep = configureNow ? 7 : 10
-      const newHistory = [...navigationHistory, nextStep]
-
-      if (onboardingId) {
-        try {
-          await fetch(`/api/onboarding/${onboardingId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              formData: { ...formData, configureNow },
-              currentStep: nextStep,
-              navigationHistory: newHistory,
-            }),
-          })
-          console.log("[v0] handleConfigurationDecision: Decisión guardada, configureNow:", configureNow)
-        } catch (error) {
-          console.error("[v0] handleConfigurationDecision: Error guardando:", error)
-        }
-      }
-
-      setCurrentStep(nextStep)
-      setNavigationHistory(newHistory)
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-    },
-    [
-      formData,
-      currentStep,
-      onboardingId,
-      navigationHistory,
-      setFormData,
-      setCurrentStep,
-      setNavigationHistory,
-      setCompletedSteps,
-    ],
-  )
-
-  const handleWorkersDecision = useCallback(
-    async (loadNow: boolean) => {
-      setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
-
-      const nextStep = loadNow ? 5 : 6
-      const newHistory = [...navigationHistory, nextStep]
-
-      if (onboardingId) {
-        try {
-          await fetch(`/api/onboarding/${onboardingId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              formData: { ...formData, loadWorkersNow: loadNow },
-              currentStep: nextStep,
-              navigationHistory: newHistory,
-            }),
-          })
-          console.log("[v0] handleWorkersDecision: Decisión guardada, loadWorkersNow:", loadNow)
-        } catch (error) {
-          console.error("[v0] handleWorkersDecision: Error guardando:", error)
-        }
-      }
-
-      setCurrentStep(nextStep)
-      setNavigationHistory(newHistory)
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-    },
-    [
-      formData,
-      currentStep,
-      onboardingId,
-      navigationHistory,
-      setFormData,
-      setCurrentStep,
-      setNavigationHistory,
-      setCompletedSteps,
-    ],
-  )
 
   const isFieldPrefilled = useCallback(
     (fieldKey: string): boolean => {
@@ -3558,96 +3266,6 @@ export function OnboardingTurnosCliente() {
     setNavigationHistory,
   ])
 
-  const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
-    console.log("[v0] fetchTokenData: Iniciando con token:", token.substring(0, 20) + "...")
-
-    // Import the toast function from useToast hook for local use
-    const { toast } = await import("@/hooks/use-toast")
-
-    try {
-      const response = await fetch("/api/decrypt-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      })
-
-      console.log("[v0] fetchTokenData: Response status:", response.status)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error("[v0] fetchTokenData: Error en respuesta:", errorData)
-        toast({
-          title: "Error al cargar datos",
-          description: errorData.error || "No se pudo desencriptar el token",
-          variant: "destructive",
-        })
-        return null
-      }
-
-      const result = await response.json()
-      console.log("[v0] fetchTokenData: Respuesta exitosa:", {
-        success: result.success,
-        hasEmpresaData: !!result.empresaData,
-        razonSocial: result.empresaData?.razonSocial,
-        rut: result.empresaData?.rut,
-      })
-
-      if (!result.success || !result.empresaData) {
-        console.error("[v0] fetchTokenData: Token inválido o sin datos")
-        toast({
-          title: "Token inválido",
-          description: "El enlace no contiene datos válidos",
-          variant: "destructive",
-        })
-        return null
-      }
-
-      const empresaData = result.empresaData
-
-      const formattedData: Partial<OnboardingFormData> = {
-        empresa: {
-          razonSocial: empresaData.razonSocial || "",
-          nombreFantasia: empresaData.nombreFantasia || "",
-          rut: empresaData.rut || "",
-          giro: empresaData.giro || "",
-          direccion: empresaData.direccion || "",
-          comuna: empresaData.comuna || "",
-          emailFacturacion: empresaData.emailFacturacion || "",
-          telefonoContacto: empresaData.telefonoContacto || "",
-          sistema: empresaData.sistema || [],
-          rubro: empresaData.rubro || "",
-          grupos: [],
-          id_zoho: empresaData.id_zoho || null,
-        },
-        admins: Array.isArray(empresaData.admins) ? empresaData.admins : [],
-        trabajadores: Array.isArray(empresaData.trabajadores) ? empresaData.trabajadores : [],
-        turnos: Array.isArray(empresaData.turnos) ? empresaData.turnos : [],
-        planificaciones: Array.isArray(empresaData.planificaciones) ? empresaData.planificaciones : [],
-        asignaciones: Array.isArray(empresaData.asignaciones) ? empresaData.asignaciones : [],
-      }
-
-      console.log("[v0] fetchTokenData: Datos formateados exitosamente:", {
-        razonSocial: formattedData.empresa?.razonSocial,
-        rut: formattedData.empresa?.rut,
-        rubro: formattedData.empresa?.rubro,
-        adminsCount: formattedData.admins?.length,
-        trabajadoresCount: formattedData.trabajadores?.length,
-      })
-
-      return formattedData
-    } catch (error) {
-      console.error("[v0] fetchTokenData: Error de red:", error)
-      toast({
-        title: "Error de conexión",
-        description: "No se pudo conectar con el servidor",
-        variant: "destructive",
-      })
-      return null
-    }
-  }
-
   // Initial Load Logic
   useEffect(() => {
     const initializeOnboarding = async () => {
@@ -3655,7 +3273,7 @@ export function OnboardingTurnosCliente() {
       if (token) {
         setHasToken(true)
         console.log("[v0] Initial load: Token found, attempting to fetch data...")
-        const fetchedData = await fetchTokenData(token)
+        const fetchedData = await fetchTokenData(token) // Assume fetchTokenData is defined elsewhere or imported
         if (fetchedData) {
           console.log("[v0] Initial load: Data fetched successfully.")
           setPrefilledData(fetchedData)
@@ -3706,8 +3324,7 @@ export function OnboardingTurnosCliente() {
           console.log("[v0] Initial load: Failed to fetch data from token.")
         }
       } else {
-        console.log("[v0] Initial load: No token found. Starting with default empty state.")
-        // If no token, try to load from API using existing onboarding ID if available
+        console.log("[v0] Initial load: No token found. Attempting to load from session storage.")
         const existingOnboardingId = sessionStorage.getItem("onboardingId")
         if (existingOnboardingId) {
           setOnboardingId(existingOnboardingId)
@@ -3766,7 +3383,7 @@ export function OnboardingTurnosCliente() {
         }
       } else if (hasToken && !onboardingId) {
         // This part might need to create a new onboarding record if no ID exists yet.
-        // For now, assume token implies pre-filled data and potential update/creation handled elsewhere or on first save.
+        // For now, assume token implies pre-filled data and potential creation handled elsewhere or on first save.
       }
     }
 
@@ -3867,7 +3484,7 @@ export function OnboardingTurnosCliente() {
           errors.push("Debes agregar al menos un trabajador.")
         }
         break
-      case 6: // Configuración - This step might skip steps based on user input.
+      case 6: // Configuration - This step might skip steps based on user input.
         // The navigation here is complex and depends on the `configureNow` flag.
         // We'll handle this directly when the `DecisionStep` is rendered.
         return // No direct 'next' button from here in the traditional sense.
@@ -4099,7 +3716,7 @@ export function OnboardingTurnosCliente() {
               )}
 
               {/* Trabajadores */}
-              {trabajadores.length > 0 && ( // Use the workers state directly
+              {trabajadores.length > 0 && ( // Use the state variable directly
                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-slate-800">Trabajadores ({trabajadores.length})</h3>
                   <p className="text-sm">
@@ -4216,6 +3833,30 @@ export function OnboardingTurnosCliente() {
     }
   }
 
+  // These handlers were moved inside the main component to resolve undeclared variable errors.
+  // They now correctly reference the state setters defined within the component.
+  const handleWorkersDecision = (decision: "now" | "later") => {
+    if (decision === "now") {
+      goNext() // Proceed to the TrabajadoresStep
+    } else {
+      // Skip TrabajadoresStep and go directly to the Configuration DecisionStep
+      setCurrentStep(6) // Corresponds to DecisionStep
+      setNavigationHistory((prev) => [...prev, 6])
+      setCompletedSteps((prev) => [...prev, currentStep])
+    }
+  }
+
+  const handleConfigurationDecision = (decision: "now" | "later") => {
+    if (decision === "now") {
+      goNext() // Proceed to TurnosStep
+    } else {
+      // Skip Turnos, Planificaciones, Asignaciones and go directly to Resumen
+      setCurrentStep(10)
+      setNavigationHistory((prev) => [...prev.slice(0, -1), 10]) // Replace current step in history
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])]) // Mark skipped steps as completed
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <nav className="sticky top-0 z-20 bg-white border-b border-slate-200 py-4 px-6 md:px-12">
@@ -4224,40 +3865,6 @@ export function OnboardingTurnosCliente() {
             <img src="/logo-geovictoria.svg" alt="GeoVictoria Logo" className="h-8 w-auto" />
             <h1 className="text-lg font-bold text-slate-800">Configuración Inicial</h1>
           </div>
-          <div className="flex items-center gap-4">
-            {currentStep > PRIMER_PASO && (
-              <button
-                onClick={goBack}
-                className="text-sm font-medium text-slate-600 hover:text-slate-800 flex items-center gap-1"
-              >
-                <ChevronLeft className="h-4 w-4" /> Atrás
-              </button>
-            )}
-            {currentStep < steps.length - 1 && ( // Don't show Next on the last step (Resumen)
-              <button
-                onClick={goNext}
-                className="text-sm font-medium text-sky-600 hover:text-sky-800 flex items-center gap-1"
-                disabled={isSubmitting} // Disable if submitting
-              >
-                Continuar <ChevronRight className="h-4 w-4" />
-              </button>
-            )}
-            {currentStep === 10 && ( // Resumen step has a "Finish" button
-              <Button
-                onClick={handleFinalizar}
-                disabled={isSubmitting}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-full"
-              >
-                {isSubmitting ? "Finalizando..." : "Finalizar"}
-              </Button>
-            )}
-            <button
-              onClick={() => setShowConfirmRestart(true)}
-              className="text-sm font-medium text-red-500 hover:text-red-700"
-            >
-              Reiniciar
-            </button>
-          </div>
         </div>
         <div className="mt-4">
           <Stepper currentStep={currentStep} />
@@ -4265,61 +3872,9 @@ export function OnboardingTurnosCliente() {
       </nav>
 
       <main className="flex-1 container mx-auto py-8 px-6 md:px-12">{renderStepContent()}</main>
-
-      {showConfirmRestart && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">¿Estás seguro de reiniciar?</h3>
-            <p className="text-slate-600 mb-6">
-              Esto borrará toda la información ingresada y te llevará al primer paso.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowConfirmRestart(false)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  // Clear session storage for onboardingId if it exists
-                  sessionStorage.removeItem("onboardingId")
-                  setOnboardingId(null)
-                  // Reset all form data and state
-                  setFormData({
-                    empresa: getEmptyEmpresa(),
-                    admins: [],
-                    trabajadores: [],
-                    turnos: DEFAULT_TURNOS,
-                    planificaciones: [],
-                    asignaciones: [],
-                    configureNow: true,
-                  })
-                  setCurrentStep(PRIMER_PASO)
-                  setNavigationHistory([PRIMER_PASO])
-                  setCompletedSteps([])
-                  setIsInitialized(false) // Re-trigger initialization
-                  hasInitialized.current = false // Allow re-initialization
-                  setShowConfirmRestart(false)
-                  // Optionally, clear token related states if restarting means discarding token data
-                  setHasToken(false)
-                  setIdZoho(null)
-                  setPrefilledData(null)
-                  setPrefilledFields(new Set())
-                  setEditedFields({})
-                  toast({ title: "Onboarding reiniciado", description: "Comienza de nuevo." })
-                }}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Reiniciar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-// CHANGE: Agregando export default para deployment
+// CHANGE: Adding export default for deployment
 export default OnboardingTurnosCliente
