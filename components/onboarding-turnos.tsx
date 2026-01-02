@@ -3270,86 +3270,67 @@ function OnboardingTurnosCliente() {
   ])
 
   useEffect(() => {
-    const initializeOnboarding = async () => {
-      const token = searchParams.get("token")
+    const initializeData = async () => {
+      console.log("[v0] Initial load: INICIO")
+      const token = searchParams?.get("token")
+      console.log("[v0] Initial load: Token found:", token)
 
       if (token) {
-        console.log("[v0] Initial load: Token found:", token)
-        setOnboardingId(token)
-        setHasToken(true)
-
         try {
           const response = await fetch(`/api/onboarding/${token}`)
+          const result = await response.json()
+          console.log("[v0] Respuesta de BD:", result)
 
-          if (response.ok) {
-            const result = await response.json()
-            console.log("[v0] Respuesta de BD:", result)
-            console.log("[v0] lastStep:", result.lastStep)
-            console.log("[v0] lastStep > 1?", result.lastStep && result.lastStep > 1)
+          if (result.success && result.data) {
+            const loadedData = result.data
 
-            if (result.lastStep && result.lastStep > 1) {
+            // Update formData with loaded data
+            if (loadedData.datos_actuales) {
+              setFormData(loadedData.datos_actuales)
+            }
+
+            // Restore last step
+            const lastStep = loadedData.ultimo_paso || 0
+            console.log("[v0] lastStep:", lastStep)
+
+            // Restore navigation history
+            if (loadedData.navigation_history && Array.isArray(loadedData.navigation_history)) {
+              setNavigationHistory(loadedData.navigation_history)
+            }
+
+            // Set current step
+            setCurrentStep(lastStep)
+
+            // Set onboarding ID for future saves
+            setOnboardingId(token)
+
+            console.log("[v0] lastStep >= 3?", lastStep >= 3)
+            if (lastStep >= 3) {
               console.log("[v0] Mostrando mensaje de sesión retomada")
-              const stepName = steps.find((s) => s.id === result.lastStep)?.label || "donde quedaste"
+              const stepName = steps.find((s) => s.id === lastStep)?.label || "paso actual" // Changed from s.step to s.id
               console.log("[v0] Step name:", stepName)
-              setResumeStepName(stepName)
-              setShowResumeModal(true) // Set modal visibility to true
-            } else {
-              console.log("[v0] NO se muestra mensaje (lastStep <= 1 o no existe)")
+              // Show resume modal after a short delay to ensure DOM is ready
+              setTimeout(() => {
+                setShowResumeModal(true)
+                setResumeStepName(stepName)
+              }, 500)
             }
 
-            if (result.success && result.formData) {
-              setFormData(result.formData)
-              setCurrentStep(result.lastStep || PRIMER_PASO)
-              setNavigationHistory(result.navigationHistory || [PRIMER_PASO])
-
-              if (result.formData.empresa?.id_zoho) {
-                setIdZoho(result.formData.empresa.id_zoho)
-              }
-
-              // Marcar campos prellenados
-              const newPrefilledFields = new Set<string>()
-              if (result.formData.empresa) {
-                Object.keys(result.formData.empresa).forEach((key) => {
-                  if (
-                    result.formData.empresa[key as keyof Empresa] !== undefined &&
-                    result.formData.empresa[key as keyof Empresa] !== ""
-                  ) {
-                    newPrefilledFields.add(`empresa.${key}`)
-                  }
-                })
-              }
-              setPrefilledFields(newPrefilledFields)
-
-              console.log("[v0] Initial load: Loaded step", result.lastStep, "with history", result.navigationHistory)
-            }
-          } else {
-            console.error("[v0] Initial load: Error loading data from BD:", response.status)
-            toast({
-              title: "Error",
-              description: "No se pudieron cargar los datos del onboarding",
-              variant: "destructive",
-            })
+            console.log("[v0] Initial load: Loaded step", lastStep, "with history", loadedData.navigation_history)
           }
         } catch (error) {
-          console.error("[v0] Initial load: Exception loading data:", error)
-          toast({
-            title: "Error",
-            description: "Error al conectar con la base de datos",
-            variant: "destructive",
-          })
+          console.error("[v0] Error loading data from BD:", error)
         }
       } else {
-        console.log("[v0] Initial load: No token found in URL")
+        console.log("[v0] No token found")
       }
 
-      isInitialized.current = true // Set ref to true after initialization
+      isInitialized.current = true // Mark as initialized using ref
     }
 
-    if (!isInitialized.current) {
-      // Check ref instead of state
-      initializeOnboarding()
-    }
-  }, [searchParams, toast, setResumeStepName, setShowResumeModal]) // Added dependencies for the new setters
+    initializeData()
+  }, [searchParams]) // Removed unnecessary dependencies like setResumeStepName, setShowResumeModal, etc. from dependency array.
+  // The effect will re-run if searchParams change, which is the intended behavior.
 
   // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
@@ -3596,7 +3577,6 @@ function OnboardingTurnosCliente() {
   const renderStepContent = () => {
     // Initial loading state
     if (!isInitialized.current) {
-      // Check ref instead of state
       return (
         <div className="flex items-center justify-center min-h-[300px]">
           <p>Cargando...</p>
@@ -3647,9 +3627,19 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      case 4: // Decision Step: Load workers now or later?
+      case 4:
+        if (formData.loadWorkersNow !== undefined) {
+          // Decision already made, skip to appropriate step
+          if (formData.loadWorkersNow === true) {
+            // Go to TrabajadoresStep
+            return renderStepContent.call({ ...this, currentStep: 5 })
+          } else {
+            // Go to DecisionStep for turnos
+            return renderStepContent.call({ ...this, currentStep: 6 })
+          }
+        }
         return <WorkersDecisionStep onDecision={handleWorkersDecision} />
-      case 5: // Trabajadores Step (if loading now)
+      case 5:
         return (
           <>
             <TrabajadoresStep
@@ -3668,13 +3658,13 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      case 6: // Skip workers loading - proceed to configuration decision
-        return (
-          <DecisionStep
-            onDecision={handleConfigurationDecision} // This function decides whether to configure now or later
-          />
-        )
-      case 7: // Turnos
+      case 6:
+        if (formData.configureNow !== undefined && formData.configureNow !== true) {
+          // Decision already made to skip turnos, go to resumen
+          return renderStepContent.call({ ...this, currentStep: 10 })
+        }
+        return <DecisionStep onDecision={handleConfigurationDecision} />
+      case 7:
         return (
           <>
             <TurnosStep
@@ -3684,7 +3674,7 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      case 8: // Planificaciones
+      case 8:
         return (
           <>
             <PlanificacionesStep
@@ -3697,7 +3687,7 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      case 9: // Asignaciones
+      case 9:
         return (
           <>
             <AsignacionStep
@@ -3896,10 +3886,11 @@ function OnboardingTurnosCliente() {
     }
   }
 
-  // These handlers were moved inside the main component to resolve undeclared variable errors.
-  // They now correctly reference the state setters defined within the component.
   const handleWorkersDecision = (decision: "now" | "later") => {
-    if (decision === "now") {
+    const loadNow = decision === "now"
+    setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
+
+    if (loadNow) {
       goNext() // Proceed to the TrabajadoresStep
     } else {
       // Skip TrabajadoresStep and go directly to the Configuration DecisionStep
@@ -3910,13 +3901,16 @@ function OnboardingTurnosCliente() {
   }
 
   const handleConfigurationDecision = (decision: "now" | "later") => {
-    if (decision === "now") {
+    const configureNow = decision === "now"
+    setFormData((prev) => ({ ...prev, configureNow: configureNow }))
+
+    if (configureNow) {
       goNext() // Proceed to TurnosStep
     } else {
       // Skip Turnos, Planificaciones, Asignaciones and go directly to Resumen
       setCurrentStep(10)
-      setNavigationHistory((prev) => [...prev.slice(0, -1), 10]) // Replace current step in history
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])]) // Mark skipped steps as completed
+      setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
     }
   }
 
