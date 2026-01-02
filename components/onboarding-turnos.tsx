@@ -3282,7 +3282,23 @@ function OnboardingTurnosCliente() {
 
           if (response.ok) {
             const result = await response.json()
-            console.log("[v0] Initial load: Data loaded from BD:", result)
+            console.log("[v0] Respuesta de BD:", result)
+            console.log("[v0] lastStep:", result.lastStep)
+            console.log("[v0] lastStep > 1?", result.lastStep && result.lastStep > 1)
+
+            if (result.lastStep && result.lastStep > 1) {
+              console.log("[v0] Mostrando mensaje de sesión retomada")
+              setShowResumeMessage(true)
+              const stepName = steps.find((s) => s.id === result.lastStep)?.label || "donde quedaste"
+              console.log("[v0] Step name:", stepName)
+              toast({
+                title: "¡Bienvenido de vuelta!",
+                description: `Continuarás desde el paso "${stepName}". Tus datos anteriores han sido guardados.`,
+                duration: 5000,
+              })
+            } else {
+              console.log("[v0] NO se muestra mensaje (lastStep <= 1 o no existe)")
+            }
 
             if (result.success && result.formData) {
               setFormData(result.formData)
@@ -3308,16 +3324,6 @@ function OnboardingTurnosCliente() {
               setPrefilledFields(newPrefilledFields)
 
               console.log("[v0] Initial load: Loaded step", result.lastStep, "with history", result.navigationHistory)
-
-              if (result.lastStep && result.lastStep > 1) {
-                setShowResumeMessage(true)
-                const stepName = steps.find((s) => s.id === result.lastStep)?.label || "donde quedaste"
-                toast({
-                  title: "¡Bienvenido de vuelta!",
-                  description: `Continuarás desde el paso "${stepName}". Tus datos anteriores han sido guardados.`,
-                  duration: 5000,
-                })
-              }
             }
           } else {
             console.error("[v0] Initial load: Error loading data from BD:", response.status)
