@@ -739,7 +739,7 @@ const EmpresaStep = React.memo<{
           placeholder="facturacion@empresa.com"
           value={empresa.emailFacturacion || ""}
           onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.emailFacturacion"] || fieldErrors["empresa.emailFacturacion (formato inválido)"]}
+          error={fieldErrors["empresa.emailFacturacion"]}
         />
         <ProtectedInput
           name="telefonoContacto"
@@ -3217,10 +3217,17 @@ function OnboardingTurnosCliente() {
     setValidationErrors([]) // Clear previous validation errors
 
     try {
+      console.log("[v0] ===== INICIANDO FINALIZACIÓN DEL ONBOARDING =====")
+      console.log("[v0] onboardingId:", onboardingId)
+      console.log("[v0] idZoho:", idZoho)
+      console.log("[v0] formData:", formData)
+      // </CHANGE>
+
       const newHistory = [...navigationHistory, 11]
 
       // Marcar como completado en BD
       if (onboardingId) {
+        console.log("[v0] handleFinalizar: Guardando en BD...")
         await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -3232,7 +3239,7 @@ function OnboardingTurnosCliente() {
             fecha_completado: new Date().toISOString(),
           }),
         })
-        console.log("[v0] handleFinalizar: Onboarding marcado como completado")
+        console.log("[v0] handleFinalizar: ✅ Onboarding marcado como completado en BD")
       }
 
       // Preparar payload para Zoho
@@ -3253,21 +3260,34 @@ function OnboardingTurnosCliente() {
         excelFile: null,
       }
 
-      // Enviar a Zoho (fire-and-forget)
-      fetch("/api/submit-to-zoho", {
+      console.log("[v0] handleFinalizar: Payload para Zoho:", JSON.stringify(payload, null, 2))
+      console.log("[v0] handleFinalizar: Enviando a /api/submit-to-zoho...")
+
+      // Cambiar a await para capturar la respuesta
+      const zohoResponse = await fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      }).catch((error) => {
-        console.error("[v0] handleFinalizar: Error enviando a Zoho:", error)
       })
+
+      console.log("[v0] handleFinalizar: Status del envío:", zohoResponse.status, zohoResponse.statusText)
+
+      const zohoResult = await zohoResponse.json()
+      console.log("[v0] handleFinalizar: Respuesta de Zoho:", zohoResult)
+
+      if (zohoResult.success) {
+        console.log("[v0] handleFinalizar: ✅ Datos enviados exitosamente a Zoho")
+      } else {
+        console.error("[v0] handleFinalizar: ❌ Error al enviar a Zoho:", zohoResult.error)
+      }
+      // </CHANGE>
 
       // Navegar a página de agradecimiento
       setCurrentStep(11)
       setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     } catch (error) {
-      console.error("[v0] handleFinalizar: Error:", error)
+      console.error("[v0] handleFinalizar: ❌ ERROR CRÍTICO:", error)
       toast({
         title: "Error",
         description: "Hubo un error al finalizar el onboarding",
@@ -3289,7 +3309,7 @@ function OnboardingTurnosCliente() {
     setNavigationHistory,
   ])
 
-  // CHANGE: Modified useEffect to incorporate the updates
+  // useEffect hook for initial data loading
   useEffect(() => {
     if (isInitialized) return
 
@@ -3453,7 +3473,6 @@ function OnboardingTurnosCliente() {
     const nextStep = currentStep + 1
     const newHistory = [...navigationHistory, nextStep]
 
-    // Basic validation before moving to the next step
     let isValid = true
     const errors: string[] = []
     const stepErrors: Record<string, string> = {}
@@ -3467,10 +3486,25 @@ function OnboardingTurnosCliente() {
         const empresaValidation = validateEmpresaFields(formData.empresa)
         if (!empresaValidation.isValid) {
           isValid = false
-          errors.push(...empresaValidation.errors)
+          // Crear mensajes de error específicos para cada campo
           empresaValidation.errors.forEach((err) => {
-            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase().replace(":", "").replace(")", "")}` // Simple mapping, remove colon/parentheses
-            stepErrors[fieldKey] = `Campo inválido: ${err}`
+            errors.push(err)
+            // Mapear el error al campo específico
+            if (err.includes("Razón Social")) stepErrors["empresa.razonSocial"] = "Este campo es obligatorio"
+            if (err.includes("Nombre de fantasía")) stepErrors["empresa.nombreFantasia"] = "Este campo es obligatorio"
+            if (err.includes("RUT")) stepErrors["empresa.rut"] = "Este campo es obligatorio"
+            if (err.includes("Giro")) stepErrors["empresa.giro"] = "Este campo es obligatorio"
+            if (err.includes("Dirección")) stepErrors["empresa.direccion"] = "Este campo es obligatorio"
+            if (err.includes("Comuna")) stepErrors["empresa.comuna"] = "Este campo es obligatorio"
+            if (err.includes("Teléfono")) stepErrors["empresa.telefonoContacto"] = "Este campo es obligatorio"
+            if (err.includes("Rubro")) stepErrors["empresa.rubro"] = "Este campo es obligatorio"
+            if (err.includes("Sistema"))
+              stepErrors["empresa.sistema"] = "Debes seleccionar al menos un sistema de marcaje"
+            if (err.includes("Email de facturación (formato inválido)")) {
+              stepErrors["empresa.emailFacturacion"] = "Formato de email inválido (ej: correo@empresa.cl)"
+            } else if (err.includes("Email de facturación")) {
+              stepErrors["empresa.emailFacturacion"] = "Este campo es obligatorio"
+            }
           })
         }
         break
@@ -3479,18 +3513,15 @@ function OnboardingTurnosCliente() {
         if (!adminValidation.isValid) {
           isValid = false
           errors.push(...adminValidation.errors)
-          setNoAdminsError(true) // Specific error for no admins
+          setNoAdminsError(true)
         } else {
           setNoAdminsError(false)
         }
         break
       case 4:
         // This step handles its own navigation via onDecision.
-        // If we reach here, it means the decision was made and goNext() was called.
-        // We should proceed directly.
         break
       case 5: // Trabajadores
-        // Simple validation: check if there are workers
         if (formData.trabajadores.length === 0) {
           isValid = false
           errors.push("Debes agregar al menos un trabajador.")
@@ -3498,11 +3529,8 @@ function OnboardingTurnosCliente() {
         break
       case 6:
         // This step handles its own navigation via onDecision.
-        // If we reach here, it means the decision was made and goNext() was called.
-        // We should proceed directly.
         break
       case 7: // Turnos
-        // Ensure at least one custom turn or default 'libre'/'descanso' exists.
         const hasCustomOrDefaultTurn =
           formData.turnos.length > 0 &&
           (formData.turnos.some((t) => !["descanso", "libre", "presencial"].includes(t.nombre.toLowerCase())) ||
@@ -3516,14 +3544,12 @@ function OnboardingTurnosCliente() {
         }
         break
       case 8: // Planificaciones
-        // If the user decided to configure now, they must create at least one planning.
         if (formData.configureNow && formData.turnos.length > 0 && formData.planificaciones.length === 0) {
           isValid = false
           errors.push("Debes crear al menos una planificación para continuar.")
         }
         break
       case 9: // Asignaciones
-        // If the user decided to configure now, all workers must have a valid assignment.
         if (formData.configureNow) {
           const workersWithoutAssignment = formData.trabajadores.filter(
             (t) =>
@@ -3535,15 +3561,15 @@ function OnboardingTurnosCliente() {
           }
         }
         break
-      case 10: // Resumen - Handled by handleFinalizar
-        return // This step has its own finalization logic
+      case 10: // Resumen
+        return
       default:
         break
     }
 
     if (!isValid) {
       setValidationErrors(errors)
-      setFieldErrors(stepErrors) // Set step-specific field errors
+      setFieldErrors(stepErrors)
       toast({
         title: "Campos inválidos",
         description: "Por favor, corrige los errores en los campos marcados.",
@@ -3551,6 +3577,7 @@ function OnboardingTurnosCliente() {
       })
       return
     }
+    // </CHANGE>
 
     if (onboardingId) {
       try {
@@ -3653,7 +3680,26 @@ function OnboardingTurnosCliente() {
       case 2:
         // CHANGE: Empresa step is now case 2
         return (
-          <>
+          <div className="space-y-6">
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-red-900 text-sm">Faltan campos obligatorios</h3>
+                    <ul className="mt-2 text-xs text-red-700 space-y-1">
+                      {validationErrors.map((error, idx) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* </CHANGE> */}
             <EmpresaStep
               empresa={formData.empresa}
               setEmpresa={setEmpresa}
@@ -3672,34 +3718,64 @@ function OnboardingTurnosCliente() {
               )}
             />
             <NavigationButtons />
-          </>
+          </div>
         )
 
-      case 3:
+      case 3: // Admin (Paso 3)
         return (
-          <>
+          <div className="space-y-6">
+            {noAdminsError && (
+              <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-red-900 text-sm">Administrador requerido</h3>
+                    <p className="mt-1 text-xs text-red-700">
+                      Debes agregar al menos un administrador para continuar con el onboarding.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* </CHANGE> */}
             <AdminStep
               admins={formData.admins}
-              setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
-              grupos={formData.empresa.grupos} // Pass company groups
+              setAdmins={(updater) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  admins: typeof updater === "function" ? updater(prev.admins) : updater,
+                }))
+              }}
+              grupos={grupos}
               ensureGrupoByName={ensureGrupoByName}
               onRemoveAdmin={removeAdmin}
-              isEditMode={false} // Assuming this is initial setup, not edit mode
+              isEditMode={false}
             />
             <NavigationButtons />
-          </>
+          </div>
         )
-      // CHANGE: Mostrar siempre el WorkersDecisionStep, no auto-saltar
       case 4:
         return <WorkersDecisionStep onDecision={handleWorkersDecision} />
 
-      case 5:
+      case 5: // Trabajadores (Paso 5)
         return (
-          <>
+          <div className="space-y-6">
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-amber-900 text-sm">Trabajadores requeridos</h3>
+                    <p className="mt-1 text-xs text-amber-700">{validationErrors[0]}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* </CHANGE> */}
             <TrabajadoresStep
               trabajadores={trabajadores} // Use the state variable directly
               setTrabajadores={setTrabajadores} // Use the state setter directly
-              grupos={formData.empresa.grupos}
+              grupos={grupos}
               setGrupos={(newGrupos) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -3710,9 +3786,8 @@ function OnboardingTurnosCliente() {
               ensureGrupoByName={ensureGrupoByName}
             />
             <NavigationButtons />
-          </>
+          </div>
         )
-      // CHANGE: Mostrar siempre el ConfigurationDecisionStep, no auto-saltar
       case 6:
         return <DecisionStep onDecision={handleConfigurationDecision} />
 

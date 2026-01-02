@@ -261,42 +261,66 @@ export async function sendToZohoFlow(payload: ZohoPayload): Promise<{
   error?: string
   data?: any
 }> {
+  console.log("[v0] ===== sendToZohoFlow: INICIO =====")
+
   const url = process.env.ZOHO_FLOW_TEST_URL
 
+  console.log("[v0] sendToZohoFlow: URL del webhook:", url ? url.substring(0, 50) + "..." : "NO CONFIGURADA")
+
   if (!url) {
+    console.error("[v0] sendToZohoFlow: ❌ ERROR - ZOHO_FLOW_TEST_URL no configurado")
     return {
       success: false,
       error: "ZOHO_FLOW_TEST_URL no configurado",
     }
   }
 
+  console.log("[v0] sendToZohoFlow: Preparando payload...")
+  console.log("[v0] sendToZohoFlow: id_zoho:", payload.id_zoho)
+  console.log("[v0] sendToZohoFlow: accion:", payload.accion)
+  console.log("[v0] sendToZohoFlow: Tamaño del payload:", JSON.stringify(payload).length, "bytes")
+
   try {
+    console.log("[v0] sendToZohoFlow: Enviando POST request...")
+
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
 
+    console.log("[v0] sendToZohoFlow: Status:", response.status, response.statusText)
+    console.log("[v0] sendToZohoFlow: Headers:", Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[v0] sendToZohoFlow: ❌ ERROR - Response body:", errorText)
+
       return {
         success: false,
-        error: `Error ${response.status}: ${response.statusText}`,
+        error: `Error ${response.status}: ${response.statusText} - ${errorText}`,
       }
     }
 
     let data
     try {
       data = await response.json()
+      console.log("[v0] sendToZohoFlow: ✅ Respuesta JSON de Zoho:", data)
     } catch (jsonError) {
       // Si no es JSON válido, intentar leer como texto
       data = await response.text()
+      console.log("[v0] sendToZohoFlow: ⚠️ Respuesta de Zoho (texto):", data)
     }
+
+    console.log("[v0] sendToZohoFlow: ✅ ÉXITO - Datos enviados correctamente a Zoho Flow")
 
     return {
       success: true,
       data,
     }
   } catch (error) {
+    console.error("[v0] sendToZohoFlow: ❌ ERROR DE RED O FETCH:", error)
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Error desconocido",

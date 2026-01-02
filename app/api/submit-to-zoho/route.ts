@@ -4,7 +4,16 @@ import * as XLSX from "xlsx"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] ===== /api/submit-to-zoho: INICIO =====")
+
     const payload: ZohoPayload = await request.json()
+
+    console.log("[v0] /api/submit-to-zoho: Payload recibido")
+    console.log("[v0] /api/submit-to-zoho: id_zoho:", payload.id_zoho)
+    console.log("[v0] /api/submit-to-zoho: eventType:", payload.eventType)
+    console.log("[v0] /api/submit-to-zoho: accion:", payload.accion)
+    console.log("[v0] /api/submit-to-zoho: empresa:", payload.formData?.empresa?.razonSocial)
+    // </CHANGE>
 
     if (
       payload.eventType === "complete" &&
@@ -13,6 +22,8 @@ export async function POST(request: NextRequest) {
       payload.formData.empresa.razonSocial &&
       payload.formData.empresa.razonSocial.trim() !== ""
     ) {
+      console.log("[v0] /api/submit-to-zoho: Generando archivo Excel...")
+
       const workbook = XLSX.utils.book_new()
 
       // Hoja 1: Empresa
@@ -60,15 +71,26 @@ export async function POST(request: NextRequest) {
         base64: base64,
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }
+
+      console.log("[v0] /api/submit-to-zoho: ✅ Excel generado:", payload.excelFile.filename)
     }
 
+    console.log("[v0] /api/submit-to-zoho: Llamando a sendToZohoFlow()...")
     const result = await sendToZohoFlow(payload)
+    console.log("[v0] /api/submit-to-zoho: Respuesta de sendToZohoFlow():", result)
+
+    if (result.success) {
+      console.log("[v0] /api/submit-to-zoho: ✅ ÉXITO - Datos enviados a Zoho Flow")
+    } else {
+      console.error("[v0] /api/submit-to-zoho: ❌ ERROR - No se pudo enviar a Zoho Flow:", result.error)
+    }
+    // </CHANGE>
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 500,
     })
   } catch (error) {
-    console.error("[v0] /api/submit-to-zoho: ERROR:", error)
+    console.error("[v0] /api/submit-to-zoho: ❌ ERROR CRÍTICO:", error)
     return NextResponse.json(
       {
         success: false,
