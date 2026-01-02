@@ -32,6 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog" // Import Dialog components
+import { useRouter } from "next/navigation" // Import useRouter
 
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
@@ -2984,6 +2985,24 @@ type OnboardingFormData = {
   loadWorkersNow?: boolean // Added loadWorkersNow to OnboardingFormData
 }
 
+// Define Grupo and Trabajador types for clarity (assuming they might be used elsewhere)
+type Grupo = {
+  id: number
+  nombre: string
+  descripcion: string
+}
+type Trabajador = {
+  id: number
+  nombre: string
+  rut: string
+  correo: string
+  grupoId: string
+  telefono1: string
+  telefono2: string
+  telefono3: string
+  tipo: "usuario" | "administrador"
+}
+
 // Define EditedFields type
 type EditedFields = Record<string, { originalValue: any; currentValue: any }>
 
@@ -3008,38 +3027,38 @@ function getEmptyEmpresa(): Empresa {
 function OnboardingTurnosCliente() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const router = useRouter() // Added useRouter
 
-  const [grupos, setGrupos] = useState<{ id: number; nombre: string; descripcion: string }[]>([])
-  const [trabajadores, setTrabajadores] = useState<any[]>([])
+  const [currentStep, setCurrentStep] = useState(PRIMER_PASO) // Initialize with PRIMER_PASO
   const [formData, setFormData] = useState<OnboardingFormData>({
     empresa: getEmptyEmpresa(),
     admins: [],
     trabajadores: [],
-    turnos: DEFAULT_TURNOS,
+    turnos: DEFAULT_TURNOS, // Initialize with default turns
     planificaciones: [],
     asignaciones: [],
-    configureNow: true,
-    loadWorkersNow: true,
+    configureNow: undefined, // Initialize as undefined
+    loadWorkersNow: undefined, // Initialize as undefined
   })
-  const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
-  const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO])
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-  const [prefilledData, setPrefilledData] = useState<any>(null)
-  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
-  const [editedFields, setEditedFields] = useState<EditedFields>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [hasToken, setHasToken] = useState(false)
-  const [idZoho, setIdZoho] = useState<string | null>(null)
+  const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO]) // Initialize with PRIMER_PASO
   const [onboardingId, setOnboardingId] = useState<string | null>(null)
-  const isInitialized = useRef(false) // Changed from boolean state to ref
-  const [showResumeMessage, setShowResumeMessage] = useState(false) // Changed to showResumeModal
+  const [idZoho, setIdZoho] = useState<string>("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]) // Initialize with Trabajador[] type
+
+  const isInitialized = useRef(false)
+  const [showResumeMessage, setShowResumeMessage] = useState(false)
   const [resumeStepName, setResumeStepName] = useState("")
-  const [showResumeModal, setShowResumeModal] = useState(false) // Added state for modal visibility
+  const [showResumeModal, setShowResumeModal] = useState(false)
 
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [noAdminsError, setNoAdminsError] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([]) // Added validationErrors state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({}) // Added fieldErrors state
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // State for prefilled fields
+  const [editedFields, setEditedFields] = useState<EditedFields>({}) // State for edited fields
 
   // Mock fetchTokenData function for demonstration purposes
   // In a real application, this would fetch data from an API based on the token.
@@ -3434,7 +3453,7 @@ function OnboardingTurnosCliente() {
           isValid = false
           errors.push(...empresaValidation.errors)
           empresaValidation.errors.forEach((err) => {
-            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase().replace(":", "")}` // Simple mapping, remove colon
+            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase().replace(":", "").replace(")", "")}` // Simple mapping, remove colon/parentheses
             stepErrors[fieldKey] = `Campo inválido: ${err}`
           })
         }
@@ -3450,8 +3469,10 @@ function OnboardingTurnosCliente() {
         }
         break
       case 4:
-        // If decision already made, show the decision screen but it will auto-skip
-        return // This step handles its own navigation via onDecision
+        // This step handles its own navigation via onDecision.
+        // If we reach here, it means the decision was made and goNext() was called.
+        // We should proceed directly.
+        break
       case 5: // Trabajadores
         // Simple validation: check if there are workers
         if (formData.trabajadores.length === 0) {
@@ -3460,32 +3481,42 @@ function OnboardingTurnosCliente() {
         }
         break
       case 6:
-        // If decision already made, show the decision screen but it will auto-skip
-        return // This step handles its own navigation via onDecision
+        // This step handles its own navigation via onDecision.
+        // If we reach here, it means the decision was made and goNext() was called.
+        // We should proceed directly.
+        break
       case 7: // Turnos
-        if (formData.turnos.length <= 1) {
-          // Checking if only default turns exist
-          // Allow proceeding even if no custom turns are added, if default 'libre' exists.
-          // Ensure default turns are present.
-          if (!DEFAULT_TURNOS.some((t) => t.nombre.toLowerCase() === "libre")) {
-            isValid = false
-            errors.push("Debes tener al menos un turno definido, idealmente uno 'Libre' o 'Descanso'.")
-          }
+        // Ensure at least one custom turn or default 'libre'/'descanso' exists.
+        const hasCustomOrDefaultTurn =
+          formData.turnos.length > 0 &&
+          (formData.turnos.some((t) => !["descanso", "libre", "presencial"].includes(t.nombre.toLowerCase())) ||
+            DEFAULT_TURNOS.some((dt) =>
+              formData.turnos.some((ft) => ft.nombre.toLowerCase() === dt.nombre.toLowerCase()),
+            ))
+
+        if (!hasCustomOrDefaultTurn) {
+          isValid = false
+          errors.push("Debes tener al menos un turno definido. Se recomienda uno 'Libre' o 'Descanso'.")
         }
         break
       case 8: // Planificaciones
-        if (formData.turnos.length > 0 && formData.planificaciones.length === 0) {
+        // If the user decided to configure now, they must create at least one planning.
+        if (formData.configureNow && formData.turnos.length > 0 && formData.planificaciones.length === 0) {
           isValid = false
           errors.push("Debes crear al menos una planificación para continuar.")
         }
         break
       case 9: // Asignaciones
-        const workersWithoutAssignment = formData.trabajadores.filter(
-          (t) => !formData.asignaciones.some((a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta),
-        )
-        if (workersWithoutAssignment.length > 0) {
-          isValid = false
-          errors.push("Todos los trabajadores deben tener una asignación de planificación válida.")
+        // If the user decided to configure now, all workers must have a valid assignment.
+        if (formData.configureNow) {
+          const workersWithoutAssignment = formData.trabajadores.filter(
+            (t) =>
+              !formData.asignaciones.some((a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta),
+          )
+          if (workersWithoutAssignment.length > 0) {
+            isValid = false
+            errors.push("Todos los trabajadores deben tener una asignación de planificación válida.")
+          }
         }
         break
       case 10: // Resumen - Handled by handleFinalizar
@@ -3548,12 +3579,12 @@ function OnboardingTurnosCliente() {
     // If valid, proceed
     setCurrentStep(nextStep)
     setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+    setCompletedSteps((prev) => [...prev, currentStep]) // Add current step to completed
   }, [
     currentStep,
     formData,
     navigationHistory,
-    onboardingId, // Agregado a dependencias
+    onboardingId,
     setCompletedSteps,
     setCurrentStep,
     setNavigationHistory,
@@ -3562,6 +3593,8 @@ function OnboardingTurnosCliente() {
     toast,
     setNoAdminsError,
     setGrupos,
+    steps.length, // Added steps.length to dependencies as it's used in metadata for handleFinalizar
+    idZoho, // Added idZoho to dependencies
   ])
 
   const goBack = useCallback(() => {
@@ -3576,6 +3609,7 @@ function OnboardingTurnosCliente() {
   const renderStepContent = () => {
     // Initial loading state
     if (!isInitialized.current) {
+      console.log("[v0] renderStepContent: Still loading, isInitialized =", isInitialized.current)
       return (
         <div className="flex items-center justify-center min-h-[300px]">
           <p>Cargando...</p>
@@ -3583,13 +3617,13 @@ function OnboardingTurnosCliente() {
       )
     }
 
-    // Render based on currentStep
+    console.log("[v0] renderStepContent: Rendering step", currentStep)
+
     switch (currentStep) {
       case 0:
         return <BienvenidaMarketingStep onContinue={goNext} nombreEmpresa={formData.empresa.nombreFantasia} />
       case 1:
-        return <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
-      case 2:
+        // Pass necessary props for EmpresaStep
         return (
           <>
             <EmpresaStep
@@ -3612,6 +3646,15 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
+
+      case 2: // Empresa step is handled within EmpresaStep component now.
+        // Redirect to the correct step after initial setup
+        return (
+          <div className="flex items-center justify-center min-h-[300px]">
+            <p>Cargando...</p>
+          </div>
+        ) // This case should ideally not be reached directly if EmpresaStep is rendered in the correct flow.
+
       case 3:
         return (
           <>
@@ -3627,22 +3670,10 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 4:
-        // If decision already made, show the decision screen but it will auto-skip
+        // Decision step for loading workers
         return (
           <WorkersDecisionStep
-            onDecision={(decision) => {
-              const loadNow = decision === "now"
-              setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
-
-              if (loadNow) {
-                goNext() // Proceed to TrabajadoresStep
-              } else {
-                // Skip TrabajadoresStep and go to Configuration DecisionStep
-                setCurrentStep(6)
-                setNavigationHistory((prev) => [...prev, 6])
-                setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-              }
-            }}
+            onDecision={handleWorkersDecision} // Use the handler function
           />
         )
       case 5:
@@ -3665,22 +3696,10 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 6:
-        // If decision already made, show the decision screen but it will auto-skip
+        // Decision step for configuration
         return (
           <DecisionStep
-            onDecision={(decision) => {
-              const configureNow = decision === "now"
-              setFormData((prev) => ({ ...prev, configureNow: configureNow }))
-
-              if (configureNow) {
-                goNext() // Proceed to TurnosStep
-              } else {
-                // Skip Turnos, Planificaciones, Asignaciones and go to Resumen
-                setCurrentStep(10)
-                setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
-                setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
-              }
-            }}
+            onDecision={handleConfigurationDecision} // Use the handler function
           />
         )
       case 7:
