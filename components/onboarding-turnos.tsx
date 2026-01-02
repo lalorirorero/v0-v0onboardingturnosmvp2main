@@ -753,7 +753,32 @@ const EmpresaStep = React.memo<{
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-3">Sistema de marcaje</label>
+        <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
+          Rubro <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="rubro"
+          name="rubro"
+          value={empresa.rubro || ""}
+          onChange={handleEmpresaChange}
+          className={`w-full rounded-lg border ${
+            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
+          } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
+        >
+          <option value="">Selecciona un rubro</option>
+          {RUBROS.map((rubro) => (
+            <option key={rubro} value={rubro}>
+              {rubro}
+            </option>
+          ))}
+        </select>
+        {fieldErrors["empresa.rubro"] && <p className="mt-1 text-sm text-red-600">{fieldErrors["empresa.rubro"]}</p>}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-3">
+          Sistema de marcaje <span className="text-red-500">*</span>
+        </label>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SISTEMAS.map((sistema) => {
             const info = SISTEMAS_INFO[sistema]
@@ -785,45 +810,21 @@ const EmpresaStep = React.memo<{
             )
           })}
         </div>
+        {fieldErrors["empresa.sistema"] && (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-600 flex items-center gap-2">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {fieldErrors["empresa.sistema"]}
+            </p>
+          </div>
+        )}
       </div>
-
-      <div>
-        <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
-          Rubro
-        </label>
-        <select
-          id="rubro"
-          name="rubro"
-          value={empresa.rubro || ""}
-          onChange={handleEmpresaChange}
-          className={`w-full rounded-lg border ${
-            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
-          } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
-        >
-          <option value="">Selecciona un rubro</option>
-          {RUBROS.map((rubro) => (
-            <option key={rubro} value={rubro}>
-              {rubro}
-            </option>
-          ))}
-        </select>
-        {fieldErrors["empresa.rubro"] && <p className="mt-1 text-sm text-red-600">{fieldErrors["empresa.rubro"]}</p>}
-      </div>
-
-      {fieldErrors["empresa.sistema"] && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-600 flex items-center gap-2">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {fieldErrors["empresa.sistema"]}
-          </p>
-        </div>
-      )}
     </section>
   )
 })
