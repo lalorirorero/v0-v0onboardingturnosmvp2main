@@ -3336,7 +3336,7 @@ function OnboardingTurnosCliente() {
             console.log("[v0] onboardingId establecido:", token)
 
             console.log("[v0] lastStep >= 3?", lastStep >= 3)
-            if (lastStep >= 3) {
+            if (lastStep >= 3 && lastStep < 11) {
               console.log("[v0] Mostrando mensaje de sesión retomada")
               const stepName = steps.find((s) => s.id === lastStep)?.label || "paso actual"
               console.log("[v0] Step name:", stepName)
