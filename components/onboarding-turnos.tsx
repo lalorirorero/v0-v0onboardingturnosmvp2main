@@ -1094,7 +1094,7 @@ const TrabajadoresStep = ({
                   fill="currentColor"
                   className="w-5 h-5 text-slate-600"
                 >
-                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L10 8.94 6.28 5.22z" />
                 </svg>
               </button>
             </DialogHeader>
@@ -3349,13 +3349,15 @@ function OnboardingTurnosCliente() {
         console.log("[v0] No token found")
       }
 
-      setIsInitialized(true)
+      console.log("[v0] Setting isInitialized to true")
+      setTimeout(() => {
+        setIsInitialized(true)
+        console.log("[v0] isInitialized set to true")
+      }, 0)
     }
 
     loadData()
   }, [searchParams])
-
-  // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
   const ensureGrupoByName = useCallback(
     (groupName: string): string => {
