@@ -3396,7 +3396,7 @@ export function OnboardingTurnosCliente() {
         const response = await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify({
+          body: JSON.stringify({
             formData: formData,
             currentStep: nextStep,
             navigationHistory: newHistory,
