@@ -22,7 +22,7 @@ import {
   Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button" // Import added
-import { useSearchParams } from "next/navigation" // Added for token handling
+// REMOVED: useSearchParams import as it's unreliable
 import { useToast } from "@/components/ui/use-toast" // Added for toast notifications
 import {
   Dialog,
@@ -3025,9 +3025,9 @@ function getEmptyEmpresa(): Empresa {
 
 // CHANGE: Adding component function declaration
 function OnboardingTurnosCliente() {
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
+  // REMOVED: useSearchParams import as it's unreliable
   const router = useRouter()
+  const { toast } = useToast() // Import toast here
 
   const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -3291,9 +3291,18 @@ function OnboardingTurnosCliente() {
 
   // CHANGE: Modified useEffect to incorporate the updates
   useEffect(() => {
+    if (isInitialized) return
+
     const loadData = async () => {
       console.log("[v0] Initial load: INICIO")
-      const token = searchParams?.get("token")
+
+      // Read token from URL on client side
+      let token: string | null = null
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search)
+        token = urlParams.get("token")
+      }
+
       console.log("[v0] Initial load: Token found:", token)
 
       if (token) {
@@ -3357,7 +3366,7 @@ function OnboardingTurnosCliente() {
     }
 
     loadData()
-  }, [searchParams])
+  }, []) // Empty dependency array to only run once
 
   const ensureGrupoByName = useCallback(
     (groupName: string): string => {
