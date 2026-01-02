@@ -821,7 +821,7 @@ const EmpresaStep = React.memo<{
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
                 clipRule="evenodd"
               />
             </svg>
@@ -3374,19 +3374,29 @@ export function OnboardingTurnosCliente() {
     // Guardar en BD antes de avanzar
     if (onboardingId) {
       try {
-        await fetch(`/api/onboarding/${onboardingId}`, {
+        console.log("[v0] handleNext: Guardando datos en BD...")
+        const response = await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify({
+          body: JSON.stringify({
             formData: formData,
             currentStep: nextStep,
             navigationHistory: newHistory,
           }),
         })
-        console.log("[v0] handleNext: Datos guardados en BD, paso:", nextStep)
+
+        const result = await response.json()
+
+        if (result.success) {
+          console.log("[v0] handleNext: Datos guardados exitosamente, paso:", nextStep)
+        } else {
+          console.error("[v0] handleNext: Error en respuesta:", result.error)
+        }
       } catch (error) {
         console.error("[v0] handleNext: Error guardando datos:", error)
       }
+    } else {
+      console.warn("[v0] handleNext: No hay onboardingId, no se guardó en BD")
     }
 
     // Enviar webhook de progreso
@@ -3416,7 +3426,7 @@ export function OnboardingTurnosCliente() {
     navigationHistory,
     validateEmpresaFields,
     validateAdminsFields,
-  ]) // Added dependencies
+  ])
 
   const handlePrev = useCallback(() => {
     if (navigationHistory.length <= 1) return
