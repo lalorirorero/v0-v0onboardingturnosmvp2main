@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useEffect, useRef, useCallback } from "react" // Import useRef and useCallback
+import { useState, useEffect, useCallback } from "react" // Import useRef and useCallback
 import {
   Building2,
   AlertCircle,
@@ -55,6 +55,12 @@ const PRIMER_PASO = 0
 
 // Días de la semana
 const DIAS = ["L", "M", "X", "J", "V", "S", "D"]
+
+// Define default turns (added because DEFAULT_TURNOS was undeclared)
+const DEFAULT_TURNOS = [
+  { id: -1, nombre: "Libre", horaInicio: "", horaFin: "", tipoColacion: "sin", colacionMinutos: 0, tooltip: "" },
+  { id: -2, nombre: "Descanso", horaInicio: "", horaFin: "", tipoColacion: "sin", colacionMinutos: 0, tooltip: "" },
+]
 
 const TOOLTIP_GRUPO =
   '"Grupo" corresponde a una forma de clasificar a los colaboradores según características que tengan en común, como por ejemplo el lugar de trabajo, tipo de turno, área/departamento al que pertenece.'
@@ -1699,7 +1705,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
         return { ...prev, diasTurnos: nuevosDias }
       })
     },
-    [setFormData, setFormData],
+    [setFormData],
   ) // Added setFormData to dependencies
 
   const addPlanificacion = useCallback(() => {
@@ -2883,42 +2889,6 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
-const DEFAULT_TURNOS = [
-  {
-    id: 1,
-    nombre: "Descanso",
-    horaInicio: "",
-    horaFin: "",
-    colacionMinutos: 0,
-    tooltip: "Fin de Semana o Feriado",
-    tipoColacion: "sin", // Default to 'sin'
-    colacionInicio: "",
-    colacionFin: "",
-  },
-  {
-    id: 2,
-    nombre: "Libre",
-    horaInicio: "",
-    horaFin: "",
-    colacionMinutos: 0,
-    tooltip: "No marca o Artículo 22",
-    tipoColacion: "sin", // Default to 'sin'
-    colacionInicio: "",
-    colacionFin: "",
-  },
-  {
-    id: 3,
-    nombre: "Presencial",
-    horaInicio: "",
-    horaFin: "",
-    colacionMinutos: 0,
-    tooltip: "Sin planificación",
-    tipoColacion: "sin", // Default to 'sin'
-    colacionInicio: "",
-    colacionFin: "",
-  },
-]
-
 // Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
 type Empresa = {
   razonSocial: string
@@ -2982,7 +2952,7 @@ type OnboardingFormData = {
     desde: string
     hasta: string
   }[]
-  configureNow: boolean
+  configureNow: boolean | undefined // Added undefined to allow initial state
   loadWorkersNow?: boolean // Added loadWorkersNow to OnboardingFormData
 }
 
@@ -3024,9 +2994,82 @@ function getEmptyEmpresa(): Empresa {
   }
 }
 
-// CHANGE: Adding component function declaration
+// CHANGE: Adding NavigationButtons component and its usage
+const NavigationButtons = () => {
+  const router = useRouter()
+  const pathname = router.pathname
+  const currentStep = Number.parseInt(pathname.split("/").pop() || "0", 10)
+
+  const handleNext = () => {
+    // Implement navigation logic here, possibly calling a goNext function from the parent component
+    console.log("Next clicked")
+  }
+
+  const handleBack = () => {
+    // Implement navigation logic here, possibly calling a goBack function from the parent component
+    console.log("Back clicked")
+  }
+
+  // This is a placeholder. The actual navigation logic needs to be passed down or managed globally.
+  // For demonstration, we'll assume it's called from the main component.
+  return (
+    <div className="mt-8 flex items-center justify-center gap-4">
+      {/* The actual buttons will be rendered by the parent component based on context */}
+    </div>
+  )
+}
+
+// Helper function to find the index of a step by its label
+const getStepIndexByLabel = (label: string): number => {
+  return steps.findIndex((step) => step.label === label)
+}
+
+// Helper function to get the current step based on the navigation history
+// This is a simplified approach; in a real app, you might want to pass currentStep down
+const getCurrentStepFromHistory = (history: number[], defaultStep: number): number => {
+  return history.length > 0 ? history[history.length - 1] : defaultStep
+}
+
+// Helper function to update the state for `trabajadores` and `grupos`
+const updateTrabajadoresAndGrupos = (
+  currentTrabajadores: Trabajador[],
+  setTrabajadores: React.Dispatch<React.SetStateAction<Trabajador[]>>,
+  currentGrupos: Grupo[],
+  setGrupos: React.Dispatch<React.SetStateAction<Grupo[]>>,
+  ensureGrupoByName: (grupoNombre: string) => string,
+) => {
+  // This function will be used to ensure that all workers have valid group IDs
+  // and that all groups mentioned by workers exist.
+  let updatedTrabajadores = [...currentTrabajadores]
+  const updatedGrupos = [...currentGrupos]
+  let groupChanged = false
+
+  updatedTrabajadores = updatedTrabajadores.map((trabajador) => {
+    if (trabajador.grupoId) {
+      // Check if the group exists
+      const grupoExists = updatedGrupos.some((g) => g.id === Number.parseInt(trabajador.grupoId))
+      if (!grupoExists && trabajador.grupoNombre) {
+        // If not, create it
+        const newGroupId = ensureGrupoByName(trabajador.grupoNombre)
+        groupChanged = true
+        return { ...trabajador, grupoId: newGroupId }
+      }
+    } else if (trabajador.grupoNombre) {
+      // If grupoId is empty but grupoNombre exists, create the group
+      const newGroupId = ensureGrupoByName(trabajador.grupoNombre)
+      groupChanged = true
+      return { ...trabajador, grupoId: newGroupId }
+    }
+    return trabajador
+  })
+
+  if (groupChanged) {
+    setTrabajadores(updatedTrabajadores)
+    setGrupos(updatedGrupos) // Assuming ensureGrupoByName also updates the groups list if needed
+  }
+}
+
 function OnboardingTurnosCliente() {
-  // REMOVED: useSearchParams import as it's unreliable
   const router = useRouter()
   const { toast } = useToast() // Import toast here
 
@@ -3062,110 +3105,17 @@ function OnboardingTurnosCliente() {
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [editedFields, setEditedFields] = useState<EditedFields>({})
 
-  // Mock fetchTokenData function for demonstration purposes
-  // In a real application, this would fetch data from an API based on the token.
-  const fetchTokenData = async (token: string): Promise<any | null> => {
-    console.log("[v0] Mock fetchTokenData called with token:", token)
-    // Simulate fetching data based on token
-    if (token === "dummy-token-123") {
-      return {
-        empresa: {
-          razonSocial: "Empresa Ejemplo S.A.",
-          nombreFantasia: "EmpresaEjemplo",
-          rut: "76.123.456-7",
-          giro: "Servicios Tecnológicos",
-          direccion: "Calle Falsa 123",
-          comuna: "Santiago",
-          emailFacturacion: "facturacion@ejemplo.com",
-          telefonoContacto: "+56987654321",
-          sistema: ["GeoVictoria APP"],
-          rubro: "1. Agrícola",
-          id_zoho: "1234567890",
-        },
-        admins: [
-          {
-            id: 1678880000001,
-            nombre: "Juan Pérez",
-            apellido: "Pérez",
-            rut: "12.345.678-9",
-            email: "juan.perez@ejemplo.com",
-            telefono: "+56911111111",
-            grupoId: "",
-            grupoNombre: "",
-          },
-        ],
-        trabajadores: [
-          {
-            id: 1678880000002,
-            nombre: "María González",
-            rut: "19.234.567-8",
-            correo: "maria.gonzalez@ejemplo.com",
-            grupoId: "",
-            telefono1: "+56922222222",
-            telefono2: "",
-            telefono3: "",
-            tipo: "usuario",
-          },
-        ],
-        turnos: [
-          {
-            id: 1,
-            nombre: "Descanso",
-            horaInicio: "",
-            horaFin: "",
-            tipoColacion: "sin",
-            colacionMinutos: 0,
-            tooltip: "",
-            colacionInicio: "",
-            colacionFin: "",
-          },
-          {
-            id: 2,
-            nombre: "Libre",
-            horaInicio: "",
-            horaFin: "",
-            tipoColacion: "sin",
-            colacionMinutos: 0,
-            tooltip: "",
-            colacionInicio: "",
-            colacionFin: "",
-          },
-          {
-            id: 3,
-            nombre: "Turno Normal",
-            horaInicio: "09:00",
-            horaFin: "18:00",
-            tipoColacion: "libre",
-            colacionMinutos: 60,
-            tooltip: "",
-            colacionInicio: "",
-            colacionFin: "",
-          },
-        ],
-        planificaciones: [
-          { id: 1, nombre: "Lunes a Viernes", diasTurnos: [3, 3, 3, 3, 3, 1, 1] },
-          { id: 2, nombre: "Fin de Semana", diasTurnos: [1, 1, 1, 1, 1, 2, 2] },
-        ],
-        asignaciones: [
-          { id: 1, trabajadorId: 1678880000002, planificacionId: 1, desde: "2023-01-01", hasta: "2023-12-31" },
-        ],
-      }
-    }
-    // Return null or throw an error if token is invalid or data not found
-    return null
-  }
+  // --- Helper functions for state management and UI ---
 
-  const formDataRef = useRef(formData)
-  useEffect(() => {
-    formDataRef.current = formData
-  }, [formData])
-
-  const setEmpresa = useCallback((updater: Empresa | ((prev: Empresa) => Empresa)) => {
-    setFormData((prev) => ({
-      ...prev,
-      empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
-    }))
-  }, [])
+  const setEmpresa = useCallback(
+    (updater: Empresa | ((prev: Empresa) => Empresa)) => {
+      setFormData((prev) => ({
+        ...prev,
+        empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
+      }))
+    },
+    [setFormData],
+  )
 
   const isFieldPrefilled = useCallback(
     (fieldKey: string): boolean => {
@@ -3176,75 +3126,288 @@ function OnboardingTurnosCliente() {
 
   const isFieldEdited = useCallback(
     (fieldKey: string): boolean => {
-      const fieldEntry = editedFields[fieldKey]
-      if (!fieldEntry) return false
-
-      return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
+      return editedFields.hasOwnProperty(fieldKey)
     },
     [editedFields],
   )
 
   const trackFieldChange = useCallback(
     (fieldKey: string, newValue: any) => {
-      // Only track changes if the field was prefilled
-      if (!prefilledFields.has(fieldKey)) return
-
-      // Dynamically get the current value from formDataRef
-      const keys = fieldKey.split(".")
-      let originalValue: any = formDataRef.current
-      for (const key of keys) {
-        originalValue = originalValue?.[key]
-        if (originalValue === undefined || originalValue === null) break
-      }
-
       setEditedFields((prev) => {
-        const updated = { ...prev }
-        if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
-          updated[fieldKey] = {
-            originalValue: originalValue,
-            currentValue: newValue,
+        // If it was prefilled, track the change
+        if (isFieldPrefilled(fieldKey)) {
+          return {
+            ...prev,
+            [fieldKey]: {
+              originalValue: prev[fieldKey]?.originalValue ?? formData.empresa[fieldKey.split(".")[1]] ?? "", // Fallback
+              currentValue: newValue,
+            },
           }
-        } else {
-          delete updated[fieldKey] // Remove if reverted to original value
         }
-        return updated
+        return prev
       })
     },
-    [prefilledFields, setEditedFields],
+    [formData, isFieldPrefilled],
   )
+
+  const ensureGrupoByName = useCallback(
+    (grupoNombre: string): string => {
+      const trimmedNombre = grupoNombre.trim()
+      const existingGrupo = grupos.find((g) => g.nombre.toLowerCase() === trimmedNombre.toLowerCase())
+
+      if (existingGrupo) {
+        return String(existingGrupo.id)
+      } else {
+        const newGrupo = {
+          id: Date.now(), // Simple unique ID generation
+          nombre: trimmedNombre,
+          descripcion: "", // Default empty description
+        }
+        setGrupos((prev) => [...prev, newGrupo])
+        setFormData((prev) => ({
+          ...prev,
+          empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGrupo] },
+        }))
+        return String(newGrupo.id)
+      }
+    },
+    [grupos, setGrupos, setFormData],
+  )
+
+  const removeAdmin = useCallback(
+    (indexToRemove: number) => {
+      setFormData((prev) => {
+        const updatedAdmins = prev.admins.filter((_, index) => index !== indexToRemove)
+        return { ...prev, admins: updatedAdmins }
+      })
+    },
+    [setFormData],
+  )
+
+  // CHANGE: Updated initialization logic to use token from URL
+  const initializeOnboarding = async () => {
+    setIsInitialized(false)
+
+    console.log("[v0] Initial load: INICIO")
+
+    // Read token from URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get("token")
+
+    console.log("[v0] Initial load: Token found:", token)
+
+    if (token) {
+      try {
+        // Fetch onboarding data using token
+        const response = await fetch(`/api/onboarding/${token}`)
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log("[v0] Respuesta de BD:", result)
+
+          if (result.success) {
+            // Set onboarding ID
+            setOnboardingId(token)
+            console.log("[v0] onboardingId establecido:", token)
+
+            // Set id_zoho from the database
+            if (result.id_zoho) {
+              setIdZoho(result.id_zoho)
+            }
+
+            // Load form data
+            if (result.formData) {
+              console.log("[v0] Cargando formData:", result.formData)
+              // Ensure default turns are present if not in loaded data
+              result.formData.turnos = result.formData.turnos?.length ? result.formData.turnos : DEFAULT_TURNOS
+              setFormData(result.formData)
+            }
+
+            // Load last step
+            const lastStep = result.lastStep || 0
+            console.log("[v0] lastStep:", lastStep)
+
+            // Load navigation history
+            if (result.navigationHistory) {
+              console.log("[v0] Cargando navigationHistory:", result.navigationHistory)
+              setNavigationHistory(result.navigationHistory)
+            }
+
+            // Show resume message if returning to advanced step (>= 3) and not completed
+            console.log("[v0] lastStep >= 3?", lastStep >= 3)
+            console.log("[v0] lastStep < 11?", lastStep < 11)
+
+            if (lastStep >= 3 && lastStep < 11) {
+              console.log("[v0] Preparando mensaje de sesión retomada")
+              const stepName = steps[lastStep]?.label || `Paso ${lastStep}` // Use label from steps array
+              console.log("[v0] Step name:", stepName)
+
+              setTimeout(() => {
+                console.log("[v0] Mostrando mensaje de sesión retomada")
+                setResumeStepName(stepName)
+                setShowResumeModal(true)
+              }, 500)
+            }
+
+            // Set current step
+            setCurrentStep(lastStep)
+            console.log(
+              "[v0] Initial load: Loaded step",
+              lastStep,
+              "with history",
+              result.navigationHistory || [lastStep],
+            )
+          }
+        } else {
+          console.error("[v0] Error al cargar datos:", response.statusText)
+          toast({
+            title: "Error",
+            description: "No se pudo cargar el progreso del onboarding.",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("[v0] Error en fetch:", error)
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo conectar con el servidor para cargar el onboarding.",
+          variant: "destructive",
+        })
+      }
+    } else {
+      console.log("[v0] No token found - user must use link from /api/generate-link")
+      // If no token, it implies this is a new onboarding. We will create a new record later if needed.
+      // For now, we proceed with default empty state.
+    }
+
+    // Initialize groups and workers
+    if (token && formData?.empresa?.grupos) {
+      // If data was loaded with a token, use its groups
+      setGrupos(formData.empresa.grupos)
+    } else {
+      // Otherwise, set default groups for a new onboarding
+      const defaultGroups = [
+        { id: 1, nombre: "Administrativo", descripcion: "Equipo de oficina" },
+        { id: 2, nombre: "Terreno", descripcion: "Personal en ruta" },
+      ]
+      setGrupos(defaultGroups)
+      // Update formData only if it's a new onboarding (no token loaded)
+      if (!token) {
+        setFormData((prev) => ({
+          ...prev,
+          empresa: { ...prev.empresa, grupos: defaultGroups },
+        }))
+      }
+    }
+
+    if (token && formData?.trabajadores) {
+      setTrabajadores(formData.trabajadores)
+    }
+
+    // If data was loaded, ensure workers and groups are in sync
+    if (token) {
+      updateTrabajadoresAndGrupos(
+        formData?.trabajadores || [], // Use loaded workers if available
+        setTrabajadores,
+        formData?.empresa?.grupos || [], // Use loaded groups if available
+        setGrupos,
+        ensureGrupoByName,
+      )
+    }
+
+    // Set default turns if none are loaded
+    if (formData.turnos.length === 0) {
+      setFormData((prev) => ({ ...prev, turnos: DEFAULT_TURNOS }))
+    }
+
+    // Set default planning days if none are loaded
+    if (formData.planificaciones.length > 0) {
+      const defaultTurnoId = DEFAULT_TURNOS.find((t) => t.nombre.toLowerCase() === "libre")?.id || DEFAULT_TURNOS[0]?.id // Fallback to the first default turn
+
+      if (defaultTurnoId !== undefined) {
+        // Set default diasTurnos for existing planificaciones if they are empty
+        const updatedPlanificaciones = formData.planificaciones.map((plan) => {
+          if (!plan.diasTurnos || plan.diasTurnos.length === 0) {
+            return {
+              ...plan,
+              diasTurnos: Array(7).fill(defaultTurnoId),
+            }
+          }
+          return plan
+        })
+        setFormData((prev) => ({ ...prev, planificaciones: updatedPlanificaciones }))
+      }
+    }
+
+    // Mark initialization as complete
+    console.log("[v0] Setting isInitialized to true")
+    setIsInitialized(true)
+    console.log("[v0] isInitialized set to true")
+  }
+
+  useEffect(() => {
+    initializeOnboarding()
+  }, [
+    toast,
+    setFormData,
+    setCurrentStep,
+    setNavigationHistory,
+    setOnboardingId,
+    setIdZoho,
+    setGrupos,
+    setTrabajadores,
+    ensureGrupoByName,
+    steps, // Added steps as dependency
+    formData, // Added formData to ensure correct state update
+    // The following are needed because they are used within the effect
+    isFieldPrefilled,
+    trackFieldChange,
+    isFieldEdited,
+    setEmpresa,
+    DEFAULT_TURNOS, // Added DEFAULT_TURNOS
+  ]) // Dependencies for effect
 
   const handleFinalizar = useCallback(async () => {
     setIsSubmitting(true)
-    setValidationErrors([]) // Clear previous validation errors
+    setValidationErrors([])
 
     try {
       console.log("[v0] ===== INICIANDO FINALIZACIÓN DEL ONBOARDING =====")
       console.log("[v0] onboardingId:", onboardingId)
       console.log("[v0] idZoho:", idZoho)
       console.log("[v0] formData:", formData)
-      // </CHANGE>
 
       const newHistory = [...navigationHistory, 11]
+
+      const dataToSave = {
+        formData: formData,
+        currentStep: 11,
+        navigationHistory: newHistory,
+        estado: "completado",
+        fecha_completado: new Date().toISOString(),
+        // Make sure to save the updated groups and workers too
+        trabajadores: trabajadores,
+        empresa: { ...formData.empresa, grupos: grupos },
+        turnos: formData.turnos, // Ensure turns are saved
+        planificaciones: formData.planificaciones, // Ensure planificaciones are saved
+        asignaciones: formData.asignaciones, // Ensure asignaciones are saved
+      }
 
       // Marcar como completado en BD
       if (onboardingId) {
         console.log("[v0] handleFinalizar: Guardando en BD...")
-        await fetch(`/api/onboarding/${onboardingId}`, {
+        const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            formData: formData,
-            currentStep: 11,
-            navigationHistory: newHistory,
-            estado: "completado",
-            fecha_completado: new Date().toISOString(),
-          }),
+          body: JSON.stringify(dataToSave),
         })
+
+        await dbPromise
         console.log("[v0] handleFinalizar: ✅ Onboarding marcado como completado en BD")
       }
 
-      // Preparar payload para Zoho
-      const payload = {
+      // Preparar payload para Zoho (mismo JSON que se guardó en BD + metadata adicional)
+      const zohoPayload = {
         accion: "completado",
         eventType: "complete",
         id_zoho: idZoho,
@@ -3253,22 +3416,25 @@ function OnboardingTurnosCliente() {
         metadata: {
           empresaRut: formData.empresa.rut || "Sin RUT",
           empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-          pasoActual: 10,
-          pasoNombre: "Resumen",
+          pasoActual: 11,
+          pasoNombre: steps[11]?.label || "Completado",
           totalPasos: steps.length,
           porcentajeProgreso: 100,
         },
+        currentStep: 11,
+        navigationHistory: newHistory,
+        estado: "completado",
+        fecha_completado: dataToSave.fecha_completado,
         excelFile: null,
       }
 
-      console.log("[v0] handleFinalizar: Payload para Zoho:", JSON.stringify(payload, null, 2))
+      console.log("[v0] handleFinalizar: Payload para Zoho:", JSON.stringify(zohoPayload, null, 2))
       console.log("[v0] handleFinalizar: Enviando a /api/submit-to-zoho...")
 
-      // Cambiar a await para capturar la respuesta
       const zohoResponse = await fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(zohoPayload),
       })
 
       console.log("[v0] handleFinalizar: Status del envío:", zohoResponse.status, zohoResponse.statusText)
@@ -3280,6 +3446,11 @@ function OnboardingTurnosCliente() {
         console.log("[v0] handleFinalizar: ✅ Datos enviados exitosamente a Zoho")
       } else {
         console.error("[v0] handleFinalizar: ❌ Error al enviar a Zoho:", zohoResult.error)
+        toast({
+          title: "Error al enviar a Zoho",
+          description: "Hubo un problema al registrar la finalización en Zoho.",
+          variant: "destructive",
+        })
       }
       // </CHANGE>
 
@@ -3308,167 +3479,9 @@ function OnboardingTurnosCliente() {
     setCompletedSteps,
     setCurrentStep,
     setNavigationHistory,
+    trabajadores, // Include workers and groups for saving
+    grupos,
   ])
-
-  // useEffect hook for initial data loading
-  useEffect(() => {
-    if (isInitialized) return
-
-    const loadData = async () => {
-      console.log("[v0] Initial load: INICIO")
-
-      // Read token from URL on client side
-      let token: string | null = null
-      if (typeof window !== "undefined") {
-        const urlParams = new URLSearchParams(window.location.search)
-        token = urlParams.get("token")
-      }
-
-      console.log("[v0] Initial load: Token found:", token)
-
-      if (token) {
-        try {
-          const response = await fetch(`/api/onboarding/${token}`)
-          const result = await response.json()
-          console.log("[v0] Respuesta de BD:", result)
-
-          if (result.success) {
-            // Update formData with loaded data
-            if (result.formData) {
-              console.log("[v0] Cargando formData:", result.formData)
-              setFormData(result.formData)
-            }
-
-            // Restore last step
-            const lastStep = result.lastStep || 0
-            console.log("[v0] lastStep:", lastStep)
-
-            // Restore navigation history
-            if (result.navigationHistory && Array.isArray(result.navigationHistory)) {
-              console.log("[v0] Cargando navigationHistory:", result.navigationHistory)
-              setNavigationHistory(result.navigationHistory)
-            }
-
-            // Set current step
-            setCurrentStep(lastStep)
-
-            // Set onboarding ID for future saves
-            setOnboardingId(token)
-            console.log("[v0] onboardingId establecido:", token)
-
-            console.log("[v0] lastStep >= 3?", lastStep >= 3)
-            if (lastStep >= 3 && lastStep < 11) {
-              console.log("[v0] Mostrando mensaje de sesión retomada")
-              const stepName = steps.find((s) => s.id === lastStep)?.label || "paso actual"
-              console.log("[v0] Step name:", stepName)
-              // Show resume modal after a short delay to ensure DOM is ready
-              setTimeout(() => {
-                setShowResumeModal(true)
-                setResumeStepName(stepName)
-              }, 500)
-            }
-
-            console.log("[v0] Initial load: Loaded step", lastStep, "with history", result.navigationHistory)
-          } else {
-            console.error("[v0] API returned success: false")
-          }
-        } catch (error) {
-          console.error("[v0] Error loading data from BD:", error)
-        }
-      } else {
-        console.log("[v0] No token found")
-      }
-
-      console.log("[v0] Setting isInitialized to true")
-      setTimeout(() => {
-        setIsInitialized(true)
-        console.log("[v0] isInitialized set to true")
-      }, 0)
-    }
-
-    loadData()
-  }, []) // Empty dependency array to only run once
-
-  const ensureGrupoByName = useCallback(
-    (groupName: string): string => {
-      const trimmedName = groupName.trim()
-      if (!trimmedName) return ""
-
-      const existingGroup = grupos.find((g) => g.nombre.toLowerCase() === trimmedName.toLowerCase())
-      if (existingGroup) {
-        return existingGroup.id.toString() // Return existing group ID
-      } else {
-        // Create a new group
-        const newGroup = {
-          id: Date.now(), // Simple ID generation
-          nombre: trimmedName,
-          descripcion: "",
-        }
-        setGrupos((prev) => [...prev, newGroup])
-        return newGroup.id.toString() // Return new group ID
-      }
-    },
-    [grupos, setGrupos],
-  )
-
-  const handleCreateGroup = useCallback(
-    (groupName: string) => {
-      ensureGrupoByName(groupName)
-    },
-    [ensureGrupoByName],
-  )
-
-  const handleGrupoSelect = useCallback(
-    (trabajadorId: number, grupoId: string) => {
-      setTrabajadores((prev) => prev.map((t) => (t.id === trabajadorId ? { ...t, grupoId: grupoId } : t)))
-      // If the group name is new, create it.
-      if (grupoId && !grupos.some((g) => g.id === Number(grupoId))) {
-        handleCreateGroup(grupoId) // Assuming you'd pass the name here if needed differently
-      }
-    },
-    [setTrabajadores, grupos, handleCreateGroup],
-  )
-
-  const removeAdmin = (indexToRemove: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      admins: prev.admins.filter((_, index) => index !== indexToRemove),
-    }))
-  }
-
-  // Navigation Buttons Component
-  const NavigationButtons = ({
-    showBack = true,
-    showNext = true,
-    nextLabel = "Siguiente",
-  }: {
-    showBack?: boolean
-    showNext?: boolean
-    nextLabel?: string
-  }) => (
-    <div className="flex justify-center items-center gap-4 py-6">
-      {showBack && navigationHistory.length > 1 && (
-        <button
-          type="button"
-          onClick={goBack}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Atrás
-        </button>
-      )}
-      {showNext && (
-        <button
-          type="button"
-          onClick={goNext}
-          className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
-        >
-          {nextLabel}
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      )}
-    </div>
-  )
 
   const goNext = useCallback(async () => {
     const nextStep = currentStep + 1
@@ -3523,7 +3536,7 @@ function OnboardingTurnosCliente() {
         // This step handles its own navigation via onDecision.
         break
       case 5: // Trabajadores
-        if (formData.trabajadores.length === 0) {
+        if (trabajadores.length === 0) {
           isValid = false
           errors.push("Debes agregar al menos un trabajador.")
         }
@@ -3552,7 +3565,7 @@ function OnboardingTurnosCliente() {
         break
       case 9: // Asignaciones
         if (formData.configureNow) {
-          const workersWithoutAssignment = formData.trabajadores.filter(
+          const workersWithoutAssignment = trabajadores.filter(
             (t) =>
               !formData.asignaciones.some((a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta),
           )
@@ -3587,27 +3600,73 @@ function OnboardingTurnosCliente() {
           onboardingId,
         })
 
-        const response = await fetch(`/api/onboarding/${onboardingId}`, {
+        const dataToSave = {
+          formData: formData,
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+          // Make sure to save the updated groups and workers too
+          trabajadores: trabajadores,
+          empresa: { ...formData.empresa, grupos: grupos },
+          turnos: formData.turnos, // Ensure turns are saved
+          planificaciones: formData.planificaciones, // Ensure planificaciones are saved
+          asignaciones: formData.asignaciones, // Ensure asignaciones are saved
+        }
+
+        // Guardar en BD
+        const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            formData: formData,
-            currentStep: nextStep,
-            navigationHistory: newHistory,
-            estado: "en_progreso",
-          }),
+          body: JSON.stringify(dataToSave),
         })
 
-        if (!response.ok) {
-          console.error("[v0] goNext: Error guardando en BD", await response.text())
+        // Enviar a Zoho en paralelo (mismo JSON que se guarda en BD)
+        const zohoPayload = {
+          accion: "progreso",
+          eventType: "progress",
+          id_zoho: idZoho,
+          fechaHoraEnvio: new Date().toISOString(),
+          formData: formData,
+          metadata: {
+            empresaRut: formData.empresa.rut || "Sin RUT",
+            empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
+            pasoActual: nextStep,
+            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            totalPasos: steps.length,
+            porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
+          },
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+        }
+
+        const zohoPromise = fetch("/api/submit-to-zoho", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(zohoPayload),
+        })
+
+        // Esperar ambas peticiones
+        const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
+
+        if (!dbResponse.ok) {
+          console.error("[v0] goNext: Error guardando en BD", await dbResponse.text())
           toast({
             title: "Error al guardar",
             description: "No se pudo guardar el progreso, pero puedes continuar.",
             variant: "destructive",
           })
         } else {
-          console.log("[v0] goNext: Guardado exitoso en BD")
+          console.log("[v0] goNext: ✅ Guardado exitoso en BD")
         }
+
+        if (zohoResponse.ok) {
+          const zohoResult = await zohoResponse.json()
+          console.log("[v0] goNext: ✅ Progreso enviado a Zoho:", zohoResult)
+        } else {
+          console.warn("[v0] goNext: ⚠️ No se pudo enviar progreso a Zoho (no bloqueante)")
+        }
+        // </CHANGE>
       } catch (error) {
         console.error("[v0] goNext: Error en fetch:", error)
         toast({
@@ -3623,7 +3682,7 @@ function OnboardingTurnosCliente() {
     // If valid, proceed
     setCurrentStep(nextStep)
     setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...prev, currentStep]) // Add current step to completed
+    setCompletedSteps((prev) => [...prev, currentStep]) // Mark current step as completed
   }, [
     currentStep,
     formData,
@@ -3637,8 +3696,17 @@ function OnboardingTurnosCliente() {
     toast,
     setNoAdminsError,
     setGrupos,
-    steps.length, // Added steps.length to dependencies as it's used in metadata for handleFinalizar
-    idZoho, // Added idZoho to dependencies
+    steps.length,
+    idZoho,
+    trabajadores, // Include workers and groups for saving
+    grupos,
+    // Add steps array to dependencies as it's used in metadata for handleFinalizar & goNext
+    steps,
+    isFieldPrefilled, // Added to dependencies
+    trackFieldChange, // Added to dependencies
+    isFieldEdited, // Added to dependencies
+    setEmpresa, // Added to dependencies
+    DEFAULT_TURNOS, // Added to dependencies
   ])
 
   const goBack = useCallback(() => {
@@ -3649,7 +3717,43 @@ function OnboardingTurnosCliente() {
     setCurrentStep(previousStep)
   }, [navigationHistory, setCurrentStep, setNavigationHistory])
 
-  // Helper to get the current step component
+  // Helper to render navigation buttons
+  const NavigationButtons = ({ showNext = true }: { showNext?: boolean }) => (
+    <div className="mt-8 flex items-center justify-center gap-4">
+      <button
+        type="button"
+        onClick={goBack}
+        disabled={currentStep === PRIMER_PASO || navigationHistory.length <= 1}
+        className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Atrás
+      </button>
+      {showNext &&
+        currentStep < steps.length - 1 && ( // Don't show "Next" on the last step before completion
+          <button
+            type="button"
+            onClick={goNext}
+            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
+          >
+            Continuar
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        )}
+      {currentStep === steps.length - 2 && ( // Special case for the "Resumen" step's "Finalizar" button
+        <button
+          type="button"
+          onClick={handleFinalizar} // This should trigger the final submission
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25"
+        >
+          Confirmar y Enviar
+          <Check className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  )
+
+  // Helper to render step content
   const renderStepContent = () => {
     // Initial loading state
     if (!isInitialized) {
