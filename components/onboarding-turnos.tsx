@@ -22,22 +22,9 @@ import {
   Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button" // Import added
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
-import { sendProgressWebhook } from "@/lib/backend"
-
-import { TokenTester } from "./token-tester"
 
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
@@ -3018,7 +3005,210 @@ function getEmptyEmpresa(): Empresa {
   }
 }
 
-// CHANGE: Reemplazando función mock por llamada real a API decrypt-token
+// CHANGE: Corregir JSON.JSON.stringify y agregar wrappers para convertir string a boolean
+const handleConfigurationDecision = useCallback(
+  async (configureNow: boolean) => {
+    setFormData((prev) => ({ ...prev, configureNow }))
+
+    const nextStep = configureNow ? 7 : 10
+    const newHistory = [...navigationHistory, nextStep]
+
+    if (onboardingId) {
+      try {
+        await fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            formData: { ...formData, configureNow },
+            currentStep: nextStep,
+            navigationHistory: newHistory,
+          }),
+        })
+        console.log("[v0] handleConfigurationDecision: Decisión guardada, configureNow:", configureNow)
+      } catch (error) {
+        console.error("[v0] handleConfigurationDecision: Error guardando:", error)
+      }
+    }
+
+    setCurrentStep(nextStep)
+    setNavigationHistory(newHistory)
+    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+  },
+  [
+    formData,
+    currentStep,
+    onboardingId,
+    navigationHistory,
+    setFormData,
+    setCurrentStep,
+    setNavigationHistory,
+    setCompletedSteps,
+  ],
+)
+
+const handleWorkersDecision = useCallback(
+  async (loadNow: boolean) => {
+    setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
+
+    const nextStep = loadNow ? 5 : 6
+    const newHistory = [...navigationHistory, nextStep]
+
+    if (onboardingId) {
+      try {
+        await fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            formData: { ...formData, loadWorkersNow: loadNow },
+            currentStep: nextStep,
+            navigationHistory: newHistory,
+          }),
+        })
+        console.log("[v0] handleWorkersDecision: Decisión guardada, loadWorkersNow:", loadNow)
+      } catch (error) {
+        console.error("[v0] handleWorkersDecision: Error guardando:", error)
+      }
+    }
+
+    setCurrentStep(nextStep)
+    setNavigationHistory(newHistory)
+    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+  },
+  [
+    formData,
+    currentStep,
+    onboardingId,
+    navigationHistory,
+    setFormData,
+    setCurrentStep,
+    setNavigationHistory,
+    setCompletedSteps,
+  ],
+)
+
+const isFieldPrefilled = useCallback(
+  (fieldKey: string): boolean => {
+    return prefilledFields.has(fieldKey)
+  },
+  [prefilledFields],
+)
+
+const isFieldEdited = useCallback(
+  (fieldKey: string): boolean => {
+    const fieldEntry = editedFields[fieldKey]
+    if (!fieldEntry) return false
+
+    return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
+  },
+  [editedFields],
+)
+
+const trackFieldChange = useCallback(
+  (fieldKey: string, newValue: any) => {
+    // Only track changes if the field was prefilled
+    if (!prefilledFields.has(fieldKey)) return
+
+    // Dynamically get the current value from formDataRef
+    const keys = fieldKey.split(".")
+    let originalValue: any = formDataRef.current
+    for (const key of keys) {
+      originalValue = originalValue?.[key]
+      if (originalValue === undefined || originalValue === null) break
+    }
+
+    setEditedFields((prev) => {
+      const updated = { ...prev }
+      if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
+        updated[fieldKey] = {
+          originalValue: originalValue,
+          currentValue: newValue,
+        }
+      } else {
+        delete updated[fieldKey] // Remove if reverted to original value
+      }
+      return updated
+    })
+  },
+  [prefilledFields, setEditedFields],
+)
+
+const handleFinalizar = useCallback(async () => {
+  setIsSubmitting(true)
+  setValidationErrors([]) // Clear previous validation errors
+
+  try {
+    const newHistory = [...navigationHistory, 11]
+
+    // Marcar como completado en BD
+    if (onboardingId) {
+      await fetch(`/api/onboarding/${onboardingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formData: formData,
+          currentStep: 11,
+          navigationHistory: newHistory,
+          estado: "completado",
+          fecha_completado: new Date().toISOString(),
+        }),
+      })
+      console.log("[v0] handleFinalizar: Onboarding marcado como completado")
+    }
+
+    // Preparar payload para Zoho
+    const payload = {
+      accion: "completado",
+      eventType: "complete",
+      id_zoho: idZoho,
+      fechaHoraEnvio: new Date().toISOString(),
+      formData: formData,
+      metadata: {
+        empresaRut: formData.empresa.rut || "Sin RUT",
+        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
+        pasoActual: 10,
+        pasoNombre: "Resumen",
+        totalPasos: steps.length,
+        porcentajeProgreso: 100,
+      },
+      excelFile: null,
+    }
+
+    // Enviar a Zoho (fire-and-forget)
+    fetch("/api/submit-to-zoho", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch((error) => {
+      console.error("[v0] handleFinalizar: Error enviando a Zoho:", error)
+    })
+
+    // Navegar a página de agradecimiento
+    setCurrentStep(11)
+    setNavigationHistory(newHistory)
+    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+  } catch (error) {
+    console.error("[v0] handleFinalizar: Error:", error)
+    toast({
+      title: "Error",
+      description: "Hubo un error al finalizar el onboarding",
+      variant: "destructive",
+    })
+  } finally {
+    setIsSubmitting(false)
+  }
+}, [
+  formData,
+  idZoho,
+  steps.length,
+  onboardingId,
+  navigationHistory,
+  toast,
+  currentStep,
+  setCompletedSteps,
+  setCurrentStep,
+  setNavigationHistory,
+])
+
 const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
   console.log("[v0] fetchTokenData: Iniciando con token:", token.substring(0, 20) + "...")
 
@@ -3149,6 +3339,10 @@ export function OnboardingTurnosCliente() {
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
+  // Moved these states outside of the main component function to be accessible by handlers
+  const [grupos, setGrupos] = useState<{ id: number; nombre: string; descripcion: string }[]>([])
+  const [trabajadores, setTrabajadores] = useState<any[]>([])
+
   const formDataRef = useRef(formData)
   useEffect(() => {
     formDataRef.current = formData
@@ -3160,313 +3354,6 @@ export function OnboardingTurnosCliente() {
       empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
     }))
   }, [])
-
-  const loadDataFromPrefill = (data: Partial<OnboardingFormData>) => {
-    if (!data) return
-
-    const initialFormData: Partial<OnboardingFormData> = {
-      empresa: data.empresa || getEmptyEmpresa(),
-      admins: data.admins || [],
-      trabajadores: data.trabajadores || [],
-      turnos: data.turnos && data.turnos.length > 0 ? data.turnos : DEFAULT_TURNOS,
-      planificaciones: data.planificaciones || [],
-      asignaciones: data.asignaciones || [],
-      configureNow: data.configureNow !== undefined ? data.configureNow : true,
-      loadWorkersNow: data.loadWorkersNow !== undefined ? data.loadWorkersNow : false, // Initialize loadWorkersNow
-    }
-
-    setFormData(initialFormData as OnboardingFormData)
-
-    const fieldsToTrack = new Set<string>()
-    if (data.empresa) {
-      Object.keys(data.empresa).forEach((key) => {
-        if (data.empresa?.[key as keyof Empresa]) {
-          fieldsToTrack.add(`empresa.${key}`)
-        }
-      })
-    }
-    if (data.admins) {
-      data.admins.forEach((admin, index) => {
-        Object.keys(admin).forEach((key) => {
-          if (admin[key as keyof typeof admin]) fieldsToTrack.add(`admins[${index}].${key}`)
-        })
-      })
-    }
-    if (data.trabajadores) {
-      data.trabajadores.forEach((trabajador, index) => {
-        Object.keys(trabajador).forEach((key) => {
-          if (trabajador[key as keyof typeof trabajador]) fieldsToTrack.add(`trabajadores[${index}].${key}`)
-        })
-      })
-    }
-    if (data.turnos) {
-      data.turnos.forEach((turno, index) => {
-        Object.keys(turno).forEach((key) => {
-          if (turno[key as keyof typeof turno]) fieldsToTrack.add(`turnos[${index}].${key}`)
-        })
-      })
-    }
-    if (data.planificaciones) {
-      data.planificaciones.forEach((plan, index) => {
-        Object.keys(plan).forEach((key) => {
-          if (plan[key as keyof typeof plan]) fieldsToTrack.add(`planificaciones[${index}].${key}`)
-        })
-      })
-    }
-    if (data.asignaciones) {
-      data.asignaciones.forEach((asignacion, index) => {
-        Object.keys(asignacion).forEach((key) => {
-          if (asignacion[key as keyof typeof asignacion]) fieldsToTrack.add(`asignaciones[${index}].${key}`)
-        })
-      })
-    }
-    setPrefilledFields(fieldsToTrack)
-  }
-
-  useEffect(() => {
-    if (hasInitialized.current) return
-
-    const initializeData = async () => {
-      console.log("[v0] useEffect initializeData: INICIO")
-      console.log("[v0] useEffect initializeData: URL completa:", window.location.href)
-      console.log("[v0] useEffect initializeData: Search string:", window.location.search)
-
-      // Intentar ambos métodos para máxima compatibilidad
-      const token = searchParams?.get("token") || new URLSearchParams(window.location.search).get("token")
-
-      console.log("[v0] useEffect initializeData: searchParams object:", searchParams)
-      console.log("[v0] useEffect initializeData: Token from searchParams:", searchParams?.get("token"))
-      console.log(
-        "[v0] useEffect initializeData: Token from URLSearchParams:",
-        new URLSearchParams(window.location.search).get("token"),
-      )
-      console.log("[v0] useEffect initializeData: Token final:", token ? token : "NO HAY TOKEN")
-
-      if (token) {
-        console.log("[v0] useEffect initializeData: Token completo:", token)
-        console.log("[v0] useEffect initializeData: Llamando a /api/onboarding/" + token)
-
-        try {
-          // Cargar datos desde BD usando el token (UUID)
-          const response = await fetch(`/api/onboarding/${token}`)
-
-          console.log("[v0] useEffect initializeData: Response status:", response.status)
-
-          const result = await response.json()
-
-          console.log("[v0] useEffect initializeData: Respuesta de BD:", {
-            success: result.success,
-            lastStep: result.lastStep,
-            hasFormData: !!result.formData,
-            empresaRazonSocial: result.formData?.empresa?.razonSocial,
-          })
-
-          if (result.success && result.formData) {
-            setOnboardingId(token)
-            setIdZoho(result.formData.empresa.id_zoho)
-            setHasToken(true)
-
-            // Cargar datos prellenados
-            loadDataFromPrefill(result.formData)
-
-            // Restaurar paso y navegación
-            setCurrentStep(result.lastStep || PRIMER_PASO)
-            setNavigationHistory(result.navigationHistory || [0])
-
-            console.log("[v0] useEffect initializeData: Datos cargados exitosamente desde BD")
-            console.log("[v0] useEffect initializeData: Empresa:", result.formData.empresa.razonSocial)
-            console.log("[v0] useEffect initializeData: Paso actual:", result.lastStep)
-          } else {
-            console.error("[v0] useEffect initializeData: Error cargando datos", result)
-            toast({
-              title: "Error al cargar datos",
-              description: result.error || "No se pudieron cargar los datos del onboarding",
-              variant: "destructive",
-            })
-          }
-        } catch (error) {
-          console.error("[v0] useEffect initializeData: Error de red:", error)
-          toast({
-            title: "Error de conexión",
-            description: "No se pudo conectar con el servidor",
-            variant: "destructive",
-          })
-        }
-      } else {
-        console.log("[v0] useEffect initializeData: No hay token en la URL, modo sin prellenado")
-      }
-
-      setIsInitialized(true)
-      hasInitialized.current = true
-      console.log("[v0] useEffect initializeData: Inicialización completada")
-    }
-
-    initializeData()
-  }, [searchParams, toast]) // Agregar searchParams como dependencia
-
-  const handleNext = useCallback(async () => {
-    setFieldErrors({})
-    setNoAdminsError(false)
-    setValidationErrors([]) // Clear previous validation errors
-
-    // Validaciones existentes
-    if (currentStep === 2) {
-      const validation = validateEmpresaFields(formData.empresa)
-      if (!validation.isValid) {
-        const errors: Record<string, string> = {}
-        validation.errors.forEach((error) => {
-          // Simple mapping for now, might need more robust parsing if field names differ
-          // Note: These keys are based on the labels in the UI and might need adjustment
-          if (error === "Razón Social") errors["empresa.razonSocial"] = error
-          else if (error === "Nombre de fantasía") errors["empresa.nombreFantasia"] = error
-          else if (error === "RUT") errors["empresa.rut"] = error
-          else if (error === "Giro") errors["empresa.giro"] = error
-          else if (error === "Dirección") errors["empresa.direccion"] = error
-          else if (error === "Comuna") errors["empresa.comuna"] = error
-          else if (error === "Email de facturación") errors["empresa.emailFacturacion"] = error
-          else if (error === "Email de facturación (formato inválido)")
-            errors["empresa.emailFacturacion (formato inválido)"] = error
-          else if (error === "Teléfono de contacto") errors["empresa.telefonoContacto"] = error
-          else if (error === "Rubro") errors["empresa.rubro"] = error
-        })
-
-        // Handle "Sistema" separately as it's a multi-select
-        if (!formData.empresa.sistema || formData.empresa.sistema.length === 0) {
-          errors["empresa.sistema"] = "Sistema es obligatorio"
-        }
-
-        setFieldErrors(errors)
-
-        toast({
-          title: "Campos obligatorios faltantes",
-          description: `Por favor completa los siguientes campos: ${validation.errors.join(", ")}`,
-          variant: "destructive",
-        })
-        return
-      }
-    } else if (currentStep === 3) {
-      const validation = validateAdminsFields(formData.admins)
-      if (!validation.isValid) {
-        setNoAdminsError(true)
-        toast({
-          title: "Administrador requerido",
-          description: validation.errors.join(", "),
-          variant: "destructive",
-        })
-        return
-      }
-    } else if (currentStep === 7 && formData.turnos.length === 0) {
-      toast({
-        title: "Turnos requeridos",
-        description: "Debes crear al menos un turno para continuar.",
-        variant: "destructive",
-      })
-      return
-    } else if (currentStep === 8 && formData.planificaciones.length === 0) {
-      toast({
-        title: "Planificaciones requeridas",
-        description: "Debes crear al menos una planificación para continuar.",
-        variant: "destructive",
-      })
-      return
-    } else if (currentStep === 9) {
-      // Check if all assignments have required fields filled
-      const incompleteAssignments = formData.asignaciones.filter(
-        (a) => !a.trabajadorId || !a.planificacionId || !a.desde || (a.hasta !== "permanente" && !a.hasta),
-      )
-      if (incompleteAssignments.length > 0) {
-        toast({
-          title: "Asignaciones incompletas",
-          description:
-            "Asegúrate de que todas las asignaciones tengan un trabajador, una planificación y un periodo válido (Desde/Hasta o Permanente).",
-          variant: "destructive",
-        })
-        return
-      }
-    }
-
-    // Validación pasó, proceder
-    const nextStep = currentStep + 1
-    const newHistory = [...navigationHistory, nextStep]
-
-    // Guardar en BD antes de avanzar
-    if (onboardingId) {
-      try {
-        console.log("[v0] handleNext: Guardando datos en BD...")
-        const response = await fetch(`/api/onboarding/${onboardingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify({
-            formData: formData,
-            currentStep: nextStep,
-            navigationHistory: newHistory,
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.success) {
-          console.log("[v0] handleNext: Datos guardados exitosamente, paso:", nextStep)
-        } else {
-          console.error("[v0] handleNext: Error en respuesta:", result.error)
-        }
-      } catch (error) {
-        console.error("[v0] handleNext: Error guardando datos:", error)
-      }
-    } else {
-      console.warn("[v0] handleNext: No hay onboardingId, no se guardó en BD")
-    }
-
-    // Enviar webhook de progreso
-    if (nextStep < steps.length) {
-      sendProgressWebhook({
-        pasoActual: currentStep,
-        pasoNombre: steps[currentStep]?.label || "Paso desconocido",
-        totalPasos: steps.length,
-        empresaRut: formData.empresa.rut || "Sin RUT",
-        empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-        idZoho: idZoho || null,
-      })
-    }
-
-    setCurrentStep(nextStep)
-    setNavigationHistory(newHistory)
-    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }, [
-    currentStep,
-    steps,
-    formData,
-    toast,
-    sendProgressWebhook,
-    idZoho,
-    onboardingId,
-    navigationHistory,
-    validateEmpresaFields,
-    validateAdminsFields,
-  ])
-
-  const handlePrev = useCallback(() => {
-    if (navigationHistory.length <= 1) return
-
-    const newHistory = navigationHistory.slice(0, -1)
-    const previousStep = newHistory[newHistory.length - 1]
-
-    console.log("[v0] handlePrev: Retrocediendo a paso:", previousStep, "Historial:", newHistory)
-
-    // Enviar webhook de progreso
-    sendProgressWebhook({
-      pasoActual: previousStep,
-      pasoNombre: steps[previousStep]?.label || "Paso desconocido",
-      totalPasos: steps.length,
-      empresaRut: formData.empresa.rut || "Sin RUT",
-      empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
-      idZoho: idZoho || null,
-    })
-
-    setCurrentStep(previousStep)
-    setNavigationHistory(newHistory)
-  }, [navigationHistory, steps, formData.empresa, sendProgressWebhook, idZoho])
 
   const handleConfigurationDecision = useCallback(
     async (configureNow: boolean) => {
@@ -3496,7 +3383,16 @@ export function OnboardingTurnosCliente() {
       setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     },
-    [formData, currentStep, onboardingId, navigationHistory],
+    [
+      formData,
+      currentStep,
+      onboardingId,
+      navigationHistory,
+      setFormData,
+      setCurrentStep,
+      setNavigationHistory,
+      setCompletedSteps,
+    ],
   )
 
   const handleWorkersDecision = useCallback(
@@ -3511,7 +3407,7 @@ export function OnboardingTurnosCliente() {
           await fetch(`/api/onboarding/${onboardingId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.JSON.stringify({
+            body: JSON.stringify({
               formData: { ...formData, loadWorkersNow: loadNow },
               currentStep: nextStep,
               navigationHistory: newHistory,
@@ -3527,7 +3423,16 @@ export function OnboardingTurnosCliente() {
       setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     },
-    [formData, currentStep, onboardingId, navigationHistory],
+    [
+      formData,
+      currentStep,
+      onboardingId,
+      navigationHistory,
+      setFormData,
+      setCurrentStep,
+      setNavigationHistory,
+      setCompletedSteps,
+    ],
   )
 
   const isFieldPrefilled = useCallback(
@@ -3562,7 +3467,7 @@ export function OnboardingTurnosCliente() {
 
       setEditedFields((prev) => {
         const updated = { ...prev }
-        if (JSON.stringify(originalValue) !== JSON.JSON.stringify(newValue)) {
+        if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
           updated[fieldKey] = {
             originalValue: originalValue,
             currentValue: newValue,
@@ -3588,7 +3493,7 @@ export function OnboardingTurnosCliente() {
         await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify({
+          body: JSON.stringify({
             formData: formData,
             currentStep: 11,
             navigationHistory: newHistory,
@@ -3640,31 +3545,418 @@ export function OnboardingTurnosCliente() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [formData, idZoho, steps.length, onboardingId, navigationHistory, toast, currentStep, setCompletedSteps])
+  }, [
+    formData,
+    idZoho,
+    steps.length,
+    onboardingId,
+    navigationHistory,
+    toast,
+    currentStep,
+    setCompletedSteps,
+    setCurrentStep,
+    setNavigationHistory,
+  ])
 
-  // Render loading state until initialized
-  if (!isInitialized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Cargando onboarding...</p>
-        </div>
-      </div>
-    )
+  const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData> | null> => {
+    console.log("[v0] fetchTokenData: Iniciando con token:", token.substring(0, 20) + "...")
+
+    // Import the toast function from useToast hook for local use
+    const { toast } = await import("@/hooks/use-toast")
+
+    try {
+      const response = await fetch("/api/decrypt-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      })
+
+      console.log("[v0] fetchTokenData: Response status:", response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("[v0] fetchTokenData: Error en respuesta:", errorData)
+        toast({
+          title: "Error al cargar datos",
+          description: errorData.error || "No se pudo desencriptar el token",
+          variant: "destructive",
+        })
+        return null
+      }
+
+      const result = await response.json()
+      console.log("[v0] fetchTokenData: Respuesta exitosa:", {
+        success: result.success,
+        hasEmpresaData: !!result.empresaData,
+        razonSocial: result.empresaData?.razonSocial,
+        rut: result.empresaData?.rut,
+      })
+
+      if (!result.success || !result.empresaData) {
+        console.error("[v0] fetchTokenData: Token inválido o sin datos")
+        toast({
+          title: "Token inválido",
+          description: "El enlace no contiene datos válidos",
+          variant: "destructive",
+        })
+        return null
+      }
+
+      const empresaData = result.empresaData
+
+      const formattedData: Partial<OnboardingFormData> = {
+        empresa: {
+          razonSocial: empresaData.razonSocial || "",
+          nombreFantasia: empresaData.nombreFantasia || "",
+          rut: empresaData.rut || "",
+          giro: empresaData.giro || "",
+          direccion: empresaData.direccion || "",
+          comuna: empresaData.comuna || "",
+          emailFacturacion: empresaData.emailFacturacion || "",
+          telefonoContacto: empresaData.telefonoContacto || "",
+          sistema: empresaData.sistema || [],
+          rubro: empresaData.rubro || "",
+          grupos: [],
+          id_zoho: empresaData.id_zoho || null,
+        },
+        admins: Array.isArray(empresaData.admins) ? empresaData.admins : [],
+        trabajadores: Array.isArray(empresaData.trabajadores) ? empresaData.trabajadores : [],
+        turnos: Array.isArray(empresaData.turnos) ? empresaData.turnos : [],
+        planificaciones: Array.isArray(empresaData.planificaciones) ? empresaData.planificaciones : [],
+        asignaciones: Array.isArray(empresaData.asignaciones) ? empresaData.asignaciones : [],
+      }
+
+      console.log("[v0] fetchTokenData: Datos formateados exitosamente:", {
+        razonSocial: formattedData.empresa?.razonSocial,
+        rut: formattedData.empresa?.rut,
+        rubro: formattedData.empresa?.rubro,
+        adminsCount: formattedData.admins?.length,
+        trabajadoresCount: formattedData.trabajadores?.length,
+      })
+
+      return formattedData
+    } catch (error) {
+      console.error("[v0] fetchTokenData: Error de red:", error)
+      toast({
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor",
+        variant: "destructive",
+      })
+      return null
+    }
   }
 
+  // Initial Load Logic
+  useEffect(() => {
+    const initializeOnboarding = async () => {
+      const token = searchParams.get("token")
+      if (token) {
+        setHasToken(true)
+        console.log("[v0] Initial load: Token found, attempting to fetch data...")
+        const fetchedData = await fetchTokenData(token)
+        if (fetchedData) {
+          console.log("[v0] Initial load: Data fetched successfully.")
+          setPrefilledData(fetchedData)
+          // Populate initial formData and prefilledFields
+          setFormData((prev) => {
+            const updatedFormData = { ...prev }
+            const newPrefilledFields = new Set<string>()
+
+            // Empresas
+            if (fetchedData?.empresa) {
+              updatedFormData.empresa = { ...prev.empresa, ...fetchedData.empresa }
+              Object.keys(fetchedData.empresa).forEach((key) => {
+                if (fetchedData.empresa[key as keyof Empresa] !== undefined) {
+                  newPrefilledFields.add(`empresa.${key}`)
+                }
+              })
+            }
+            // Admins
+            if (fetchedData?.admins && fetchedData.admins.length > 0) {
+              updatedFormData.admins = fetchedData.admins
+            }
+            // Trabajadores
+            if (fetchedData?.trabajadores && fetchedData.trabajadores.length > 0) {
+              updatedFormData.trabajadores = fetchedData.trabajadores
+            }
+            // Turnos
+            if (fetchedData?.turnos && fetchedData.turnos.length > 0) {
+              updatedFormData.turnos = fetchedData.turnos
+            }
+            // Planificaciones
+            if (fetchedData?.planificaciones && fetchedData.planificaciones.length > 0) {
+              updatedFormData.planificaciones = fetchedData.planificaciones
+            }
+            // Asignaciones
+            if (fetchedData?.asignaciones && fetchedData.asignaciones.length > 0) {
+              updatedFormData.asignaciones = fetchedData.asignaciones
+            }
+            // Zoho ID
+            if (fetchedData?.empresa?.id_zoho) {
+              setIdZoho(fetchedData.empresa.id_zoho)
+            }
+
+            setPrefilledFields(newPrefilledFields)
+            console.log("[v0] Initial load: formData and prefilledFields updated.")
+            return updatedFormData
+          })
+        } else {
+          console.log("[v0] Initial load: Failed to fetch data from token.")
+        }
+      } else {
+        console.log("[v0] Initial load: No token found. Starting with default empty state.")
+        // If no token, try to load from API using existing onboarding ID if available
+        const existingOnboardingId = sessionStorage.getItem("onboardingId")
+        if (existingOnboardingId) {
+          setOnboardingId(existingOnboardingId)
+          try {
+            const response = await fetch(`/api/onboarding/${existingOnboardingId}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data.formData) {
+                console.log("[v0] Initial load: Loaded existing onboarding data.")
+                setFormData(data.formData)
+                setCurrentStep(data.currentStep || PRIMER_PASO)
+                setNavigationHistory(data.navigationHistory || [0])
+                setCompletedSteps(data.completedSteps || [])
+                setIdZoho(data.formData.empresa?.id_zoho || null)
+              }
+            } else {
+              console.error("[v0] Initial load: Failed to load existing onboarding data.")
+            }
+          } catch (error) {
+            console.error("[v0] Initial load: Error loading existing onboarding data.", error)
+          }
+        } else {
+          console.log("[v0] Initial load: No existing onboarding ID found either.")
+        }
+      }
+      setIsInitialized(true)
+    }
+
+    if (!hasInitialized.current) {
+      initializeOnboarding()
+      hasInitialized.current = true
+    }
+  }, [searchParams, toast, setFormData, setCurrentStep, setNavigationHistory, setCompletedSteps])
+
+  // Effect to save onboarding progress periodically
+  useEffect(() => {
+    const handleSaveProgress = async () => {
+      if (!onboardingId && !hasToken) return // Don't save if no onboarding context
+
+      if (onboardingId) {
+        try {
+          await fetch(`/api/onboarding/${onboardingId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              formData: formData,
+              currentStep: currentStep,
+              navigationHistory: navigationHistory,
+              completedSteps: Array.from(completedSteps), // Convert Set to Array
+              estado: "en_progreso",
+            }),
+          })
+          console.log(`[v0] Progress saved for onboardingId: ${onboardingId} at step: ${currentStep}`)
+        } catch (error) {
+          console.error("[v0] Error saving onboarding progress:", error)
+        }
+      } else if (hasToken && !onboardingId) {
+        // This part might need to create a new onboarding record if no ID exists yet.
+        // For now, assume token implies pre-filled data and potential update/creation handled elsewhere or on first save.
+      }
+    }
+
+    const saveInterval = setInterval(handleSaveProgress, 60000) // Save every 60 seconds
+
+    return () => clearInterval(saveInterval) // Cleanup on component unmount
+  }, [formData, currentStep, navigationHistory, completedSteps, onboardingId, hasToken])
+
+  const ensureGrupoByName = useCallback(
+    (groupName: string): string => {
+      const trimmedName = groupName.trim()
+      if (!trimmedName) return ""
+
+      const existingGroup = grupos.find((g) => g.nombre.toLowerCase() === trimmedName.toLowerCase())
+      if (existingGroup) {
+        return existingGroup.id.toString() // Return existing group ID
+      } else {
+        // Create a new group
+        const newGroup = {
+          id: Date.now(), // Simple ID generation
+          nombre: trimmedName,
+          descripcion: "",
+        }
+        setGrupos((prev) => [...prev, newGroup])
+        return newGroup.id.toString() // Return new group ID
+      }
+    },
+    [grupos, setGrupos],
+  )
+
+  const handleCreateGroup = useCallback(
+    (groupName: string) => {
+      ensureGrupoByName(groupName)
+    },
+    [ensureGrupoByName],
+  )
+
+  const handleGrupoSelect = useCallback(
+    (trabajadorId: number, grupoId: string) => {
+      setTrabajadores((prev) => prev.map((t) => (t.id === trabajadorId ? { ...t, grupoId: grupoId } : t)))
+      // If the group name is new, create it.
+      if (grupoId && !grupos.some((g) => g.id === Number(grupoId))) {
+        handleCreateGroup(grupoId) // Assuming you'd pass the name here if needed differently
+      }
+    },
+    [setTrabajadores, grupos, handleCreateGroup],
+  )
+
+  const removeAdmin = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      admins: prev.admins.filter((_, index) => index !== indexToRemove),
+    }))
+  }
+
+  // Navigation Handlers
+  const goNext = useCallback(() => {
+    const nextStep = currentStep + 1
+    const newHistory = [...navigationHistory, nextStep]
+
+    // Basic validation before moving to the next step
+    let isValid = true
+    const errors: string[] = []
+    const stepErrors: Record<string, string> = {}
+
+    switch (currentStep) {
+      case 0: // Bienvenida - No validation needed
+        break
+      case 1: // Antes de comenzar - No validation needed
+        break
+      case 2: // Empresa
+        const empresaValidation = validateEmpresaFields(formData.empresa)
+        if (!empresaValidation.isValid) {
+          isValid = false
+          errors.push(...empresaValidation.errors)
+          empresaValidation.errors.forEach((err) => {
+            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase()}` // Simple mapping
+            stepErrors[fieldKey] = `Campo inválido: ${err}`
+          })
+        }
+        break
+      case 3: // Admin
+        const adminValidation = validateAdminsFields(formData.admins)
+        if (!adminValidation.isValid) {
+          isValid = false
+          errors.push(...adminValidation.errors)
+          setNoAdminsError(true) // Specific error for no admins
+        } else {
+          setNoAdminsError(false)
+        }
+        break
+      case 4: // Decision - Handled by onDecision callback
+        return // This step has its own navigation logic
+      case 5: // Trabajadores
+        // Simple validation: check if there are workers
+        if (formData.trabajadores.length === 0) {
+          isValid = false
+          errors.push("Debes agregar al menos un trabajador.")
+        }
+        break
+      case 6: // Configuración - This step might skip steps based on user input.
+        // The navigation here is complex and depends on the `configureNow` flag.
+        // We'll handle this directly when the `DecisionStep` is rendered.
+        return // No direct 'next' button from here in the traditional sense.
+      case 7: // Turnos
+        if (formData.turnos.length <= 1) {
+          // Checking if only default turns exist
+          // Allow proceeding even if no custom turns are added, if default 'libre' exists.
+          // Ensure default turns are present.
+          if (!DEFAULT_TURNOS.some((t) => t.nombre.toLowerCase() === "libre")) {
+            isValid = false
+            errors.push("Debes tener al menos un turno definido, idealmente uno 'Libre' o 'Descanso'.")
+          }
+        }
+        break
+      case 8: // Planificaciones
+        if (formData.turnos.length > 0 && formData.planificaciones.length === 0) {
+          isValid = false
+          errors.push("Debes crear al menos una planificación para continuar.")
+        }
+        break
+      case 9: // Asignaciones
+        const workersWithoutAssignment = formData.trabajadores.filter(
+          (t) => !formData.asignaciones.some((a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta),
+        )
+        if (workersWithoutAssignment.length > 0) {
+          isValid = false
+          errors.push("Todos los trabajadores deben tener una asignación de planificación válida.")
+        }
+        break
+      case 10: // Resumen - Handled by handleFinalizar
+        return // This step has its own finalization logic
+      default:
+        break
+    }
+
+    if (!isValid) {
+      setValidationErrors(errors)
+      setFieldErrors(stepErrors) // Set step-specific field errors
+      toast({
+        title: "Campos inválidos",
+        description: "Por favor, corrige los errores en los campos marcados.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // If valid, proceed
+    setCurrentStep(nextStep)
+    setNavigationHistory(newHistory)
+    setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+  }, [
+    currentStep,
+    formData,
+    navigationHistory,
+    setCompletedSteps,
+    setCurrentStep,
+    setNavigationHistory,
+    setValidationErrors,
+    setFieldErrors,
+    toast,
+    setNoAdminsError,
+    setGrupos, // Ensure setGrupos is here if used in validation
+  ])
+
+  const goBack = useCallback(() => {
+    if (navigationHistory.length <= 1) return // Cannot go back further than the first step
+
+    const previousStep = navigationHistory[navigationHistory.length - 2]
+    setNavigationHistory((prev) => prev.slice(0, -1)) // Remove current step from history
+    setCurrentStep(previousStep)
+  }, [navigationHistory, setCurrentStep, setNavigationHistory])
+
+  // Helper to get the current step component
   const renderStepContent = () => {
+    // Initial loading state
+    if (!isInitialized) {
+      return (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <p>Cargando...</p>
+        </div>
+      )
+    }
+
+    // Render based on currentStep
     switch (currentStep) {
       case 0:
-        return (
-          <BienvenidaMarketingStep
-            nombreEmpresa={formData.empresa.nombreFantasia || formData.empresa.razonSocial || undefined}
-            onContinue={handleNext}
-          />
-        )
+        return <BienvenidaMarketingStep onContinue={goNext} nombreEmpresa={formData.empresa.nombreFantasia} />
       case 1:
-        return <AntesDeComenzarStep onContinue={handleNext} onBack={handlePrev} />
+        return <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
       case 2:
         return (
           <EmpresaStep
@@ -3674,7 +3966,15 @@ export function OnboardingTurnosCliente() {
             isFieldPrefilled={isFieldPrefilled}
             isFieldEdited={isFieldEdited}
             trackFieldChange={trackFieldChange}
-            fieldErrors={fieldErrors}
+            fieldErrors={Object.keys(fieldErrors).reduce(
+              (acc, key) => {
+                if (key.startsWith("empresa.")) {
+                  acc[key] = fieldErrors[key]
+                }
+                return acc
+              },
+              {} as Record<string, string>,
+            )}
           />
         )
       case 3:
@@ -3682,58 +3982,44 @@ export function OnboardingTurnosCliente() {
           <AdminStep
             admins={formData.admins}
             setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
-            grupos={formData.empresa.grupos}
-            ensureGrupoByName={(nombre) => {
-              const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
-              if (existing) return existing.id
-              const newGroup = { id: Date.now(), nombre, descripcion: "" }
-              setFormData((prev) => ({
-                ...prev,
-                empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
-              }))
-              return newGroup.id
-            }}
-            onRemoveAdmin={(index) => {
-              console.log("[v0] Admin removido (desde el paso principal):", index)
-              setFormData((prev) => ({ ...prev, admins: prev.admins.filter((_, i) => i !== index) }))
-            }}
-            isEditMode={isEditing}
+            grupos={formData.empresa.grupos} // Pass company groups
+            ensureGrupoByName={ensureGrupoByName}
+            onRemoveAdmin={removeAdmin}
+            isEditMode={false} // Assuming this is initial setup, not edit mode
           />
         )
-      case 4:
+      case 4: // Decision Step: Load workers now or later?
         return <WorkersDecisionStep onDecision={handleWorkersDecision} />
-      case 5:
+      case 5: // Trabajadores Step (if loading now)
         return (
           <TrabajadoresStep
-            trabajadores={formData.trabajadores}
-            setTrabajadores={(newTrabajadores) => setFormData((prev) => ({ ...prev, trabajadores: newTrabajadores }))}
+            trabajadores={trabajadores} // Use the state variable directly
+            setTrabajadores={setTrabajadores} // Use the state setter directly
             grupos={formData.empresa.grupos}
             setGrupos={(newGrupos) =>
-              setFormData((prev) => ({ ...prev, empresa: { ...prev.empresa, grupos: newGrupos } }))
-            }
-            errorGlobal={validationErrors.join(", ")}
-            ensureGrupoByName={(nombre) => {
-              const existing = formData.empresa.grupos.find((g) => g.nombre.toLowerCase() === nombre.toLowerCase())
-              if (existing) return existing.id
-              const newGroup = { id: Date.now(), nombre, descripcion: "" }
               setFormData((prev) => ({
                 ...prev,
-                empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGroup] },
+                empresa: { ...prev.empresa, grupos: newGrupos },
               }))
-              return newGroup.id
-            }}
+            }
+            errorGlobal={validationErrors.join(" ")}
+            ensureGrupoByName={ensureGrupoByName}
           />
         )
-      case 6:
-        return <DecisionStep onDecision={handleConfigurationDecision} />
-      case 7:
+      case 6: // Skip workers loading - proceed to configuration decision
+        return (
+          <DecisionStep
+            onDecision={handleConfigurationDecision} // This function decides whether to configure now or later
+          />
+        )
+      case 7: // Turnos
         return (
           <TurnosStep
             turnos={formData.turnos}
             setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
           />
         )
-      case 8:
+      case 8: // Planificaciones
         return (
           <PlanificacionesStep
             planificaciones={formData.planificaciones}
@@ -3743,211 +4029,297 @@ export function OnboardingTurnosCliente() {
             turnos={formData.turnos}
           />
         )
-      case 9:
+      case 9: // Asignaciones
         return (
           <AsignacionStep
             asignaciones={formData.asignaciones}
             setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
-            trabajadores={formData.trabajadores}
+            trabajadores={trabajadores} // Use the state variable directly
             planificaciones={formData.planificaciones}
             grupos={formData.empresa.grupos}
-            errorGlobal={validationErrors.join(", ")}
+            errorGlobal={validationErrors.join(" ")}
           />
         )
-      case 10:
+      case 10: // Resumen
         return (
-          <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6 dark:bg-emerald-900/30 dark:border-emerald-900/50">
-            <h2 className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">Resumen del Onboarding</h2>
-            <div className="space-y-3 text-sm text-emerald-800 dark:text-emerald-200">
-              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                <p className="font-medium">
-                  Empresa: {formData.empresa.nombreFantasia || formData.empresa.razonSocial}
+          <section className="space-y-6">
+            <header>
+              <h2 className="text-lg font-semibold text-slate-900">Resumen</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                ¡Casi terminamos! Revisa los datos ingresados antes de finalizar.
+              </p>
+            </header>
+            {/* Display summary of entered data */}
+            <div className="grid gap-6">
+              {/* Empresa */}
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-semibold text-slate-800">Empresa</h3>
+                <p>
+                  <strong>Razón Social:</strong> {formData.empresa.razonSocial}
                 </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">RUT: {formData.empresa.rut}</p>
-              </div>
-              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                <p className="font-medium">Administradores: {formData.admins.length}</p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  {formData.admins.map((a) => a.nombre).join(", ")}
+                <p>
+                  <strong>Nombre Fantasía:</strong> {formData.empresa.nombreFantasia}
+                </p>
+                <p>
+                  <strong>RUT:</strong> {formData.empresa.rut}
+                </p>
+                <p>
+                  <strong>Giro:</strong> {formData.empresa.giro}
+                </p>
+                <p>
+                  <strong>Dirección:</strong> {formData.empresa.direccion}, {formData.empresa.comuna}
+                </p>
+                <p>
+                  <strong>Email Facturación:</strong> {formData.empresa.emailFacturacion}
+                </p>
+                <p>
+                  <strong>Teléfono Contacto:</strong> {formData.empresa.telefonoContacto}
+                </p>
+                <p>
+                  <strong>Sistema(s):</strong> {formData.empresa.sistema.join(", ") || "No seleccionado"}
+                </p>
+                <p>
+                  <strong>Rubro:</strong> {formData.empresa.rubro || "No seleccionado"}
                 </p>
               </div>
-              <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                <p className="font-medium">Trabajadores registrados: {formData.trabajadores.length}</p>
-              </div>
-              {!formData.configureNow && (
-                <>
-                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                    <p className="font-medium">Turnos configurados: {formData.turnos.length}</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                    <p className="font-medium">Planificaciones creadas: {formData.planificaciones.length}</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-3 dark:bg-slate-700">
-                    <p className="font-medium">Asignaciones realizadas: {formData.asignaciones.length}</p>
-                  </div>
-                </>
+
+              {/* Administradores */}
+              {formData.admins.length > 0 && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">Administradores</h3>
+                  <ul>
+                    {formData.admins.map((admin, index) => (
+                      <li key={admin.id || index} className="mb-2 text-sm">
+                        <strong>{admin.nombre}</strong> (RUT: {admin.rut}, Email: {admin.email}, Tel: {admin.telefono}){" "}
+                        {admin.grupoNombre && `[${admin.grupoNombre}]`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
-              {!formData.configureNow && (
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 dark:bg-amber-900/30 dark:border-amber-900/50">
-                  <p className="font-medium text-amber-900 dark:text-amber-300">
-                    ⏭️ Configuración de turnos y planificaciones omitida
+
+              {/* Trabajadores */}
+              {trabajadores.length > 0 && ( // Use the workers state directly
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">Trabajadores ({trabajadores.length})</h3>
+                  <p className="text-sm">
+                    (Detalle completo se puede ver en el paso de Trabajadores)
+                    {/* Optionally display a few worker names */}
                   </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-200">Se configurará durante la capacitación</p>
+                </div>
+              )}
+
+              {/* Grupos */}
+              {formData.empresa.grupos.length > 0 && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">Grupos ({formData.empresa.grupos.length})</h3>
+                  <ul>
+                    {formData.empresa.grupos.map((grupo) => (
+                      <li key={grupo.id} className="mb-1 text-sm">
+                        <strong>{grupo.nombre}</strong>
+                        {grupo.descripcion && `: ${grupo.descripcion}`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Turnos */}
+              {formData.turnos.filter(
+                (t) => t.nombre.toLowerCase() !== "descanso" && t.nombre.toLowerCase() !== "libre",
+              ).length > 0 && ( // Exclude default 'Descanso' and 'Libre' for cleaner summary
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">Turnos definidos</h3>
+                  <ul>
+                    {formData.turnos
+                      .filter((t) => t.nombre.toLowerCase() !== "descanso" && t.nombre.toLowerCase() !== "libre")
+                      .map((turno) => (
+                        <li key={turno.id} className="mb-2 text-sm">
+                          <strong>{turno.nombre}</strong>: {turno.horaInicio} - {turno.horaFin}
+                          {turno.tipoColacion !== "sin" && (
+                            <span>
+                              {" ("}
+                              {turno.tipoColacion === "libre"
+                                ? `${turno.colacionMinutos} min libre`
+                                : `${turno.colacionInicio} - ${turno.colacionFin} fija`}
+                              {")"}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Planificaciones */}
+              {formData.planificaciones.length > 0 && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    Planificaciones ({formData.planificaciones.length})
+                  </h3>
+                  <ul>
+                    {formData.planificaciones.map((plan) => (
+                      <li key={plan.id} className="mb-2 text-sm">
+                        <strong>{plan.nombre}</strong>
+                        {/* Optionally show assigned turns */}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Asignaciones */}
+              {formData.asignaciones.length > 0 && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    Asignaciones ({formData.asignaciones.length})
+                  </h3>
+                  <p className="text-sm">(Detalle completo se puede ver en el paso de Asignaciones)</p>
                 </div>
               )}
             </div>
           </section>
         )
-
-      case 11:
+      case 11: // Agradecimiento
         return (
-          <section className="flex flex-col items-center justify-center space-y-6 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-12 text-center dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-900/50">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500 text-white dark:bg-emerald-600">
-              <svg
-                className="h-10 w-10"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+          <section className="space-y-6 text-center">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 mx-auto">
+              <Check className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+              ¡Felicidades, {formData.empresa.nombreFantasia || "empresa"}!
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Tu configuración inicial de GeoVictoria está completa. Te contactaremos pronto para agendar tu
+              capacitación y resolver cualquier duda.
+            </p>
+            <p className="text-sm text-slate-500 mt-4">
+              Mientras tanto, puedes explorar la plataforma o visitar nuestro{" "}
+              <a href="/soporte" className="text-sky-600 hover:underline">
+                centro de ayuda
+              </a>
+              .
+            </p>
+            <div className="mt-8">
+              <Button
+                size="lg"
+                className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 transition-all duration-300 text-base px-8 py-6 rounded-full"
+                onClick={() => (window.location.href = "/dashboard")} // Redirect to dashboard or relevant page
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-emerald-900 dark:text-emerald-300">
-                ¡Gracias por completar el onboarding!
-              </h2>
-              <p className="text-lg text-emerald-800 dark:text-emerald-200">Tus datos han sido enviados exitosamente</p>
-            </div>
-
-            <div className="max-w-md space-y-3 text-sm text-slate-700 dark:text-slate-300">
-              <p>El equipo de GeoVictoria se pondrá en contacto contigo pronto para coordinar los siguientes pasos.</p>
-              <p>Recibirás un correo de confirmación con los detalles de tu registro.</p>
-            </div>
-
-            <div className="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-800">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">¿Necesitas ayuda?</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Contáctanos en soporte@geovictoria.com</p>
+                Ir a mi cuenta
+              </Button>
             </div>
           </section>
         )
-
       default:
-        return <div>Paso no encontrado</div>
+        return <p>Paso no encontrado.</p>
     }
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <AlertDialog open={showConfirmRestart} onOpenChange={setShowConfirmRestart}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro de que quieres reiniciar?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Perderás todos los cambios no guardados y volverás al primer paso.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowConfirmRestart(false)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setCurrentStep(PRIMER_PASO)
-                setNavigationHistory([0]) // Reset history
-                setCompletedSteps([])
-                setFormData({
-                  empresa: getEmptyEmpresa(),
-                  admins: [],
-                  trabajadores: [],
-                  turnos: DEFAULT_TURNOS,
-                  planificaciones: [],
-                  asignaciones: [],
-                  configureNow: true,
-                  loadWorkersNow: false, // Reset loadWorkersNow
-                })
-                setPrefilledFields(new Set())
-                setEditedFields({})
-                setIsEditing(true)
-                setIdZoho(null)
-                setHasToken(false)
-                setShowConfirmRestart(false)
-              }}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <nav className="sticky top-0 z-20 bg-white border-b border-slate-200 py-4 px-6 md:px-12">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/logo-geovictoria.svg" alt="GeoVictoria Logo" className="h-8 w-auto" />
+            <h1 className="text-lg font-bold text-slate-800">Configuración Inicial</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            {currentStep > PRIMER_PASO && (
+              <button
+                onClick={goBack}
+                className="text-sm font-medium text-slate-600 hover:text-slate-800 flex items-center gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" /> Atrás
+              </button>
+            )}
+            {currentStep < steps.length - 1 && ( // Don't show Next on the last step (Resumen)
+              <button
+                onClick={goNext}
+                className="text-sm font-medium text-sky-600 hover:text-sky-800 flex items-center gap-1"
+                disabled={isSubmitting} // Disable if submitting
+              >
+                Continuar <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+            {currentStep === 10 && ( // Resumen step has a "Finish" button
+              <Button
+                onClick={handleFinalizar}
+                disabled={isSubmitting}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-full"
+              >
+                {isSubmitting ? "Finalizando..." : "Finalizar"}
+              </Button>
+            )}
+            <button
+              onClick={() => setShowConfirmRestart(true)}
+              className="text-sm font-medium text-red-500 hover:text-red-700"
             >
               Reiniciar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Contenedor principal */}
-      <div className="mx-auto w-full max-w-[1700px] px-4">
-        {/* Stepper */}
-        <div className="mb-8">
+            </button>
+          </div>
+        </div>
+        <div className="mt-4">
           <Stepper currentStep={currentStep} />
         </div>
+      </nav>
 
-        {process.env.NODE_ENV === "development" && <TokenTester />}
+      <main className="flex-1 container mx-auto py-8 px-6 md:px-12">{renderStepContent()}</main>
 
-        {renderStepContent()}
-
-        {/* Botones de navegación genéricos */}
-        {/* Mostrar botones solo en pasos con formularios (2, 3, 5, 7, 8, 9) */}
-        {(currentStep === 2 ||
-          currentStep === 3 ||
-          currentStep === 5 ||
-          currentStep === 7 ||
-          currentStep === 8 ||
-          currentStep === 9) && (
-          <div className="flex justify-between pt-6">
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="inline-flex items-center rounded-full border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              ← Anterior
-            </button>
-            <div className="flex flex-col items-end gap-2">
-              {currentStep === 3 && noAdminsError && (
-                <p className="flex items-center gap-1 text-sm text-red-600">
-                  <span>⚠</span>
-                  Debe agregar al menos un administrador antes de continuar
-                </p>
-              )}
+      {showConfirmRestart && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">¿Estás seguro de reiniciar?</h3>
+            <p className="text-slate-600 mb-6">
+              Esto borrará toda la información ingresada y te llevará al primer paso.
+            </p>
+            <div className="flex justify-end gap-4">
               <button
-                type="button"
-                onClick={handleNext}
-                className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                onClick={() => setShowConfirmRestart(false)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100"
               >
-                Siguiente →
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  // Clear session storage for onboardingId if it exists
+                  sessionStorage.removeItem("onboardingId")
+                  setOnboardingId(null)
+                  // Reset all form data and state
+                  setFormData({
+                    empresa: getEmptyEmpresa(),
+                    admins: [],
+                    trabajadores: [],
+                    turnos: DEFAULT_TURNOS,
+                    planificaciones: [],
+                    asignaciones: [],
+                    configureNow: true,
+                  })
+                  setCurrentStep(PRIMER_PASO)
+                  setNavigationHistory([PRIMER_PASO])
+                  setCompletedSteps([])
+                  setIsInitialized(false) // Re-trigger initialization
+                  hasInitialized.current = false // Allow re-initialization
+                  setShowConfirmRestart(false)
+                  // Optionally, clear token related states if restarting means discarding token data
+                  setHasToken(false)
+                  setIdZoho(null)
+                  setPrefilledData(null)
+                  setPrefilledFields(new Set())
+                  setEditedFields({})
+                  toast({ title: "Onboarding reiniciado", description: "Comienza de nuevo." })
+                }}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Reiniciar
               </button>
             </div>
           </div>
-        )}
-
-        {/* Botones específicos para el paso de resumen (paso 10) */}
-        {currentStep === 10 && (
-          <div className="mt-8 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              ← Atrás
-            </button>
-
-            <button
-              type="button"
-              onClick={handleFinalizar}
-              disabled={isSubmitting}
-              className="inline-flex items-center rounded-full bg-emerald-500 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-600 dark:hover:bg-emerald-700"
-            >
-              {isSubmitting ? "Procesando..." : "Confirmar y Enviar →"}
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
 
+// CHANGE: Agregando export default para deployment
 export default OnboardingTurnosCliente
