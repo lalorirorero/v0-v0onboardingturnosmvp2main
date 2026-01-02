@@ -3439,7 +3439,40 @@ function OnboardingTurnosCliente() {
     }))
   }
 
-  // Navigation Handlers
+  // Navigation Buttons Component
+  const NavigationButtons = ({
+    showBack = true,
+    showNext = true,
+    nextLabel = "Siguiente",
+  }: {
+    showBack?: boolean
+    showNext?: boolean
+    nextLabel?: string
+  }) => (
+    <div className="flex justify-center items-center gap-4 py-6">
+      {showBack && navigationHistory.length > 1 && (
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Atrás
+        </button>
+      )}
+      {showNext && (
+        <button
+          type="button"
+          onClick={goNext}
+          className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
+        >
+          {nextLabel}
+          <ArrowRight className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  )
+
   const goNext = useCallback(() => {
     const nextStep = currentStep + 1
     const newHistory = [...navigationHistory, nextStep]
@@ -3460,7 +3493,7 @@ function OnboardingTurnosCliente() {
           isValid = false
           errors.push(...empresaValidation.errors)
           empresaValidation.errors.forEach((err) => {
-            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase()}` // Simple mapping
+            const fieldKey = `empresa.${err.split(" ")[0].toLowerCase().replace(":", "")}` // Simple mapping, remove colon
             stepErrors[fieldKey] = `Campo inválido: ${err}`
           })
         }
@@ -3576,52 +3609,61 @@ function OnboardingTurnosCliente() {
         return <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
       case 2:
         return (
-          <EmpresaStep
-            empresa={formData.empresa}
-            setEmpresa={setEmpresa}
-            prefilledFields={prefilledFields}
-            isFieldPrefilled={isFieldPrefilled}
-            isFieldEdited={isFieldEdited}
-            trackFieldChange={trackFieldChange}
-            fieldErrors={Object.keys(fieldErrors).reduce(
-              (acc, key) => {
-                if (key.startsWith("empresa.")) {
-                  acc[key] = fieldErrors[key]
-                }
-                return acc
-              },
-              {} as Record<string, string>,
-            )}
-          />
+          <>
+            <EmpresaStep
+              empresa={formData.empresa}
+              setEmpresa={setEmpresa}
+              prefilledFields={prefilledFields}
+              isFieldPrefilled={isFieldPrefilled}
+              isFieldEdited={isFieldEdited}
+              trackFieldChange={trackFieldChange}
+              fieldErrors={Object.keys(fieldErrors).reduce(
+                (acc, key) => {
+                  if (key.startsWith("empresa.")) {
+                    acc[key] = fieldErrors[key]
+                  }
+                  return acc
+                },
+                {} as Record<string, string>,
+              )}
+            />
+            <NavigationButtons />
+          </>
         )
       case 3:
         return (
-          <AdminStep
-            admins={formData.admins}
-            setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
-            grupos={formData.empresa.grupos} // Pass company groups
-            ensureGrupoByName={ensureGrupoByName}
-            onRemoveAdmin={removeAdmin}
-            isEditMode={false} // Assuming this is initial setup, not edit mode
-          />
+          <>
+            <AdminStep
+              admins={formData.admins}
+              setAdmins={(newAdmins) => setFormData((prev) => ({ ...prev, admins: newAdmins }))}
+              grupos={formData.empresa.grupos} // Pass company groups
+              ensureGrupoByName={ensureGrupoByName}
+              onRemoveAdmin={removeAdmin}
+              isEditMode={false} // Assuming this is initial setup, not edit mode
+            />
+            <NavigationButtons />
+          </>
         )
       case 4: // Decision Step: Load workers now or later?
         return <WorkersDecisionStep onDecision={handleWorkersDecision} />
       case 5: // Trabajadores Step (if loading now)
         return (
-          <TrabajadoresStep
-            trabajadores={trabajadores} // Use the state variable directly
-            setTrabajadores={setTrabajadores} // Use the state setter directly
-            grupos={formData.empresa.grupos}
-            setGrupos={(newGrupos) =>
-              setFormData((prev) => ({
-                ...prev,
-                empresa: { ...prev.empresa, grupos: newGrupos },
-              }))
-            }
-            errorGlobal={validationErrors.join(" ")}
-            ensureGrupoByName={ensureGrupoByName}
-          />
+          <>
+            <TrabajadoresStep
+              trabajadores={trabajadores} // Use the state variable directly
+              setTrabajadores={setTrabajadores} // Use the state setter directly
+              grupos={formData.empresa.grupos}
+              setGrupos={(newGrupos) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  empresa: { ...prev.empresa, grupos: newGrupos },
+                }))
+              }
+              errorGlobal={validationErrors.join(" ")}
+              ensureGrupoByName={ensureGrupoByName}
+            />
+            <NavigationButtons />
+          </>
         )
       case 6: // Skip workers loading - proceed to configuration decision
         return (
@@ -3631,31 +3673,40 @@ function OnboardingTurnosCliente() {
         )
       case 7: // Turnos
         return (
-          <TurnosStep
-            turnos={formData.turnos}
-            setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
-          />
+          <>
+            <TurnosStep
+              turnos={formData.turnos}
+              setTurnos={(newTurnos) => setFormData((prev) => ({ ...prev, turnos: newTurnos }))}
+            />
+            <NavigationButtons />
+          </>
         )
       case 8: // Planificaciones
         return (
-          <PlanificacionesStep
-            planificaciones={formData.planificaciones}
-            setPlanificaciones={(newPlanificaciones) =>
-              setFormData((prev) => ({ ...prev, planificaciones: newPlanificaciones }))
-            }
-            turnos={formData.turnos}
-          />
+          <>
+            <PlanificacionesStep
+              planificaciones={formData.planificaciones}
+              setPlanificaciones={(newPlanificaciones) =>
+                setFormData((prev) => ({ ...prev, planificaciones: newPlanificaciones }))
+              }
+              turnos={formData.turnos}
+            />
+            <NavigationButtons />
+          </>
         )
       case 9: // Asignaciones
         return (
-          <AsignacionStep
-            asignaciones={formData.asignaciones}
-            setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
-            trabajadores={trabajadores} // Use the state variable directly
-            planificaciones={formData.planificaciones}
-            grupos={formData.empresa.grupos}
-            errorGlobal={validationErrors.join(" ")}
-          />
+          <>
+            <AsignacionStep
+              asignaciones={formData.asignaciones}
+              setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
+              trabajadores={trabajadores} // Use the state variable directly
+              planificaciones={formData.planificaciones}
+              grupos={formData.empresa.grupos}
+              errorGlobal={validationErrors.join(" ")}
+            />
+            <NavigationButtons />
+          </>
         )
       case 10: // Resumen
         return (
@@ -3794,6 +3845,24 @@ function OnboardingTurnosCliente() {
                   <p className="text-sm">(Detalle completo se puede ver en el paso de Asignaciones)</p>
                 </div>
               )}
+            </div>
+            <div className="flex justify-center items-center gap-4 py-6">
+              <button
+                type="button"
+                onClick={goBack}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Atrás
+              </button>
+              <button
+                type="button"
+                onClick={handleFinalizar}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25"
+              >
+                Confirmar y Enviar
+                <Check className="w-5 h-5" />
+              </button>
             </div>
           </section>
         )
