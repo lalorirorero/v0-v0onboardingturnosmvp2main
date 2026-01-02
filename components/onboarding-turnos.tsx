@@ -3289,6 +3289,7 @@ function OnboardingTurnosCliente() {
     setNavigationHistory,
   ])
 
+  // CHANGE: Modified useEffect to incorporate the updates
   useEffect(() => {
     const loadData = async () => {
       console.log("[v0] Initial load: INICIO")
@@ -3301,21 +3302,21 @@ function OnboardingTurnosCliente() {
           const result = await response.json()
           console.log("[v0] Respuesta de BD:", result)
 
-          if (result.success && result.data) {
-            const loadedData = result.data
-
+          if (result.success) {
             // Update formData with loaded data
-            if (loadedData.datos_actuales) {
-              setFormData(loadedData.datos_actuales)
+            if (result.formData) {
+              console.log("[v0] Cargando formData:", result.formData)
+              setFormData(result.formData)
             }
 
             // Restore last step
-            const lastStep = loadedData.ultimo_paso || 0
+            const lastStep = result.lastStep || 0
             console.log("[v0] lastStep:", lastStep)
 
             // Restore navigation history
-            if (loadedData.navigation_history && Array.isArray(loadedData.navigation_history)) {
-              setNavigationHistory(loadedData.navigation_history)
+            if (result.navigationHistory && Array.isArray(result.navigationHistory)) {
+              console.log("[v0] Cargando navigationHistory:", result.navigationHistory)
+              setNavigationHistory(result.navigationHistory)
             }
 
             // Set current step
@@ -3323,11 +3324,12 @@ function OnboardingTurnosCliente() {
 
             // Set onboarding ID for future saves
             setOnboardingId(token)
+            console.log("[v0] onboardingId establecido:", token)
 
             console.log("[v0] lastStep >= 3?", lastStep >= 3)
             if (lastStep >= 3) {
               console.log("[v0] Mostrando mensaje de sesión retomada")
-              const stepName = steps.find((s) => s.id === lastStep)?.label || "paso actual" // Changed from s.step to s.id
+              const stepName = steps.find((s) => s.id === lastStep)?.label || "paso actual"
               console.log("[v0] Step name:", stepName)
               // Show resume modal after a short delay to ensure DOM is ready
               setTimeout(() => {
@@ -3336,7 +3338,9 @@ function OnboardingTurnosCliente() {
               }, 500)
             }
 
-            console.log("[v0] Initial load: Loaded step", lastStep, "with history", loadedData.navigation_history)
+            console.log("[v0] Initial load: Loaded step", lastStep, "with history", result.navigationHistory)
+          } else {
+            console.error("[v0] API returned success: false")
           }
         } catch (error) {
           console.error("[v0] Error loading data from BD:", error)
@@ -3345,8 +3349,7 @@ function OnboardingTurnosCliente() {
         console.log("[v0] No token found")
       }
 
-      // CHANGE: Changed from isInitialized.current to setIsInitialized
-      setIsInitialized(true) // Mark as initialized - this triggers re-render
+      setIsInitialized(true)
     }
 
     loadData()
