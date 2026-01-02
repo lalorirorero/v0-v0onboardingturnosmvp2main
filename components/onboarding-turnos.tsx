@@ -3027,38 +3027,39 @@ function getEmptyEmpresa(): Empresa {
 function OnboardingTurnosCliente() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const router = useRouter() // Added useRouter
+  const router = useRouter()
 
-  const [currentStep, setCurrentStep] = useState(PRIMER_PASO) // Initialize with PRIMER_PASO
+  const [currentStep, setCurrentStep] = useState(PRIMER_PASO)
   const [formData, setFormData] = useState<OnboardingFormData>({
     empresa: getEmptyEmpresa(),
     admins: [],
     trabajadores: [],
-    turnos: DEFAULT_TURNOS, // Initialize with default turns
+    turnos: DEFAULT_TURNOS,
     planificaciones: [],
     asignaciones: [],
-    configureNow: undefined, // Initialize as undefined
-    loadWorkersNow: undefined, // Initialize as undefined
+    configureNow: undefined,
+    loadWorkersNow: undefined,
   })
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-  const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO]) // Initialize with PRIMER_PASO
+  const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO])
   const [onboardingId, setOnboardingId] = useState<string | null>(null)
   const [idZoho, setIdZoho] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [grupos, setGrupos] = useState<Grupo[]>([])
-  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]) // Initialize with Trabajador[] type
+  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([])
 
-  const isInitialized = useRef(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+
   const [showResumeMessage, setShowResumeMessage] = useState(false)
   const [resumeStepName, setResumeStepName] = useState("")
   const [showResumeModal, setShowResumeModal] = useState(false)
 
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [noAdminsError, setNoAdminsError] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<string[]>([]) // Added validationErrors state
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({}) // Added fieldErrors state
-  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set()) // State for prefilled fields
-  const [editedFields, setEditedFields] = useState<EditedFields>({}) // State for edited fields
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
+  const [editedFields, setEditedFields] = useState<EditedFields>({})
 
   // Mock fetchTokenData function for demonstration purposes
   // In a real application, this would fetch data from an API based on the token.
@@ -3289,7 +3290,7 @@ function OnboardingTurnosCliente() {
   ])
 
   useEffect(() => {
-    const initializeData = async () => {
+    const loadData = async () => {
       console.log("[v0] Initial load: INICIO")
       const token = searchParams?.get("token")
       console.log("[v0] Initial load: Token found:", token)
@@ -3344,11 +3345,12 @@ function OnboardingTurnosCliente() {
         console.log("[v0] No token found")
       }
 
-      isInitialized.current = true // Mark as initialized using ref
+      // CHANGE: Changed from isInitialized.current to setIsInitialized
+      setIsInitialized(true) // Mark as initialized - this triggers re-render
     }
 
-    initializeData()
-  }, [searchParams]) // Removed unnecessary dependencies
+    loadData()
+  }, [searchParams])
 
   // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
@@ -3608,11 +3610,14 @@ function OnboardingTurnosCliente() {
   // Helper to get the current step component
   const renderStepContent = () => {
     // Initial loading state
-    if (!isInitialized.current) {
-      console.log("[v0] renderStepContent: Still loading, isInitialized =", isInitialized.current)
+    if (!isInitialized) {
+      console.log("[v0] renderStepContent: Still loading, isInitialized =", isInitialized)
       return (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Cargando...</p>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+            <p className="text-sm text-slate-600">Cargando...</p>
+          </div>
         </div>
       )
     }
