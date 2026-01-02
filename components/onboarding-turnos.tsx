@@ -3273,11 +3273,10 @@ function OnboardingTurnosCliente() {
 
       if (token) {
         console.log("[v0] Initial load: Token found:", token)
-        setOnboardingId(token) // El token ES el ID del onboarding
+        setOnboardingId(token)
         setHasToken(true)
 
         try {
-          // Cargar datos desde Supabase usando el token como ID
           const response = await fetch(`/api/onboarding/${token}`)
 
           if (response.ok) {
@@ -3291,11 +3290,15 @@ function OnboardingTurnosCliente() {
               setShowResumeMessage(true)
               const stepName = steps.find((s) => s.id === result.lastStep)?.label || "donde quedaste"
               console.log("[v0] Step name:", stepName)
-              toast({
-                title: "¡Bienvenido de vuelta!",
-                description: `Continuarás desde el paso "${stepName}". Tus datos anteriores han sido guardados.`,
-                duration: 5000,
-              })
+
+              // Usar setTimeout para dar tiempo al Toaster de montarse
+              setTimeout(() => {
+                toast({
+                  title: "¡Bienvenido de vuelta!",
+                  description: `Continuarás desde el paso "${stepName}". Tus datos anteriores han sido guardados.`,
+                  duration: 5000,
+                })
+              }, 500) // Delay de 500ms
             } else {
               console.log("[v0] NO se muestra mensaje (lastStep <= 1 o no existe)")
             }
