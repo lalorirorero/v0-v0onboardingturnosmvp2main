@@ -3329,8 +3329,7 @@ function OnboardingTurnosCliente() {
     }
 
     initializeData()
-  }, [searchParams]) // Removed unnecessary dependencies like setResumeStepName, setShowResumeModal, etc. from dependency array.
-  // The effect will re-run if searchParams change, which is the intended behavior.
+  }, [searchParams]) // Removed unnecessary dependencies
 
   // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
@@ -3450,8 +3449,9 @@ function OnboardingTurnosCliente() {
           setNoAdminsError(false)
         }
         break
-      case 4: // Decision - Handled by onDecision callback
-        return // This step has its own navigation logic
+      case 4:
+        // If decision already made, show the decision screen but it will auto-skip
+        return // This step handles its own navigation via onDecision
       case 5: // Trabajadores
         // Simple validation: check if there are workers
         if (formData.trabajadores.length === 0) {
@@ -3459,10 +3459,9 @@ function OnboardingTurnosCliente() {
           errors.push("Debes agregar al menos un trabajador.")
         }
         break
-      case 6: // Configuration - This step might skip steps based on user input.
-        // The navigation here is complex and depends on the `configureNow` flag.
-        // We'll handle this directly when the `DecisionStep` is rendered.
-        return // No direct 'next' button from here in the traditional sense.
+      case 6:
+        // If decision already made, show the decision screen but it will auto-skip
+        return // This step handles its own navigation via onDecision
       case 7: // Turnos
         if (formData.turnos.length <= 1) {
           // Checking if only default turns exist
@@ -3628,17 +3627,24 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 4:
-        if (formData.loadWorkersNow !== undefined) {
-          // Decision already made, skip to appropriate step
-          if (formData.loadWorkersNow === true) {
-            // Go to TrabajadoresStep
-            return renderStepContent.call({ ...this, currentStep: 5 })
-          } else {
-            // Go to DecisionStep for turnos
-            return renderStepContent.call({ ...this, currentStep: 6 })
-          }
-        }
-        return <WorkersDecisionStep onDecision={handleWorkersDecision} />
+        // If decision already made, show the decision screen but it will auto-skip
+        return (
+          <WorkersDecisionStep
+            onDecision={(decision) => {
+              const loadNow = decision === "now"
+              setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
+
+              if (loadNow) {
+                goNext() // Proceed to TrabajadoresStep
+              } else {
+                // Skip TrabajadoresStep and go to Configuration DecisionStep
+                setCurrentStep(6)
+                setNavigationHistory((prev) => [...prev, 6])
+                setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+              }
+            }}
+          />
+        )
       case 5:
         return (
           <>
@@ -3659,11 +3665,24 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 6:
-        if (formData.configureNow !== undefined && formData.configureNow !== true) {
-          // Decision already made to skip turnos, go to resumen
-          return renderStepContent.call({ ...this, currentStep: 10 })
-        }
-        return <DecisionStep onDecision={handleConfigurationDecision} />
+        // If decision already made, show the decision screen but it will auto-skip
+        return (
+          <DecisionStep
+            onDecision={(decision) => {
+              const configureNow = decision === "now"
+              setFormData((prev) => ({ ...prev, configureNow: configureNow }))
+
+              if (configureNow) {
+                goNext() // Proceed to TurnosStep
+              } else {
+                // Skip Turnos, Planificaciones, Asignaciones and go to Resumen
+                setCurrentStep(10)
+                setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
+                setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
+              }
+            }}
+          />
+        )
       case 7:
         return (
           <>
@@ -3907,7 +3926,7 @@ function OnboardingTurnosCliente() {
     if (configureNow) {
       goNext() // Proceed to TurnosStep
     } else {
-      // Skip Turnos, Planificaciones, Asignaciones and go directly to Resumen
+      // Skip Turnos, Planificaciones, Asignaciones and go to Resumen
       setCurrentStep(10)
       setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
       setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
