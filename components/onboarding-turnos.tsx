@@ -3266,90 +3266,68 @@ function OnboardingTurnosCliente() {
     setNavigationHistory,
   ])
 
-  // Initial Load Logic
   useEffect(() => {
     const initializeOnboarding = async () => {
       const token = searchParams.get("token")
+
       if (token) {
+        console.log("[v0] Initial load: Token found:", token)
+        setOnboardingId(token) // El token ES el ID del onboarding
         setHasToken(true)
-        console.log("[v0] Initial load: Token found, attempting to fetch data...")
-        const fetchedData = await fetchTokenData(token) // Assume fetchTokenData is defined elsewhere or imported
-        if (fetchedData) {
-          console.log("[v0] Initial load: Data fetched successfully.")
-          setPrefilledData(fetchedData)
-          // Populate initial formData and prefilledFields
-          setFormData((prev) => {
-            const updatedFormData = { ...prev }
-            const newPrefilledFields = new Set<string>()
 
-            // Empresas
-            if (fetchedData?.empresa) {
-              updatedFormData.empresa = { ...prev.empresa, ...fetchedData.empresa }
-              Object.keys(fetchedData.empresa).forEach((key) => {
-                if (fetchedData.empresa[key as keyof Empresa] !== undefined) {
-                  newPrefilledFields.add(`empresa.${key}`)
-                }
-              })
-            }
-            // Admins
-            if (fetchedData?.admins && fetchedData.admins.length > 0) {
-              updatedFormData.admins = fetchedData.admins
-            }
-            // Trabajadores
-            if (fetchedData?.trabajadores && fetchedData.trabajadores.length > 0) {
-              updatedFormData.trabajadores = fetchedData.trabajadores
-            }
-            // Turnos
-            if (fetchedData?.turnos && fetchedData.turnos.length > 0) {
-              updatedFormData.turnos = fetchedData.turnos
-            }
-            // Planificaciones
-            if (fetchedData?.planificaciones && fetchedData.planificaciones.length > 0) {
-              updatedFormData.planificaciones = fetchedData.planificaciones
-            }
-            // Asignaciones
-            if (fetchedData?.asignaciones && fetchedData.asignaciones.length > 0) {
-              updatedFormData.asignaciones = fetchedData.asignaciones
-            }
-            // Zoho ID
-            if (fetchedData?.empresa?.id_zoho) {
-              setIdZoho(fetchedData.empresa.id_zoho)
-            }
+        try {
+          // Cargar datos desde Supabase usando el token como ID
+          const response = await fetch(`/api/onboarding/${token}`)
 
-            setPrefilledFields(newPrefilledFields)
-            console.log("[v0] Initial load: formData and prefilledFields updated.")
-            return updatedFormData
+          if (response.ok) {
+            const result = await response.json()
+            console.log("[v0] Initial load: Data loaded from BD:", result)
+
+            if (result.success && result.formData) {
+              setFormData(result.formData)
+              setCurrentStep(result.lastStep || PRIMER_PASO)
+              setNavigationHistory(result.navigationHistory || [PRIMER_PASO])
+
+              if (result.formData.empresa?.id_zoho) {
+                setIdZoho(result.formData.empresa.id_zoho)
+              }
+
+              // Marcar campos prellenados
+              const newPrefilledFields = new Set<string>()
+              if (result.formData.empresa) {
+                Object.keys(result.formData.empresa).forEach((key) => {
+                  if (
+                    result.formData.empresa[key as keyof Empresa] !== undefined &&
+                    result.formData.empresa[key as keyof Empresa] !== ""
+                  ) {
+                    newPrefilledFields.add(`empresa.${key}`)
+                  }
+                })
+              }
+              setPrefilledFields(newPrefilledFields)
+
+              console.log("[v0] Initial load: Loaded step", result.lastStep, "with history", result.navigationHistory)
+            }
+          } else {
+            console.error("[v0] Initial load: Error loading data from BD:", response.status)
+            toast({
+              title: "Error",
+              description: "No se pudieron cargar los datos del onboarding",
+              variant: "destructive",
+            })
+          }
+        } catch (error) {
+          console.error("[v0] Initial load: Exception loading data:", error)
+          toast({
+            title: "Error",
+            description: "Error al conectar con la base de datos",
+            variant: "destructive",
           })
-        } else {
-          console.log("[v0] Initial load: Failed to fetch data from token.")
         }
       } else {
-        console.log("[v0] Initial load: No token found. Attempting to load from session storage.")
-        const existingOnboardingId = sessionStorage.getItem("onboardingId")
-        if (existingOnboardingId) {
-          setOnboardingId(existingOnboardingId)
-          try {
-            const response = await fetch(`/api/onboarding/${existingOnboardingId}`)
-            if (response.ok) {
-              const data = await response.json()
-              if (data.formData) {
-                console.log("[v0] Initial load: Loaded existing onboarding data.")
-                setFormData(data.formData)
-                setCurrentStep(data.currentStep || PRIMER_PASO)
-                setNavigationHistory(data.navigationHistory || [0])
-                setCompletedSteps(data.completedSteps || [])
-                setIdZoho(data.formData.empresa?.id_zoho || null)
-              }
-            } else {
-              console.error("[v0] Initial load: Failed to load existing onboarding data.")
-            }
-          } catch (error) {
-            console.error("[v0] Initial load: Error loading existing onboarding data.", error)
-          }
-        } else {
-          console.log("[v0] Initial load: No existing onboarding ID found either.")
-        }
+        console.log("[v0] Initial load: No token found in URL")
       }
+
       setIsInitialized(true)
     }
 
@@ -3357,40 +3335,9 @@ function OnboardingTurnosCliente() {
       initializeOnboarding()
       hasInitialized.current = true
     }
-  }, [searchParams, toast, setFormData, setCurrentStep, setNavigationHistory, setCompletedSteps])
+  }, [searchParams, toast])
 
-  // Effect to save onboarding progress periodically
-  useEffect(() => {
-    const handleSaveProgress = async () => {
-      if (!onboardingId && !hasToken) return // Don't save if no onboarding context
-
-      if (onboardingId) {
-        try {
-          await fetch(`/api/onboarding/${onboardingId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              formData: formData,
-              currentStep: currentStep,
-              navigationHistory: navigationHistory,
-              completedSteps: Array.from(completedSteps), // Convert Set to Array
-              estado: "en_progreso",
-            }),
-          })
-          console.log(`[v0] Progress saved for onboardingId: ${onboardingId} at step: ${currentStep}`)
-        } catch (error) {
-          console.error("[v0] Error saving onboarding progress:", error)
-        }
-      } else if (hasToken && !onboardingId) {
-        // This part might need to create a new onboarding record if no ID exists yet.
-        // For now, assume token implies pre-filled data and potential creation handled elsewhere or on first save.
-      }
-    }
-
-    const saveInterval = setInterval(handleSaveProgress, 60000) // Save every 60 seconds
-
-    return () => clearInterval(saveInterval) // Cleanup on component unmount
-  }, [formData, currentStep, navigationHistory, completedSteps, onboardingId, hasToken])
+  // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
   const ensureGrupoByName = useCallback(
     (groupName: string): string => {
