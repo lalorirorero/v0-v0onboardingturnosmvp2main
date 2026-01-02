@@ -4000,7 +4000,8 @@ function OnboardingTurnosCliente() {
       <nav className="sticky top-0 z-20 bg-white border-b border-slate-200 py-4 px-6 md:px-12">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo-geovictoria.svg" alt="GeoVictoria Logo" className="h-8 w-auto" />
+            {/* CHANGE: Actualizado de .svg a .png */}
+            <img src="/logo-geovictoria.png" alt="GeoVictoria Logo" className="h-8 w-auto" />
             <h1 className="text-lg font-bold text-slate-800">Configuración Inicial</h1>
           </div>
         </div>
