@@ -37,6 +37,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
 import { sendProgressWebhook } from "@/lib/backend"
 
+import { TokenTester } from "./token-tester"
+
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
 const steps = [
@@ -693,7 +695,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Tech Solutions S.A."
           value={empresa.razonSocial || ""}
           onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.razónsocial"]}
+          error={fieldErrors["empresa.razonSocial"]}
         />
         <ProtectedInput
           name="nombreFantasia"
@@ -701,7 +703,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: TechSol"
           value={empresa.nombreFantasia || ""}
           onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.nombredefantasía"]}
+          error={fieldErrors["empresa.nombreFantasia"]}
         />
         <ProtectedInput
           name="rut"
@@ -725,7 +727,7 @@ const EmpresaStep = React.memo<{
           placeholder="Ej: Av. Principal 123"
           value={empresa.direccion || ""}
           onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.dirección"]}
+          error={fieldErrors["empresa.direccion"]}
         />
         <ProtectedInput
           name="comuna"
@@ -742,9 +744,7 @@ const EmpresaStep = React.memo<{
           placeholder="facturacion@empresa.com"
           value={empresa.emailFacturacion || ""}
           onChange={handleEmpresaChange}
-          error={
-            fieldErrors["empresa.emaildefacturación"] || fieldErrors["empresa.emaildefacturación(formatoinválido)"]
-          }
+          error={fieldErrors["empresa.emailFacturacion"] || fieldErrors["empresa.emailFacturacion (formato inválido)"]}
         />
         <ProtectedInput
           name="telefonoContacto"
@@ -753,7 +753,7 @@ const EmpresaStep = React.memo<{
           placeholder="+56912345678"
           value={empresa.telefonoContacto || ""}
           onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.teléfonodecontacto"]}
+          error={fieldErrors["empresa.telefonoContacto"]}
         />
       </div>
 
@@ -3228,21 +3228,37 @@ export function OnboardingTurnosCliente() {
 
     const initializeData = async () => {
       console.log("[v0] useEffect initializeData: INICIO")
-      const urlParams = new URLSearchParams(window.location.search)
-      const token = urlParams.get("token")
+      console.log("[v0] useEffect initializeData: URL completa:", window.location.href)
+      console.log("[v0] useEffect initializeData: Search string:", window.location.search)
 
-      console.log("[v0] useEffect initializeData: Token:", token ? token.substring(0, 20) + "..." : "NO HAY TOKEN")
+      // Intentar ambos métodos para máxima compatibilidad
+      const token = searchParams?.get("token") || new URLSearchParams(window.location.search).get("token")
+
+      console.log("[v0] useEffect initializeData: searchParams object:", searchParams)
+      console.log("[v0] useEffect initializeData: Token from searchParams:", searchParams?.get("token"))
+      console.log(
+        "[v0] useEffect initializeData: Token from URLSearchParams:",
+        new URLSearchParams(window.location.search).get("token"),
+      )
+      console.log("[v0] useEffect initializeData: Token final:", token ? token : "NO HAY TOKEN")
 
       if (token) {
+        console.log("[v0] useEffect initializeData: Token completo:", token)
+        console.log("[v0] useEffect initializeData: Llamando a /api/onboarding/" + token)
+
         try {
           // Cargar datos desde BD usando el token (UUID)
           const response = await fetch(`/api/onboarding/${token}`)
+
+          console.log("[v0] useEffect initializeData: Response status:", response.status)
+
           const result = await response.json()
 
           console.log("[v0] useEffect initializeData: Respuesta de BD:", {
             success: result.success,
             lastStep: result.lastStep,
             hasFormData: !!result.formData,
+            empresaRazonSocial: result.formData?.empresa?.razonSocial,
           })
 
           if (result.success && result.formData) {
@@ -3257,17 +3273,19 @@ export function OnboardingTurnosCliente() {
             setCurrentStep(result.lastStep || PRIMER_PASO)
             setNavigationHistory(result.navigationHistory || [0])
 
-            console.log("[v0] useEffect initializeData: Datos cargados exitosamente")
+            console.log("[v0] useEffect initializeData: Datos cargados exitosamente desde BD")
+            console.log("[v0] useEffect initializeData: Empresa:", result.formData.empresa.razonSocial)
+            console.log("[v0] useEffect initializeData: Paso actual:", result.lastStep)
           } else {
-            console.error("[v0] useEffect initializeData: Error cargando datos")
+            console.error("[v0] useEffect initializeData: Error cargando datos", result)
             toast({
               title: "Error al cargar datos",
-              description: "No se pudieron cargar los datos del onboarding",
+              description: result.error || "No se pudieron cargar los datos del onboarding",
               variant: "destructive",
             })
           }
         } catch (error) {
-          console.error("[v0] useEffect initializeData: Error:", error)
+          console.error("[v0] useEffect initializeData: Error de red:", error)
           toast({
             title: "Error de conexión",
             description: "No se pudo conectar con el servidor",
@@ -3275,7 +3293,7 @@ export function OnboardingTurnosCliente() {
           })
         }
       } else {
-        console.log("[v0] useEffect initializeData: No hay token en la URL")
+        console.log("[v0] useEffect initializeData: No hay token en la URL, modo sin prellenado")
       }
 
       setIsInitialized(true)
@@ -3284,7 +3302,7 @@ export function OnboardingTurnosCliente() {
     }
 
     initializeData()
-  }, [])
+  }, [searchParams, toast]) // Agregar searchParams como dependencia
 
   const handleNext = useCallback(async () => {
     setFieldErrors({})
@@ -3299,16 +3317,16 @@ export function OnboardingTurnosCliente() {
         validation.errors.forEach((error) => {
           // Simple mapping for now, might need more robust parsing if field names differ
           // Note: These keys are based on the labels in the UI and might need adjustment
-          if (error === "Razón Social") errors["empresa.razónsocial"] = error
-          else if (error === "Nombre de fantasía") errors["empresa.nombredefantasía"] = error
+          if (error === "Razón Social") errors["empresa.razonSocial"] = error
+          else if (error === "Nombre de fantasía") errors["empresa.nombreFantasia"] = error
           else if (error === "RUT") errors["empresa.rut"] = error
           else if (error === "Giro") errors["empresa.giro"] = error
-          else if (error === "Dirección") errors["empresa.dirección"] = error
+          else if (error === "Dirección") errors["empresa.direccion"] = error
           else if (error === "Comuna") errors["empresa.comuna"] = error
-          else if (error === "Email de facturación") errors["empresa.emaildefacturación"] = error
+          else if (error === "Email de facturación") errors["empresa.emailFacturacion"] = error
           else if (error === "Email de facturación (formato inválido)")
-            errors["empresa.emaildefacturación(formatoinválido)"] = error
-          else if (error === "Teléfono de contacto") errors["empresa.teléfonodecontacto"] = error
+            errors["empresa.emailFacturacion (formato inválido)"] = error
+          else if (error === "Teléfono de contacto") errors["empresa.telefonoContacto"] = error
           else if (error === "Rubro") errors["empresa.rubro"] = error
         })
 
@@ -3378,7 +3396,7 @@ export function OnboardingTurnosCliente() {
         const response = await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: JSON.JSON.stringify({
             formData: formData,
             currentStep: nextStep,
             navigationHistory: newHistory,
@@ -3870,6 +3888,8 @@ export function OnboardingTurnosCliente() {
         <div className="mb-8">
           <Stepper currentStep={currentStep} />
         </div>
+
+        {process.env.NODE_ENV === "development" && <TokenTester />}
 
         {renderStepContent()}
 

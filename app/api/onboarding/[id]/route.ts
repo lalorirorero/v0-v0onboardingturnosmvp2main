@@ -2,13 +2,15 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 // GET /api/onboarding/[id] - Obtener datos actuales del onboarding
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     if (!id) {
       return NextResponse.json({ success: false, error: "ID requerido" }, { status: 400 })
     }
+
+    console.log(`[v0] GET /api/onboarding/${id}`)
 
     const supabase = await getSupabaseServerClient()
 
@@ -18,6 +20,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       console.error("[v0] Error obteniendo onboarding:", error)
       return NextResponse.json({ success: false, error: "Onboarding no encontrado" }, { status: 404 })
     }
+
+    console.log(`[v0] Onboarding encontrado - Paso: ${data.ultimo_paso}`)
 
     return NextResponse.json({
       success: true,
@@ -33,9 +37,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PATCH /api/onboarding/[id] - Actualizar datos del onboarding
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     if (!id) {
