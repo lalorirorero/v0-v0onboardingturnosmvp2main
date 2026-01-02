@@ -3889,15 +3889,6 @@ function OnboardingTurnosCliente() {
               </a>
               .
             </p>
-            <div className="mt-8">
-              <Button
-                size="lg"
-                className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 transition-all duration-300 text-base px-8 py-6 rounded-full"
-                onClick={() => (window.location.href = "/dashboard")} // Redirect to dashboard or relevant page
-              >
-                Ir a mi cuenta
-              </Button>
-            </div>
           </section>
         )
       default:
