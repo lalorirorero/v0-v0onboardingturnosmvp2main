@@ -24,6 +24,14 @@ import {
 import { Button } from "@/components/ui/button" // Import added
 import { useSearchParams } from "next/navigation" // Added for token handling
 import { useToast } from "@/components/ui/use-toast" // Added for toast notifications
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog" // Import Dialog components
 
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
@@ -1065,18 +1073,14 @@ const TrabajadoresStep = ({
       </div>
 
       {showVideoModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setShowVideoModal(false)}
-        >
-          <div
-            className="relative w-full max-w-[1700px] bg-white rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+          <DialogContent className="max-w-[1700px] w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <DialogHeader className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Cómo pegar datos desde Excel</h3>
-                <p className="text-xs text-slate-500 mt-1">Tutorial paso a paso para importar trabajadores</p>
+                <DialogTitle className="text-lg font-semibold text-slate-900">Cómo pegar datos desde Excel</DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 mt-1">
+                  Tutorial paso a paso para importar trabajadores
+                </DialogDescription>
               </div>
               <button
                 type="button"
@@ -1092,7 +1096,7 @@ const TrabajadoresStep = ({
                   <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                 </svg>
               </button>
-            </div>
+            </DialogHeader>
 
             <div className="p-6 space-y-4">
               <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 text-xs space-y-2">
@@ -1121,17 +1125,13 @@ const TrabajadoresStep = ({
               </div>
             </div>
 
-            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowVideoModal(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
-              >
+            <DialogFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
+              <Button type="button" onClick={() => setShowVideoModal(false)} variant="outline" className="rounded-lg">
                 Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -3033,11 +3033,13 @@ function OnboardingTurnosCliente() {
   const [hasToken, setHasToken] = useState(false)
   const [idZoho, setIdZoho] = useState<string | null>(null)
   const [onboardingId, setOnboardingId] = useState<string | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-  const hasInitialized = useRef(false)
+  const isInitialized = useRef(false) // Changed from boolean state to ref
+  const [showResumeMessage, setShowResumeMessage] = useState(false) // Changed to showResumeModal
+  const [resumeStepName, setResumeStepName] = useState("")
+  const [showResumeModal, setShowResumeModal] = useState(false) // Added state for modal visibility
+
   const [showConfirmRestart, setShowConfirmRestart] = useState(false)
   const [noAdminsError, setNoAdminsError] = useState(false)
-  const [showResumeMessage, setShowResumeMessage] = useState(false)
 
   // Mock fetchTokenData function for demonstration purposes
   // In a real application, this would fetch data from an API based on the token.
@@ -3287,18 +3289,10 @@ function OnboardingTurnosCliente() {
 
             if (result.lastStep && result.lastStep > 1) {
               console.log("[v0] Mostrando mensaje de sesión retomada")
-              setShowResumeMessage(true)
               const stepName = steps.find((s) => s.id === result.lastStep)?.label || "donde quedaste"
               console.log("[v0] Step name:", stepName)
-
-              // Usar setTimeout para dar tiempo al Toaster de montarse
-              setTimeout(() => {
-                toast({
-                  title: "¡Bienvenido de vuelta!",
-                  description: `Continuarás desde el paso "${stepName}". Tus datos anteriores han sido guardados.`,
-                  duration: 5000,
-                })
-              }, 500) // Delay de 500ms
+              setResumeStepName(stepName)
+              setShowResumeModal(true) // Set modal visibility to true
             } else {
               console.log("[v0] NO se muestra mensaje (lastStep <= 1 o no existe)")
             }
@@ -3348,14 +3342,14 @@ function OnboardingTurnosCliente() {
         console.log("[v0] Initial load: No token found in URL")
       }
 
-      setIsInitialized(true)
+      isInitialized.current = true // Set ref to true after initialization
     }
 
-    if (!hasInitialized.current) {
+    if (!isInitialized.current) {
+      // Check ref instead of state
       initializeOnboarding()
-      hasInitialized.current = true
     }
-  }, [searchParams, toast])
+  }, [searchParams, toast, setResumeStepName, setShowResumeModal]) // Added dependencies for the new setters
 
   // (Comentado el useEffect de auto-save que guardaba cada 60 segundos)
 
@@ -3601,7 +3595,8 @@ function OnboardingTurnosCliente() {
   // Helper to get the current step component
   const renderStepContent = () => {
     // Initial loading state
-    if (!isInitialized) {
+    if (!isInitialized.current) {
+      // Check ref instead of state
       return (
         <div className="flex items-center justify-center min-h-[300px]">
           <p>Cargando...</p>
@@ -3919,7 +3914,7 @@ function OnboardingTurnosCliente() {
       // Skip TrabajadoresStep and go directly to the Configuration DecisionStep
       setCurrentStep(6) // Corresponds to DecisionStep
       setNavigationHistory((prev) => [...prev, 6])
-      setCompletedSteps((prev) => [...prev, currentStep])
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     }
   }
 
@@ -3935,7 +3930,36 @@ function OnboardingTurnosCliente() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
+      {showResumeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100">
+                <svg className="h-6 w-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">¡Bienvenido de vuelta!</h3>
+            </div>
+            <p className="mb-6 text-sm text-slate-600">
+              Continuarás desde el paso <strong>"{resumeStepName}"</strong>. Tus datos anteriores han sido guardados.
+            </p>
+            <button
+              onClick={() => setShowResumeModal(false)}
+              className="w-full rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      )}
+
       <nav className="sticky top-0 z-20 bg-white border-b border-slate-200 py-4 px-6 md:px-12">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
