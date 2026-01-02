@@ -3689,28 +3689,8 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      // If decision was already made, skip this step
+      // CHANGE: Mostrar siempre el WorkersDecisionStep, no auto-saltar
       case 4:
-        if (formData.loadWorkersNow !== undefined) {
-          console.log("[v0] Skipping WorkersDecisionStep - already decided:", formData.loadWorkersNow)
-          // Auto-advance based on previous decision
-          if (formData.loadWorkersNow) {
-            // User decided to load workers now, go to step 5
-            if (currentStep === 4) {
-              setCurrentStep(5)
-              setNavigationHistory((prev) => [...prev, 5])
-            }
-            return null // Will re-render with step 5
-          } else {
-            // User decided to load workers later, skip to step 6
-            if (currentStep === 4) {
-              setCurrentStep(6)
-              setNavigationHistory((prev) => [...prev, 6])
-            }
-            return null // Will re-render with step 6
-          }
-        }
-        // Decision not made yet, show the decision step
         return <WorkersDecisionStep onDecision={handleWorkersDecision} />
 
       case 5:
@@ -3732,28 +3712,8 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      // If decision was already made, skip this step
+      // CHANGE: Mostrar siempre el ConfigurationDecisionStep, no auto-saltar
       case 6:
-        if (formData.configureNow !== undefined) {
-          console.log("[v0] Skipping ConfigurationDecisionStep - already decided:", formData.configureNow)
-          // Auto-advance based on previous decision
-          if (formData.configureNow) {
-            // User decided to configure now, go to step 7
-            if (currentStep === 6) {
-              setCurrentStep(7)
-              setNavigationHistory((prev) => [...prev, 7])
-            }
-            return null // Will re-render with step 7
-          } else {
-            // User decided to configure later, skip to step 10 (Resumen)
-            if (currentStep === 6) {
-              setCurrentStep(10)
-              setNavigationHistory((prev) => [...prev, 10])
-            }
-            return null // Will re-render with step 10
-          }
-        }
-        // Decision not made yet, show the decision step
         return <DecisionStep onDecision={handleConfigurationDecision} />
 
       case 7:
