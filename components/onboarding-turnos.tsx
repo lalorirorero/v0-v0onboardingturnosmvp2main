@@ -3031,7 +3031,7 @@ const fetchTokenData = async (token: string): Promise<Partial<OnboardingFormData
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.JSON.stringify({ token }),
+      body: JSON.stringify({ token }),
     })
 
     console.log("[v0] fetchTokenData: Response status:", response.status)
@@ -3396,7 +3396,7 @@ export function OnboardingTurnosCliente() {
         const response = await fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: JSON.JSON.stringify({
             formData: formData,
             currentStep: nextStep,
             navigationHistory: newHistory,
@@ -3475,13 +3475,12 @@ export function OnboardingTurnosCliente() {
       const nextStep = configureNow ? 7 : 10
       const newHistory = [...navigationHistory, nextStep]
 
-      // Guardar decisión en BD
       if (onboardingId) {
         try {
           await fetch(`/api/onboarding/${onboardingId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.JSON.stringify({
+            body: JSON.stringify({
               formData: { ...formData, configureNow },
               currentStep: nextStep,
               navigationHistory: newHistory,
@@ -3507,7 +3506,6 @@ export function OnboardingTurnosCliente() {
       const nextStep = loadNow ? 5 : 6
       const newHistory = [...navigationHistory, nextStep]
 
-      // Guardar decisión en BD
       if (onboardingId) {
         try {
           await fetch(`/api/onboarding/${onboardingId}`, {
@@ -3544,8 +3542,7 @@ export function OnboardingTurnosCliente() {
       const fieldEntry = editedFields[fieldKey]
       if (!fieldEntry) return false
 
-      // Compare original and current values, handling potential deep comparisons
-      return JSON.JSON.stringify(fieldEntry.originalValue) !== JSON.JSON.stringify(fieldEntry.currentValue)
+      return JSON.stringify(fieldEntry.originalValue) !== JSON.stringify(fieldEntry.currentValue)
     },
     [editedFields],
   )
@@ -3565,7 +3562,7 @@ export function OnboardingTurnosCliente() {
 
       setEditedFields((prev) => {
         const updated = { ...prev }
-        if (JSON.JSON.stringify(originalValue) !== JSON.JSON.stringify(newValue)) {
+        if (JSON.stringify(originalValue) !== JSON.JSON.stringify(newValue)) {
           updated[fieldKey] = {
             originalValue: originalValue,
             currentValue: newValue,
@@ -3624,7 +3621,7 @@ export function OnboardingTurnosCliente() {
       fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify(payload),
+        body: JSON.stringify(payload),
       }).catch((error) => {
         console.error("[v0] handleFinalizar: Error enviando a Zoho:", error)
       })
