@@ -527,7 +527,7 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
   )
 }
 
-// START CHANGE: Modificar ProtectedInput para mostrar errores
+// START CHANGE: Modificando ProtectedInput para mostrar errores
 const ProtectedInput = React.memo<{
   name: string
   label: string
@@ -3642,7 +3642,16 @@ function OnboardingTurnosCliente() {
       case 0:
         return <BienvenidaMarketingStep onContinue={goNext} nombreEmpresa={formData.empresa.nombreFantasia} />
       case 1:
-        // Pass necessary props for EmpresaStep
+        // CHANGE: Corrected step numbering and component for case 1
+        return (
+          <>
+            <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
+            <NavigationButtons showNext={false} /> {/* No 'Siguiente' button here */}
+          </>
+        )
+
+      case 2:
+        // CHANGE: Empresa step is now case 2
         return (
           <>
             <EmpresaStep
@@ -3665,14 +3674,6 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-
-      case 2: // Empresa step is handled within EmpresaStep component now.
-        // Redirect to the correct step after initial setup
-        return (
-          <div className="flex items-center justify-center min-h-[300px]">
-            <p>Cargando...</p>
-          </div>
-        ) // This case should ideally not be reached directly if EmpresaStep is rendered in the correct flow.
 
       case 3:
         return (
