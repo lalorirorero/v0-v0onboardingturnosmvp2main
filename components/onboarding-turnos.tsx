@@ -3420,7 +3420,7 @@ function OnboardingTurnosCliente() {
     </div>
   )
 
-  const goNext = useCallback(() => {
+  const goNext = useCallback(async () => {
     const nextStep = currentStep + 1
     const newHistory = [...navigationHistory, nextStep]
 
@@ -3511,6 +3511,46 @@ function OnboardingTurnosCliente() {
       return
     }
 
+    if (onboardingId) {
+      try {
+        console.log("[v0] goNext: Guardando avance en BD", {
+          step: nextStep,
+          onboardingId,
+        })
+
+        const response = await fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            formData: formData,
+            currentStep: nextStep,
+            navigationHistory: newHistory,
+            estado: "en_progreso",
+          }),
+        })
+
+        if (!response.ok) {
+          console.error("[v0] goNext: Error guardando en BD", await response.text())
+          toast({
+            title: "Error al guardar",
+            description: "No se pudo guardar el progreso, pero puedes continuar.",
+            variant: "destructive",
+          })
+        } else {
+          console.log("[v0] goNext: Guardado exitoso en BD")
+        }
+      } catch (error) {
+        console.error("[v0] goNext: Error en fetch:", error)
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo conectar con el servidor.",
+          variant: "destructive",
+        })
+      }
+    } else {
+      console.warn("[v0] goNext: No hay onboardingId, no se guardó en BD")
+    }
+
     // If valid, proceed
     setCurrentStep(nextStep)
     setNavigationHistory(newHistory)
@@ -3519,6 +3559,7 @@ function OnboardingTurnosCliente() {
     currentStep,
     formData,
     navigationHistory,
+    onboardingId, // Agregado a dependencias
     setCompletedSteps,
     setCurrentStep,
     setNavigationHistory,
@@ -3526,7 +3567,7 @@ function OnboardingTurnosCliente() {
     setFieldErrors,
     toast,
     setNoAdminsError,
-    setGrupos, // Ensure setGrupos is here if used in validation
+    setGrupos,
   ])
 
   const goBack = useCallback(() => {
