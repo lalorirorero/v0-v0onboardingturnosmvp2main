@@ -3,13 +3,41 @@ import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    console.log("[v0] generate-link: Recibiendo solicitud")
+
+    let body
+    try {
+      const text = await request.text()
+      console.log("[v0] generate-link: Body recibido (texto):", text)
+
+      if (!text || text.trim() === "") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "El body de la solicitud está vacío. Debes enviar un JSON con los datos de la empresa.",
+          },
+          { status: 400 },
+        )
+      }
+
+      body = JSON.parse(text)
+      console.log("[v0] generate-link: Body parseado exitosamente")
+    } catch (parseError) {
+      console.error("[v0] generate-link: Error parseando JSON:", parseError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "El body de la solicitud no es un JSON válido. Verifica el formato.",
+        },
+        { status: 400 },
+      )
+    }
 
     if (!body.empresa && !body.empresaData) {
       return NextResponse.json(
         {
           success: false,
-          error: "Se requiere el campo 'empresa' con los datos de la empresa",
+          error: "Se requiere el campo 'empresa' o 'empresaData' con los datos de la empresa",
         },
         { status: 400 },
       )
@@ -64,11 +92,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error("[v0] generate-link: Error creando registro:", error)
+      console.error("[v0] generate-link: Error creando registro en Supabase:", error)
       return NextResponse.json(
         {
           success: false,
-          error: "Error al crear registro en base de datos",
+          error: `Error al crear registro en base de datos: ${error.message}`,
+          details: error,
         },
         { status: 500 },
       )
@@ -90,11 +119,12 @@ export async function POST(request: NextRequest) {
       token,
     })
   } catch (error) {
-    console.error("[v0] generate-link: Error:", error)
+    console.error("[v0] generate-link: Error general:", error)
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 },
     )
