@@ -2889,6 +2889,8 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
+const turnos: any[] = [] // Placeholder for turnos
+
 // Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
 type Empresa = {
   razonSocial: string
@@ -3769,7 +3771,6 @@ function OnboardingTurnosCliente() {
         return (
           <>
             <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
-            <NavigationButtons showNext={false} /> {/* No 'Siguiente' button here */}
           </>
         )
 
