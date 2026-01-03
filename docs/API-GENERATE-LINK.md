@@ -53,8 +53,8 @@ POST /api/generate-link
 | `comuna` | string | **Sí** | Texto libre | `"Santiago Centro"` |
 | `emailFacturacion` | string | **Sí** | Email válido | `"facturacion@construcsur.cl"` |
 | `telefonoContacto` | string | **Sí** | Formato: `+56XXXXXXXXX` | `"+56223456789"` |
-| `rubro` | string | **Sí** | Uno de los rubros disponibles (ver lista abajo) | `"Construcción"` |
-| `sistema` | array | **Sí** | Array con al menos 1 sistema (ver opciones abajo) | `["Control de Asistencia"]` |
+| `rubro` | string | **Sí** | Uno de los rubros disponibles (ver lista abajo) | `"3. Construcción"` |
+| `sistema` | array | **Sí** | Array con al menos 1 sistema (ver opciones abajo) | `["GeoVictoria BOX"]` |
 
 ### Campos Opcionales
 
@@ -64,41 +64,48 @@ POST /api/generate-link
 
 ### Rubros Disponibles
 
-Debes seleccionar uno de estos valores para el campo `rubro`:
+Debes seleccionar **exactamente uno** de estos valores para el campo `rubro`:
 
 ```
-- "Agricultura, ganadería, silvicultura y pesca"
-- "Explotación de minas y canteras"
-- "Industrias manufactureras"
-- "Suministro de electricidad, gas, vapor y aire acondicionado"
-- "Suministro de agua; evacuación de aguas residuales, gestión de desechos"
-- "Construcción"
-- "Comercio al por mayor y al por menor"
-- "Transporte y almacenamiento"
-- "Actividades de alojamiento y de servicio de comidas"
-- "Información y comunicaciones"
-- "Actividades financieras y de seguros"
-- "Actividades inmobiliarias"
-- "Actividades profesionales, científicas y técnicas"
-- "Actividades de servicios administrativos y de apoyo"
-- "Administración pública y defensa; planes de seguridad social"
-- "Enseñanza"
-- "Actividades de atención de la salud humana y de asistencia social"
-- "Actividades artísticas, de entretenimiento y recreativas"
-- "Otras actividades de servicios"
-- "Actividades de los hogares como empleadores"
-- "Actividades de organizaciones y órganos extraterritoriales"
+- "1. Agrícola"
+- "2. Condominio"
+- "3. Construcción"
+- "4. Inmobiliaria"
+- "5. Consultoria"
+- "6. Banca y Finanzas"
+- "7. Educación"
+- "8. Municipio"
+- "9. Gobierno"
+- "10. Mineria"
+- "11. Naviera"
+- "12. Outsourcing Seguridad"
+- "13. Outsourcing General"
+- "14. Outsourcing Retail"
+- "15. Planta Productiva"
+- "16. Logistica"
+- "17. Retail Enterprise"
+- "18. Retail SMB"
+- "19. Salud"
+- "20. Servicios"
+- "21. Transporte"
+- "22. Turismo, Hotelería y Gastronomía"
 ```
+
+**Nota importante:** El valor debe incluir el número y el punto tal como se muestra arriba.
 
 ### Sistemas de Marcaje Disponibles
 
-Debes incluir al menos uno de estos valores en el array `sistema`:
+Debes incluir **al menos uno** de estos valores en el array `sistema`:
 
 ```
-- "Control de Asistencia"
-- "Gestión de Turnos"
-- "Portal del Colaborador"
+- "GeoVictoria BOX"    (Relojes Biométricos)
+- "GeoVictoria CALL"   (Marcaje por Llamada)
+- "GeoVictoria APP"    (Aplicación Móvil)
+- "GeoVictoria USB"    (Lector USB Biométrico)
+- "GeoVictoria WEB"    (Portal Web)
 ```
+
+Puedes seleccionar múltiples sistemas de marcaje según las necesidades del cliente.
 
 ---
 
@@ -134,8 +141,8 @@ Si deseas pre-llenar datos de administradores, cada objeto del array debe tener:
     "comuna": "Santiago Centro",
     "emailFacturacion": "facturacion@construcsur.cl",
     "telefonoContacto": "+56223456789",
-    "rubro": "Construcción",
-    "sistema": ["Control de Asistencia", "Gestión de Turnos"]
+    "rubro": "3. Construcción",
+    "sistema": ["GeoVictoria BOX", "GeoVictoria APP"]
   }
 }
 ```
@@ -154,8 +161,8 @@ Si deseas pre-llenar datos de administradores, cada objeto del array debe tener:
     "comuna": "Santiago Centro",
     "emailFacturacion": "facturacion@construcsur.cl",
     "telefonoContacto": "+56223456789",
-    "rubro": "Construcción",
-    "sistema": ["Control de Asistencia", "Gestión de Turnos"]
+    "rubro": "3. Construcción",
+    "sistema": ["GeoVictoria BOX", "GeoVictoria APP", "GeoVictoria WEB"]
   },
   "admins": [
     {
@@ -175,6 +182,68 @@ Si deseas pre-llenar datos de administradores, cada objeto del array debe tener:
       "grupo": "Operaciones"
     }
   ]
+}
+```
+
+### Ejemplo con Diferentes Industrias
+
+#### Ejemplo 1: Minería
+
+```json
+{
+  "id_zoho": "3525045000561554088",
+  "empresa": {
+    "razonSocial": "Minera del Norte SA",
+    "nombreFantasia": "MinaNorte",
+    "rut": "78.123.456-7",
+    "giro": "Extracción de minerales metálicos",
+    "direccion": "Ruta Norte KM 45",
+    "comuna": "Antofagasta",
+    "emailFacturacion": "facturacion@minanorte.cl",
+    "telefonoContacto": "+56552123456",
+    "rubro": "10. Mineria",
+    "sistema": ["GeoVictoria BOX", "GeoVictoria CALL"]
+  }
+}
+```
+
+#### Ejemplo 2: Retail
+
+```json
+{
+  "id_zoho": "3525045000561554099",
+  "empresa": {
+    "razonSocial": "Supermercados El Ahorro SpA",
+    "nombreFantasia": "El Ahorro",
+    "rut": "79.456.789-0",
+    "giro": "Comercio al por menor en supermercados",
+    "direccion": "Av. Principal 5678",
+    "comuna": "Viña del Mar",
+    "emailFacturacion": "contabilidad@elahorro.cl",
+    "telefonoContacto": "+56322567890",
+    "rubro": "18. Retail SMB",
+    "sistema": ["GeoVictoria BOX", "GeoVictoria USB", "GeoVictoria WEB"]
+  }
+}
+```
+
+#### Ejemplo 3: Educación
+
+```json
+{
+  "id_zoho": "3525045000561554100",
+  "empresa": {
+    "razonSocial": "Colegio San Andrés",
+    "nombreFantasia": "San Andrés",
+    "rut": "70.234.567-8",
+    "giro": "Enseñanza básica y media",
+    "direccion": "Calle Los Aromos 123",
+    "comuna": "Providencia",
+    "emailFacturacion": "administracion@sanandres.cl",
+    "telefonoContacto": "+56223334444",
+    "rubro": "7. Educación",
+    "sistema": ["GeoVictoria WEB", "GeoVictoria APP"]
+  }
 }
 ```
 
@@ -261,8 +330,8 @@ curl -X POST https://tu-dominio.vercel.app/api/generate-link \
       "comuna": "Santiago Centro",
       "emailFacturacion": "facturacion@construcsur.cl",
       "telefonoContacto": "+56223456789",
-      "rubro": "Construcción",
-      "sistema": ["Control de Asistencia"]
+      "rubro": "3. Construcción",
+      "sistema": ["GeoVictoria BOX", "GeoVictoria APP"]
     },
     "admins": [
       {
@@ -291,8 +360,8 @@ const payload = {
     comuna: "Santiago Centro",
     emailFacturacion: "facturacion@construcsur.cl",
     telefonoContacto: "+56223456789",
-    rubro: "Construcción",
-    sistema: ["Control de Asistencia", "Gestión de Turnos"]
+    rubro: "3. Construcción",
+    sistema: ["GeoVictoria BOX", "GeoVictoria APP", "GeoVictoria WEB"]
   },
   admins: [
     {
@@ -342,8 +411,8 @@ payload = {
         "comuna": "Santiago Centro",
         "emailFacturacion": "facturacion@construcsur.cl",
         "telefonoContacto": "+56223456789",
-        "rubro": "Construcción",
-        "sistema": ["Control de Asistencia", "Gestión de Turnos"]
+        "rubro": "3. Construcción",
+        "sistema": ["GeoVictoria BOX", "GeoVictoria APP"]
     },
     "admins": [
         {
