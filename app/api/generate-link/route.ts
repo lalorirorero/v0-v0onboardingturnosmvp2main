@@ -1,5 +1,80 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+
+const ALLOWED_RUBROS = [
+  "1. Agrícola",
+  "2. Condominio",
+  "3. Construcción",
+  "4. Inmobiliaria",
+  "5. Consultoria",
+  "6. Banca y Finanzas",
+  "7. Educación",
+  "8. Municipio",
+  "9. Gobierno",
+  "10. Mineria",
+  "11. Naviera",
+  "12. Outsourcing Seguridad",
+  "13. Outsourcing General",
+  "14. Outsourcing Retail",
+  "15. Planta Productiva",
+  "16. Logistica",
+  "17. Retail Enterprise",
+  "18. Retail SMB",
+  "19. Salud",
+  "20. Servicios",
+  "21. Transporte",
+  "22. Turismo, Hotelería y Gastronomía",
+] as const
+
+const ALLOWED_SISTEMAS = [
+  "GeoVictoria BOX",
+  "GeoVictoria CALL",
+  "GeoVictoria APP",
+  "GeoVictoria USB",
+  "GeoVictoria WEB",
+] as const
+
+const empresaSchema = z.object({
+  razonSocial: z.string().trim().min(1, "El campo 'razonSocial' es obligatorio"),
+  nombreFantasia: z.string().trim().optional(),
+  rut: z.string().trim().min(1, "El campo 'rut' es obligatorio"),
+  giro: z.string().trim().min(1, "El campo 'giro' es obligatorio"),
+  direccion: z.string().trim().min(1, "El campo 'direccion' es obligatorio"),
+  comuna: z.string().trim().min(1, "El campo 'comuna' es obligatorio"),
+  emailFacturacion: z.string().trim().email("El campo 'emailFacturacion' debe ser un email válido"),
+  telefonoContacto: z.string().trim().min(1, "El campo 'telefonoContacto' es obligatorio"),
+  rubro: z
+    .string()
+    .trim()
+    .refine((value) => ALLOWED_RUBROS.includes(value as (typeof ALLOWED_RUBROS)[number]), {
+      message: "El campo 'rubro' debe corresponder a un valor del catálogo",
+    }),
+  sistema: z
+    .array(z.string().trim())
+    .min(1, "El campo 'sistema' debe contener al menos un elemento")
+    .refine((values) => values.every((value) => ALLOWED_SISTEMAS.includes(value as (typeof ALLOWED_SISTEMAS)[number])), {
+      message: "Todos los valores de 'sistema' deben pertenecer al catálogo",
+    }),
+})
+
+const requestBodySchema = z
+  .object({
+    id_zoho: z.union([z.string(), z.number()]).optional(),
+    empresa: empresaSchema.optional(),
+    empresaData: empresaSchema.optional(),
+    admins: z.array(z.any()).optional(),
+    trabajadores: z.array(z.any()).optional(),
+    turnos: z.array(z.any()).optional(),
+    planificaciones: z.array(z.any()).optional(),
+    asignaciones: z.array(z.any()).optional(),
+    configureNow: z.boolean().optional(),
+    loadWorkersNow: z.boolean().optional(),
+  })
+  .refine((data) => data.empresa || data.empresaData, {
+    message: "Se requiere el campo 'empresa' o 'empresaData' con los datos de la empresa",
+    path: ["empresa"],
+  })
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,41 +108,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!body.empresa && !body.empresaData) {
+    const parsed = requestBodySchema.safeParse(body)
+
+    if (!parsed.success) {
+      const validationErrors = parsed.error.errors.map((issue) => ({
+        campo: issue.path.join(".") || "payload",
+        mensaje: issue.message,
+      }))
+
+      console.warn("[v0] generate-link: Errores de validación", validationErrors)
+
       return NextResponse.json(
         {
           success: false,
-          error: "Se requiere el campo 'empresa' o 'empresaData' con los datos de la empresa",
+          error: "El payload enviado no cumple con los requisitos mínimos",
+          validationErrors,
         },
         { status: 400 },
       )
     }
 
-    const id_zoho = body.id_zoho ? String(body.id_zoho) : null
+    const validatedBody = parsed.data
+    const empresaInput = validatedBody.empresa ?? validatedBody.empresaData!
+    const id_zoho = validatedBody.id_zoho ? String(validatedBody.id_zoho) : null
 
     // Estructura de datos inicial consistente
     const formData = {
       empresa: {
-        razonSocial: body.empresa?.razonSocial || body.empresaData?.razonSocial || "",
-        nombreFantasia: body.empresa?.nombreFantasia || body.empresaData?.nombreFantasia || "",
-        rut: body.empresa?.rut || body.empresaData?.rut || "",
-        giro: body.empresa?.giro || body.empresaData?.giro || "",
-        direccion: body.empresa?.direccion || body.empresaData?.direccion || "",
-        comuna: body.empresa?.comuna || body.empresaData?.comuna || "",
-        emailFacturacion: body.empresa?.emailFacturacion || body.empresaData?.emailFacturacion || "",
-        telefonoContacto: body.empresa?.telefonoContacto || body.empresaData?.telefonoContacto || "",
-        sistema: body.empresa?.sistema || body.empresaData?.sistema || [],
-        rubro: body.empresa?.rubro || body.empresaData?.rubro || "",
+        razonSocial: empresaInput.razonSocial,
+        nombreFantasia: empresaInput.nombreFantasia || "",
+        rut: empresaInput.rut,
+        giro: empresaInput.giro,
+        direccion: empresaInput.direccion,
+        comuna: empresaInput.comuna,
+        emailFacturacion: empresaInput.emailFacturacion,
+        telefonoContacto: empresaInput.telefonoContacto,
+        sistema: empresaInput.sistema,
+        rubro: empresaInput.rubro,
         grupos: [],
         id_zoho: id_zoho,
       },
-      admins: body.admins || body.empresaData?.admins || [],
-      trabajadores: body.trabajadores || body.empresaData?.trabajadores || [],
-      turnos: body.turnos || body.empresaData?.turnos || [],
-      planificaciones: body.planificaciones || body.empresaData?.planificaciones || [],
-      asignaciones: body.asignaciones || body.empresaData?.asignaciones || [],
-      configureNow: false,
-      loadWorkersNow: false,
+      admins: validatedBody.admins || [],
+      trabajadores: validatedBody.trabajadores || [],
+      turnos: validatedBody.turnos || [],
+      planificaciones: validatedBody.planificaciones || [],
+      asignaciones: validatedBody.asignaciones || [],
+      configureNow: validatedBody.configureNow ?? false,
+      loadWorkersNow: validatedBody.loadWorkersNow ?? false,
     }
 
     console.log("[v0] generate-link: Creando registro en BD:", {
