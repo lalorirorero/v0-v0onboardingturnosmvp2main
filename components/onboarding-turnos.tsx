@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useEffect, useCallback } from "react" // Import useRef and useCallback
+import { useState, useEffect, useCallback, useRef } from "react" // Import useRef and useCallback
 import {
   Building2,
   AlertCircle,
@@ -3184,6 +3184,19 @@ function OnboardingTurnosCliente() {
     [setFormData],
   )
 
+  const hasInitialized = useRef(false)
+
+  useEffect(() => {
+    if (hasInitialized.current) {
+      console.log("[v0] useEffect: Already initialized, skipping")
+      return
+    }
+
+    console.log("[v0] useEffect: Initializing for the first time")
+    hasInitialized.current = true
+    initializeOnboarding()
+  }, []) // Array de dependencias vacío para ejecutar solo una vez al montar
+
   // CHANGE: Updated initialization logic to use token from URL
   const initializeOnboarding = async () => {
     setIsInitialized(false)
@@ -3339,33 +3352,11 @@ function OnboardingTurnosCliente() {
       }
     }
 
-    // Mark initialization as complete
+    // Set initialization as complete
     console.log("[v0] Setting isInitialized to true")
     setIsInitialized(true)
     console.log("[v0] isInitialized set to true")
   }
-
-  useEffect(() => {
-    initializeOnboarding()
-  }, [
-    toast,
-    setFormData,
-    setCurrentStep,
-    setNavigationHistory,
-    setOnboardingId,
-    setIdZoho,
-    setGrupos,
-    setTrabajadores,
-    ensureGrupoByName,
-    steps, // Added steps as dependency
-    formData, // Added formData to ensure correct state update
-    // The following are needed because they are used within the effect
-    isFieldPrefilled,
-    trackFieldChange,
-    isFieldEdited,
-    setEmpresa,
-    DEFAULT_TURNOS, // Added DEFAULT_TURNOS
-  ]) // Dependencies for effect
 
   const handleFinalizar = useCallback(async () => {
     setIsSubmitting(true)
