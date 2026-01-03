@@ -54,7 +54,7 @@ const steps = [
 const PRIMER_PASO = 0
 
 // Días de la semana
-const DIAS = ["L", "M", "X", "J", "V", "S", "D"]
+const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
 // Define default turns (added because DEFAULT_TURNOS was undeclared)
 const DEFAULT_TURNOS = [
