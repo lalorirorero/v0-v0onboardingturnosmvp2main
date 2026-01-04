@@ -4110,33 +4110,179 @@ function OnboardingTurnosCliente() {
     }
   }
 
-  const handleWorkersDecision = (decision: "now" | "later") => {
+  // CHANGE: Added async to handleWorkersDecision and handleConfigurationDecision
+  const handleWorkersDecision = async (decision: "now" | "later") => {
     const loadNow = decision === "now"
-    setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
+    const updatedFormData = { ...formData, loadWorkersNow: loadNow }
+    setFormData(updatedFormData)
 
+    // Determinar el siguiente paso
+    const nextStep = loadNow ? currentStep + 1 : 6 // Si carga ahora va al paso 5, si no va al paso 6
+    const newHistory = [...navigationHistory, nextStep]
+
+    // Guardar decisión en BD y enviar a Zoho
+    if (onboardingId) {
+      try {
+        console.log("[v0] handleWorkersDecision: Guardando decisión en BD...")
+
+        const dataToSave = {
+          formData: updatedFormData,
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+        }
+
+        // Guardar en BD
+        const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSave),
+        })
+
+        // Enviar a Zoho en paralelo
+        const zohoPayload = {
+          accion: "progreso",
+          eventType: "progress",
+          id_zoho: idZoho,
+          fechaHoraEnvio: new Date().toISOString(),
+          formData: updatedFormData,
+          metadata: {
+            empresaRut: updatedFormData.empresa.rut || "Sin RUT",
+            empresaNombre:
+              updatedFormData.empresa.razonSocial || updatedFormData.empresa.nombreFantasia || "Sin nombre",
+            pasoActual: nextStep,
+            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            totalPasos: steps.length,
+            porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
+            decision: loadNow ? "Cargar trabajadores ahora" : "Cargar trabajadores en capacitación",
+          },
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+        }
+
+        const zohoPromise = fetch("/api/submit-to-zoho", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.JSON.stringify(zohoPayload),
+        })
+
+        const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
+
+        if (dbResponse.ok) {
+          console.log("[v0] handleWorkersDecision: ✅ Decisión guardada en BD")
+        } else {
+          console.error("[v0] handleWorkersDecision: Error guardando en BD", await dbResponse.text())
+        }
+
+        if (zohoResponse.ok) {
+          console.log("[v0] handleWorkersDecision: ✅ Decisión enviada a Zoho")
+        } else {
+          console.warn("[v0] handleWorkersDecision: ⚠️ No se pudo enviar a Zoho")
+        }
+      } catch (error) {
+        console.error("[v0] handleWorkersDecision: Error:", error)
+      }
+    }
+
+    // Navegar al siguiente paso
     if (loadNow) {
-      goNext() // Proceed to the TrabajadoresStep
+      setCurrentStep(nextStep)
+      setNavigationHistory(newHistory)
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     } else {
-      // Skip TrabajadoresStep and go directly to the Configuration DecisionStep
-      setCurrentStep(6) // Corresponds to DecisionStep
+      setCurrentStep(6)
       setNavigationHistory((prev) => [...prev, 6])
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     }
   }
 
-  const handleConfigurationDecision = (decision: "now" | "later") => {
+  const handleConfigurationDecision = async (decision: "now" | "later") => {
     const configureNow = decision === "now"
-    setFormData((prev) => ({ ...prev, configureNow: configureNow }))
+    const updatedFormData = { ...formData, configureNow: configureNow }
+    setFormData(updatedFormData)
 
+    // Determinar el siguiente paso
+    const nextStep = configureNow ? currentStep + 1 : 10 // Si configura ahora va al paso 7, si no va al paso 10
+    const newHistory = configureNow ? [...navigationHistory, nextStep] : [...navigationHistory.slice(0, -1), 10]
+
+    // Guardar decisión en BD y enviar a Zoho
+    if (onboardingId) {
+      try {
+        console.log("[v0] handleConfigurationDecision: Guardando decisión en BD...")
+
+        const dataToSave = {
+          formData: updatedFormData,
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+        }
+
+        // Guardar en BD
+        const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSave),
+        })
+
+        // Enviar a Zoho en paralelo
+        const zohoPayload = {
+          accion: "progreso",
+          eventType: "progress",
+          id_zoho: idZoho,
+          fechaHoraEnvio: new Date().toISOString(),
+          formData: updatedFormData,
+          metadata: {
+            empresaRut: updatedFormData.empresa.rut || "Sin RUT",
+            empresaNombre:
+              updatedFormData.empresa.razonSocial || updatedFormData.empresa.nombreFantasia || "Sin nombre",
+            pasoActual: nextStep,
+            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            totalPasos: steps.length,
+            porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
+            decision: configureNow ? "Configurar turnos ahora" : "Configurar turnos en capacitación",
+          },
+          currentStep: nextStep,
+          navigationHistory: newHistory,
+          estado: "en_progreso",
+        }
+
+        const zohoPromise = fetch("/api/submit-to-zoho", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(zohoPayload),
+        })
+
+        const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
+
+        if (dbResponse.ok) {
+          console.log("[v0] handleConfigurationDecision: ✅ Decisión guardada en BD")
+        } else {
+          console.error("[v0] handleConfigurationDecision: Error guardando en BD", await dbResponse.text())
+        }
+
+        if (zohoResponse.ok) {
+          console.log("[v0] handleConfigurationDecision: ✅ Decisión enviada a Zoho")
+        } else {
+          console.warn("[v0] handleConfigurationDecision: ⚠️ No se pudo enviar a Zoho")
+        }
+      } catch (error) {
+        console.error("[v0] handleConfigurationDecision: Error:", error)
+      }
+    }
+
+    // Navegar al siguiente paso
     if (configureNow) {
-      goNext() // Proceed to TurnosStep
+      setCurrentStep(nextStep)
+      setNavigationHistory(newHistory)
+      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
     } else {
-      // Skip Turnos, Planificaciones, Asignaciones and go to Resumen
       setCurrentStep(10)
-      setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
+      setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
     }
   }
+  // </CHANGE>
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
