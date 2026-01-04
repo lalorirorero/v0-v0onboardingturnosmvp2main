@@ -4110,31 +4110,81 @@ function OnboardingTurnosCliente() {
     }
   }
 
-  const handleWorkersDecision = (decision: "now" | "later") => {
+  const persistDecision = useCallback(
+    async (nextStep: number, updatedFormData: FormData, newHistory: number[]) => {
+      if (!onboardingId) {
+        console.warn("[v0] persistDecision: No hay onboardingId, no se guardó en BD")
+        return
+      }
+
+      const dataToSave = {
+        formData: updatedFormData,
+        currentStep: nextStep,
+        navigationHistory: newHistory,
+        estado: "en_progreso",
+        trabajadores: trabajadores,
+        empresa: { ...updatedFormData.empresa, grupos: grupos },
+        turnos: updatedFormData.turnos,
+        planificaciones: updatedFormData.planificaciones,
+        asignaciones: updatedFormData.asignaciones,
+      }
+
+      try {
+        const response = await fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSave),
+        })
+
+        if (response.ok) {
+          console.log(`[v0] persistDecision: ✅ Decisión guardada en BD para paso ${nextStep}`)
+        } else {
+          console.error("[v0] persistDecision: ❌ Error al guardar decisión en BD", await response.text())
+        }
+      } catch (error) {
+        console.error("[v0] persistDecision: ❌ Error de red al guardar decisión", error)
+      }
+    },
+    [grupos, onboardingId, trabajadores],
+  )
+
+  const handleWorkersDecision = async (decision: "now" | "later") => {
     const loadNow = decision === "now"
-    setFormData((prev) => ({ ...prev, loadWorkersNow: loadNow }))
+    const updatedFormData = { ...formData, loadWorkersNow: loadNow }
+    setFormData(updatedFormData)
 
     if (loadNow) {
-      goNext() // Proceed to the TrabajadoresStep
+      await goNext() // Proceed to the TrabajadoresStep (and persist)
     } else {
       // Skip TrabajadoresStep and go directly to the Configuration DecisionStep
-      setCurrentStep(6) // Corresponds to DecisionStep
-      setNavigationHistory((prev) => [...prev, 6])
+      const nextStep = 6 // Corresponds to DecisionStep
+      const newHistory = [...navigationHistory, nextStep]
+
+      setCurrentStep(nextStep)
+      setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+
+      await persistDecision(nextStep, updatedFormData, newHistory)
     }
   }
 
-  const handleConfigurationDecision = (decision: "now" | "later") => {
+  const handleConfigurationDecision = async (decision: "now" | "later") => {
     const configureNow = decision === "now"
-    setFormData((prev) => ({ ...prev, configureNow: configureNow }))
+    const updatedFormData = { ...formData, configureNow }
+    setFormData(updatedFormData)
 
     if (configureNow) {
-      goNext() // Proceed to TurnosStep
+      await goNext() // Proceed to TurnosStep (and persist)
     } else {
       // Skip Turnos, Planificaciones, Asignaciones and go to Resumen
-      setCurrentStep(10)
-      setNavigationHistory((prev) => [...prev.slice(0, -1), 10])
+      const nextStep = 10
+      const newHistory = [...navigationHistory.slice(0, -1), nextStep]
+
+      setCurrentStep(nextStep)
+      setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...new Set([...prev, currentStep, 7, 8, 9])])
+
+      await persistDecision(nextStep, updatedFormData, newHistory)
     }
   }
 
