@@ -40,8 +40,8 @@ const steps = [
   { id: 0, label: "Bienvenida", description: "Comienza aquí" },
   { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
   { id: 2, label: "Empresa", description: "Datos base de la empresa" },
-  { id: 3, label: "Admin", description: "Encargado de la plataforma" },
-  { id: 4, label: "Decisión", description: "¿Cargar trabajadores?" }, // Actualizar array de steps
+  { id: 3, label: "Administrador principal", description: "Quién administrará la plataforma" },
+  { id: 4, label: "Carga de trabajadores", description: "Elige cómo agregar a tu equipo" }, // Actualizar array de steps
   { id: 5, label: "Trabajadores", description: "Listado inicial" },
   { id: 6, label: "Configuración", description: "Decidir qué configurar" },
   { id: 7, label: "Turnos", description: "Definición de turnos" },
@@ -4303,7 +4303,8 @@ function OnboardingTurnosCliente() {
               <h3 className="text-lg font-semibold text-slate-900">¡Bienvenido de vuelta!</h3>
             </div>
             <p className="mb-6 text-sm text-slate-600">
-              Continuarás desde el paso <strong>"{resumeStepName}"</strong>. Tus datos anteriores han sido guardados.
+              Retomaremos tu configuración en <strong>"{resumeStepName}"</strong> para que continúes justo donde la dejaste.
+              Tus datos previos siguen guardados y los podrás revisar antes de avanzar.
             </p>
             <button
               onClick={() => setShowResumeModal(false)}
