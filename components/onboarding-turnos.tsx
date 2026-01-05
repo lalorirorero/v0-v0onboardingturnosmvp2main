@@ -43,7 +43,7 @@ const steps = [
   { id: 3, label: "Administrador principal", description: "Quién administrará la plataforma" },
   { id: 4, label: "Carga de trabajadores", description: "Elige cómo agregar a tu equipo" }, // Actualizar array de steps
   { id: 5, label: "Trabajadores", description: "Listado inicial" },
-  { id: 6, label: "Configuración", description: "Decidir qué configurar" },
+  { id: 6, label: "Configuración de Turnos", description: "Decidir qué configurar" },
   { id: 7, label: "Turnos", description: "Definición de turnos" },
   { id: 8, label: "Planificaciones", description: "Tipos de planificación semanal" },
   { id: 9, label: "Asignaciones", description: "Asignar planificaciones a trabajadores" },
