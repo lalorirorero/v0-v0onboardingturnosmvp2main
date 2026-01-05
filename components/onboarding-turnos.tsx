@@ -867,19 +867,43 @@ const TrabajadoresStep = ({
       })
       return
     }
+ const parsedLines = lines
+      .map((line) => line.split(/\t|;|,/).map((c) => c.trim()))
+      .filter((cols) => cols.some((c) => c.length > 0))
+      .filter((cols) => {
+        const first = (cols[0] || "").toLowerCase()
+        const second = (cols[1] || "").toLowerCase()
+        const fifth = (cols[4] || "").toLowerCase()
+        const looksLikeHeader =
+          first.includes("rut") || second.includes("correo") || fifth.includes("grupo") || first.includes("apellido")
+        return !looksLikeHeader
+      })
 
+    if (parsedLines.length === 0) {
+      setBulkStatus({ total: 0, added: 0, error: "No se detectaron filas válidas para procesar." })
+      return
+    }
+
+    if (parsedLines.length > MAX_ROWS) {
+      setBulkStatus({
+        total: parsedLines.length,
+        added: 0,
+        error: `Límite excedido. Máximo ${MAX_ROWS} filas por lote. Detectadas ${parsedLines.length} filas.`,
+      })
+      return
+    }
     const nombreToId = new Map()
 
-    const nuevos = lines.map((line, index) => {
-      const cols = line.split(/\t|;|,/)
-      const rutCompleto = (cols[0] || "").trim()
-      const correoPersonal = (cols[1] || "").trim()
-      const nombres = (cols[2] || "").trim()
-      const apellidos = (cols[3] || "").trim()
-      const grupoNombre = (cols[4] || "").trim()
-      const telefono1 = (cols[5] || "").trim()
-      const telefono2 = (cols[6] || "").trim()
-      const telefono3 = (cols[7] || "").trim()
+      const nuevos = parsedLines.map((cols, index) => {
+      const rutCompleto = cols[0] || ""
+      const correoPersonal = cols[1] || ""
+      const nombres = cols[2] || ""
+      const apellidos = cols[3] || ""
+      const grupoNombre = cols[4] || ""
+      const telefono1 = cols[5] || ""
+      const telefono2 = cols[6] || ""
+      const telefono3 = cols[7] || ""
+
 
       const nombreCompleto = `${nombres} ${apellidos}`.trim()
 
