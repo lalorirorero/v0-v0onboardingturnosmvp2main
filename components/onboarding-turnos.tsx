@@ -3940,7 +3940,15 @@ function OnboardingTurnosCliente() {
           <>
             <AsignacionStep
               asignaciones={formData.asignaciones}
-              setAsignaciones={(newAsignaciones) => setFormData((prev) => ({ ...prev, asignaciones: newAsignaciones }))}
+                            setAsignaciones={(newAsignaciones) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  asignaciones:
+                    typeof newAsignaciones === "function"
+                      ? newAsignaciones(prev.asignaciones)
+                      : newAsignaciones,
+                }))
+              }
               trabajadores={trabajadores} // Use the state variable directly
               planificaciones={formData.planificaciones}
               grupos={formData.empresa.grupos}
