@@ -3789,7 +3789,7 @@ function OnboardingTurnosCliente() {
 
     switch (currentStep) {
       case 0:
-        return <BienvenidaMarketingStep onContinue={goNext} nombreEmpresa={formData.empresa.nombreFantasia} />
+        return <BienvenidaMarketingStep onContinue={goNext} nombreEmpresa={formData.empresa.razonSocial} />
       case 1:
         // CHANGE: Corrected step numbering and component for case 1
         return (
