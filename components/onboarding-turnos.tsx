@@ -2795,7 +2795,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
           <CheckCircle2 className="w-8 h-8 text-slate-600" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Antes de finalizar</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Antes de comenzar</h1>
         <p className="text-slate-600 max-w-2xl mx-auto">
           Te explicamos brevemente qué información te pediremos para configurar tu plataforma.
         </p>
