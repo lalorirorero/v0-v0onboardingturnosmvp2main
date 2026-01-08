@@ -851,6 +851,9 @@ const TrabajadoresStep = ({
   const MAX_ROWS = 500
   const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here
 
+  // Create a ref for the group ID counter
+  const grupoIdCounterRef = useRef(Date.now())
+
   useEffect(() => {
     const lines = bulkText
       .split(/\r?\n/)
@@ -867,7 +870,23 @@ const TrabajadoresStep = ({
       })
       return
     }
- const parsedLines = lines
+
+    console.log("[v0] === LIMPIANDO GRUPOS PREVIOS ===")
+    console.log("[v0] Grupos antes de limpiar:", grupos.length)
+
+    // setGrupos automáticamente actualiza formData.empresa.grupos desde el componente padre
+    setGrupos([])
+
+    // Resetear el contador de IDs de grupos para empezar desde cero
+    grupoIdCounterRef.current = Date.now()
+
+    console.log("[v0] Grupos limpiados. Contador de IDs reseteado a:", grupoIdCounterRef.current)
+    // </CHANGE>
+
+    console.log("[v0] === INICIO DE PARSEO DE EXCEL ===")
+    console.log("[v0] Total de líneas detectadas:", lines.length)
+
+    const parsedLines = lines
       .map((line) => line.split(/\t|;|,/).map((c) => c.trim()))
       .filter((cols) => cols.some((c) => c.length > 0))
       .filter((cols) => {
@@ -878,6 +897,8 @@ const TrabajadoresStep = ({
           first.includes("rut") || second.includes("correo") || fifth.includes("grupo") || first.includes("apellido")
         return !looksLikeHeader
       })
+
+    console.log("[v0] Líneas parseadas (sin encabezados):", parsedLines.length)
 
     if (parsedLines.length === 0) {
       setBulkStatus({ total: 0, added: 0, error: "No se detectaron filas válidas para procesar." })
@@ -892,9 +913,21 @@ const TrabajadoresStep = ({
       })
       return
     }
+
     const nombreToId = new Map()
 
-      const nuevos = parsedLines.map((cols, index) => {
+    console.log(
+      "[v0] Primeras 5 líneas parseadas:",
+      parsedLines.slice(0, 5).map((cols) => ({
+        rut: cols[0],
+        correo: cols[1],
+        nombres: cols[2],
+        apellidos: cols[3],
+        grupo: cols[4],
+      })),
+    )
+
+    const nuevos = parsedLines.map((cols, index) => {
       const rutCompleto = cols[0] || ""
       const correoPersonal = cols[1] || ""
       const nombres = cols[2] || ""
@@ -904,7 +937,6 @@ const TrabajadoresStep = ({
       const telefono2 = cols[6] || ""
       const telefono3 = cols[7] || ""
 
-
       const nombreCompleto = `${nombres} ${apellidos}`.trim()
 
       let grupoId = ""
@@ -912,10 +944,12 @@ const TrabajadoresStep = ({
         const key = grupoNombre.trim().toLowerCase()
         if (nombreToId.has(key)) {
           grupoId = nombreToId.get(key)
+          console.log(`[v0] Grupo existente reutilizado: "${grupoNombre}" -> ID: ${grupoId}`)
         } else {
           const idObtenido = ensureGrupoByName(grupoNombre)
           grupoId = idObtenido
           nombreToId.set(key, idObtenido)
+          console.log(`[v0] Nuevo grupo creado: "${grupoNombre}" -> ID: ${idObtenido}`)
         }
       }
 
@@ -932,6 +966,19 @@ const TrabajadoresStep = ({
       }
     })
 
+    console.log("[v0] === RESUMEN DE PROCESAMIENTO ===")
+    console.log("[v0] Total de trabajadores procesados:", nuevos.length)
+    console.log("[v0] Grupos únicos detectados:", nombreToId.size)
+    console.log("[v0] Mapa de grupos:", Array.from(nombreToId.entries()))
+    console.log(
+      "[v0] Distribución de trabajadores por grupo:",
+      nuevos.reduce((acc, t) => {
+        const grupoNombre = parsedLines[nuevos.indexOf(t)][4] || "Sin grupo"
+        acc[grupoNombre] = (acc[grupoNombre] || 0) + 1
+        return acc
+      }, {}),
+    )
+
     setTrabajadores([...trabajadores, ...nuevos])
     setBulkStatus({
       total: lines.length,
@@ -939,7 +986,7 @@ const TrabajadoresStep = ({
       error: "",
     })
     setBulkText("")
-    setErrors({ byId: {}, global: [] }) // setErrors is undeclared, this needs to be fixed.
+    setErrors({ byId: {}, global: [] })
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
@@ -2913,8 +2960,6 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
   )
 }
 
-const turnos: any[] = [] // Placeholder for turnos
-
 // Define the Empresa type (assuming it's defined elsewhere or needs to be defined here)
 type Empresa = {
   razonSocial: string
@@ -3176,24 +3221,29 @@ function OnboardingTurnosCliente() {
     [formData, isFieldPrefilled],
   )
 
+  const grupoIdCounterRef = useRef(Date.now())
+
   const ensureGrupoByName = useCallback(
     (grupoNombre: string): string => {
       const trimmedNombre = grupoNombre.trim()
       const existingGrupo = grupos.find((g) => g.nombre.toLowerCase() === trimmedNombre.toLowerCase())
 
       if (existingGrupo) {
+        console.log(`[v0] Grupo existente reutilizado: "${trimmedNombre}" -> ID: ${existingGrupo.id}`)
         return String(existingGrupo.id)
       } else {
+        const newId = grupoIdCounterRef.current++
         const newGrupo = {
-          id: Date.now(), // Simple unique ID generation
+          id: newId,
           nombre: trimmedNombre,
-          descripcion: "", // Default empty description
+          descripcion: "",
         }
         setGrupos((prev) => [...prev, newGrupo])
         setFormData((prev) => ({
           ...prev,
           empresa: { ...prev.empresa, grupos: [...prev.empresa.grupos, newGrupo] },
         }))
+        console.log(`[v0] Nuevo grupo creado: "${trimmedNombre}" -> ID: ${newGrupo.id}`)
         return String(newGrupo.id)
       }
     },
@@ -3361,7 +3411,8 @@ function OnboardingTurnosCliente() {
 
     // Set default planning days if none are loaded
     if (formData.planificaciones.length > 0) {
-      const defaultTurnoId = DEFAULT_TURNOS.find((t) => t.nombre.toLowerCase() === "libre")?.id || DEFAULT_TURNOS[0]?.id // Fallback to the first default turn
+      const defaultTurno = DEFAULT_TURNOS.find((t) => t.nombre.toLowerCase() === "libre") || DEFAULT_TURNOS[0] // Fallback to the first default turn
+      const defaultTurnoId = defaultTurno ? defaultTurno.id : null // Ensure defaultTurno is not undefined
 
       if (defaultTurnoId !== undefined) {
         // Set default diasTurnos for existing planificaciones if they are empty
@@ -3474,7 +3525,7 @@ function OnboardingTurnosCliente() {
       // Navegar a página de agradecimiento
       setCurrentStep(11)
       setNavigationHistory(newHistory)
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])])
+      setCompletedSteps((prev) => [...prev, currentStep])
     } catch (error) {
       console.error("[v0] handleFinalizar: ❌ ERROR CRÍTICO:", error)
       toast({
@@ -3678,8 +3729,7 @@ function OnboardingTurnosCliente() {
         }
 
         if (zohoResponse.ok) {
-          const zohoResult = await zohoResponse.json()
-          console.log("[v0] goNext: ✅ Progreso enviado a Zoho:", zohoResult)
+          console.log("[v0] goNext: ✅ Progreso enviado a Zoho")
         } else {
           console.warn("[v0] goNext: ⚠️ No se pudo enviar progreso a Zoho (no bloqueante)")
         }
@@ -3692,8 +3742,6 @@ function OnboardingTurnosCliente() {
           variant: "destructive",
         })
       }
-    } else {
-      console.warn("[v0] goNext: No hay onboardingId, no se guardó en BD")
     }
 
     // If valid, proceed
@@ -3747,7 +3795,8 @@ function OnboardingTurnosCliente() {
         Atrás
       </button>
       {showNext &&
-        currentStep < steps.length - 1 && ( // Don't show "Next" on the last step before completion
+        currentStep < steps.length - 1 && // Don't show "Next" on the last step before completion
+        !(currentStep === 1 || currentStep === 4 || currentStep === 6) && ( // Hide Next for decision steps
           <button
             type="button"
             onClick={goNext}
@@ -3795,6 +3844,7 @@ function OnboardingTurnosCliente() {
         return (
           <>
             <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
+            <NavigationButtons />
           </>
         )
 
@@ -3936,8 +3986,7 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 9:
-        return (             
-          
+        return (
           <>
             <AsignacionStep
               asignaciones={formData.asignaciones}
@@ -3945,9 +3994,7 @@ function OnboardingTurnosCliente() {
                 setFormData((prev) => ({
                   ...prev,
                   asignaciones:
-                    typeof newAsignaciones === "function"
-                      ? newAsignaciones(prev.asignaciones)
-                      : newAsignaciones,
+                    typeof newAsignaciones === "function" ? newAsignaciones(prev.asignaciones) : newAsignaciones,
                 }))
               }
               trabajadores={trabajadores} // Use the state variable directly
@@ -3956,7 +4003,8 @@ function OnboardingTurnosCliente() {
               errorGlobal={validationErrors.join(" ")}
             />
             <NavigationButtons />
-          </>)
+          </>
+        )
       case 10: // Resumen
         return (
           <section className="space-y-6">
@@ -4032,7 +4080,7 @@ function OnboardingTurnosCliente() {
                   <h3 className="text-sm font-semibold text-slate-800">Grupos ({formData.empresa.grupos.length})</h3>
                   <ul>
                     {formData.empresa.grupos.map((grupo) => (
-                      <li key={grupo.id} className="mb-1 text-sm">
+                      <li key={grupo.id} className="mb-2 text-sm">
                         <strong>{grupo.nombre}</strong>
                         {grupo.descripcion && `: ${grupo.descripcion}`}
                       </li>
@@ -4196,7 +4244,7 @@ function OnboardingTurnosCliente() {
         const zohoPromise = fetch("/api/submit-to-zoho", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify(zohoPayload),
+          body: JSON.stringify(zohoPayload),
         })
 
         const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
@@ -4335,8 +4383,8 @@ function OnboardingTurnosCliente() {
               <h3 className="text-lg font-semibold text-slate-900">¡Bienvenido de vuelta!</h3>
             </div>
             <p className="mb-6 text-sm text-slate-600">
-              Retomaremos tu configuración en <strong>"{resumeStepName}"</strong> para que continúes justo donde la dejaste.
-              Tus datos previos siguen guardados y los podrás revisar antes de avanzar.
+              Retomaremos tu configuración en <strong>"{resumeStepName}"</strong> para que continúes justo donde la
+              dejaste. Tus datos previos siguen guardados y los podrás revisar antes de avanzar.
             </p>
             <button
               onClick={() => setShowResumeModal(false)}
