@@ -3705,7 +3705,7 @@ function OnboardingTurnosCliente() {
         const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify(dataToSave),
+          body: JSON.stringify(dataToSave),
         })
 
         // Enviar a Zoho en paralelo (mismo JSON que se guarda en BD)
@@ -3714,7 +3714,7 @@ function OnboardingTurnosCliente() {
           eventType: "progress",
           id_zoho: idZoho,
           fechaHoraEnvio: new Date().toISOString(),
-          formData: updatedFormData, // Use updatedFormData instead of formData
+          formData: updatedFormData,
           metadata: {
             empresaRut: formData.empresa.rut || "Sin RUT",
             empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
@@ -3733,7 +3733,7 @@ function OnboardingTurnosCliente() {
         const zohoPromise = fetch("/api/submit-to-zoho", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify(zohoPayload),
+          body: JSON.stringify(zohoPayload),
         })
 
         // Esperar ambas peticiones
