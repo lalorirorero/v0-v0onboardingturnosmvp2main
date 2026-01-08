@@ -987,7 +987,7 @@ const TrabajadoresStep = ({
     })
     setBulkText("")
     setErrors({ byId: {}, global: [] })
-  }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName]) // Added ensureGrupoByName to dependency array
+  }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
     const updated = trabajadores.map((t) => (t.id === id ? { ...t, [field]: value } : t))
@@ -2942,7 +2942,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
         >
           <ArrowLeft className="w-5 h-5" />
           Atrás
@@ -3447,8 +3447,21 @@ function OnboardingTurnosCliente() {
 
       const newHistory = [...navigationHistory, 11]
 
+      const updatedFormData = {
+        ...formData,
+        trabajadores: trabajadores, // Sync trabajadores from state
+        empresa: {
+          ...formData.empresa,
+          grupos: grupos, // Sync grupos from state
+        },
+      }
+
+      console.log("[v0] handleFinalizar: Trabajadores a guardar:", trabajadores.length)
+      console.log("[v0] handleFinalizar: Grupos a guardar:", grupos.length)
+      // </CHANGE>
+
       const dataToSave = {
-        formData: formData,
+        formData: updatedFormData, // Use updatedFormData instead of formData
         currentStep: 11,
         navigationHistory: newHistory,
         estado: "completado",
@@ -3480,7 +3493,7 @@ function OnboardingTurnosCliente() {
         eventType: "complete",
         id_zoho: idZoho,
         fechaHoraEnvio: new Date().toISOString(),
-        formData: formData,
+        formData: updatedFormData,
         metadata: {
           empresaRut: formData.empresa.rut || "Sin RUT",
           empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
@@ -3668,24 +3681,31 @@ function OnboardingTurnosCliente() {
           onboardingId,
         })
 
+        const updatedFormData = {
+          ...formData,
+          trabajadores: trabajadores, // Sync trabajadores from state
+          empresa: {
+            ...formData.empresa,
+            grupos: grupos, // Sync grupos from state
+          },
+        }
+
+        console.log("[v0] goNext: Trabajadores a guardar:", trabajadores.length)
+        console.log("[v0] goNext: Grupos a guardar:", grupos.length)
+        // </CHANGE>
+
         const dataToSave = {
-          formData: formData,
+          formData: updatedFormData, // Use updatedFormData instead of formData
           currentStep: nextStep,
           navigationHistory: newHistory,
           estado: "en_progreso",
-          // Make sure to save the updated groups and workers too
-          trabajadores: trabajadores,
-          empresa: { ...formData.empresa, grupos: grupos },
-          turnos: formData.turnos, // Ensure turns are saved
-          planificaciones: formData.planificaciones, // Ensure planificaciones are saved
-          asignaciones: formData.asignaciones, // Ensure asignaciones are saved
         }
 
         // Guardar en BD
         const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
+          body: JSON.JSON.stringify(dataToSave),
         })
 
         // Enviar a Zoho en paralelo (mismo JSON que se guarda en BD)
@@ -3694,7 +3714,7 @@ function OnboardingTurnosCliente() {
           eventType: "progress",
           id_zoho: idZoho,
           fechaHoraEnvio: new Date().toISOString(),
-          formData: formData,
+          formData: updatedFormData, // Use updatedFormData instead of formData
           metadata: {
             empresaRut: formData.empresa.rut || "Sin RUT",
             empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
@@ -3702,6 +3722,8 @@ function OnboardingTurnosCliente() {
             pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
+            totalTrabajadores: trabajadores.length, // Add worker count to metadata
+            totalGrupos: grupos.length, // Add group count to metadata
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
@@ -3711,7 +3733,7 @@ function OnboardingTurnosCliente() {
         const zohoPromise = fetch("/api/submit-to-zoho", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(zohoPayload),
+          body: JSON.JSON.stringify(zohoPayload),
         })
 
         // Esperar ambas peticiones
