@@ -842,18 +842,41 @@ const TrabajadoresStep = ({
   setTrabajadores,
   grupos,
   setGrupos,
-  errorGlobal,
   ensureGrupoByName, // Agregado prop ensureGrupoByName
+  errorGlobal,
+  fieldErrors,
+  formData,
 }) => {
+  const grupoIdCounter = useRef(Date.now())
+  const [isFirstMount, setIsFirstMount] = useState(true)
   const [bulkText, setBulkText] = useState("")
   const [showVideoModal, setShowVideoModal] = useState(false) // Renamed from showExcelVideo
   const [bulkStatus, setBulkStatus] = useState({ total: 0, added: 0, error: "" })
   const MAX_ROWS = 500
-  const [errors, setErrors] = useState({ byId: {}, global: [] }) // Declare errors here
+  const [localFieldErrors, setLocalFieldErrors] = useState({ byId: {}, global: [] }) // Declare errors here
 
-  // Create a ref for the group ID counter
-  const grupoIdCounterRef = useRef(Date.now())
+  useEffect(() => {
+    if (isFirstMount) {
+      setIsFirstMount(false)
 
+      // Solo limpiar si NO hay grupos ni trabajadores cargados desde BD
+      if (grupos.length === 0 && trabajadores.length === 0) {
+        console.log("[v0] TrabajadoresStep mounted - Limpiando grupos previos (onboarding nuevo)")
+        setGrupos([])
+        grupoIdCounter.current = Date.now()
+      } else {
+        console.log(
+          "[v0] TrabajadoresStep mounted - Manteniendo grupos existentes:",
+          grupos.length,
+          "grupos y",
+          trabajadores.length,
+          "trabajadores",
+        )
+      }
+    }
+  }, [isFirstMount, grupos.length, trabajadores.length, setGrupos])
+
+  // CHANGE: Updated useEffect to use ensureGrupoByName and clear groups
   useEffect(() => {
     const lines = bulkText
       .split(/\r?\n/)
@@ -878,9 +901,9 @@ const TrabajadoresStep = ({
     setGrupos([])
 
     // Resetear el contador de IDs de grupos para empezar desde cero
-    grupoIdCounterRef.current = Date.now()
+    grupoIdCounter.current = Date.now()
 
-    console.log("[v0] Grupos limpiados. Contador de IDs reseteado a:", grupoIdCounterRef.current)
+    console.log("[v0] Grupos limpiados. Contador de IDs reseteado a:", grupoIdCounter.current)
     // </CHANGE>
 
     console.log("[v0] === INICIO DE PARSEO DE EXCEL ===")
@@ -986,16 +1009,16 @@ const TrabajadoresStep = ({
       error: "",
     })
     setBulkText("")
-    setErrors({ byId: {}, global: [] })
+    setLocalFieldErrors({ byId: {}, global: [] })
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
     const updated = trabajadores.map((t) => (t.id === id ? { ...t, [field]: value } : t))
     setTrabajadores(updated)
 
-    if (errors?.byId?.[id]?.[field]) {
+    if (localFieldErrors?.byId?.[id]?.[field]) {
       // errors is undeclared, this needs to be fixed.
-      const newById = { ...(errors.byId || {}) }
+      const newById = { ...(localFieldErrors.byId || {}) }
       const row = { ...(newById[id] || {}) }
       delete row[field]
       if (Object.keys(row).length === 0) {
@@ -1003,7 +1026,7 @@ const TrabajadoresStep = ({
       } else {
         newById[id] = row
       }
-      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
+      setLocalFieldErrors({ ...(localFieldErrors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
     }
   }
 
@@ -1031,15 +1054,15 @@ const TrabajadoresStep = ({
       return
     }
     setTrabajadores(trabajadores.filter((t) => t.id !== id))
-    if (errors?.byId?.[id]) {
+    if (localFieldErrors?.byId?.[id]) {
       // errors is undeclared, this needs to be fixed.
-      const newById = { ...(errors.byId || {}) }
+      const newById = { ...(localFieldErrors.byId || {}) }
       delete newById[id]
-      setErrors({ ...(errors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
+      setLocalFieldErrors({ ...(localFieldErrors || { byId: {}, global: [] }), byId: newById }) // setErrors is undeclared, this needs to be fixed.
     }
   }
 
-  const globalErrors = errors?.global || []
+  const globalErrors = localFieldErrors?.global || []
 
   return (
     <section className="space-y-4">
@@ -1240,7 +1263,7 @@ const TrabajadoresStep = ({
           </thead>
           <tbody>
             {trabajadores.map((t) => {
-              const rowErrors = (errors && errors.byId && errors.byId[t.id]) || {}
+              const rowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
               const isAdmin = t.tipo === "administrador"
               return (
                 <tr key={t.id} className={`border-t border-slate-100 ${isAdmin ? "bg-blue-50" : ""}`}>
@@ -3390,19 +3413,27 @@ function OnboardingTurnosCliente() {
     }
 
     if (token && formData?.trabajadores) {
+      console.log("[v0] Inicialización: Cargando trabajadores desde BD:", formData.trabajadores.length)
       setTrabajadores(formData.trabajadores)
     }
 
+    if (token && formData?.empresa?.grupos) {
+      console.log("[v0] Inicialización: Cargando grupos desde BD:", formData.empresa.grupos.length)
+      setGrupos(formData.empresa.grupos)
+    }
+
     // If data was loaded, ensure workers and groups are in sync
-    if (token) {
+    if (token && formData?.trabajadores && formData?.trabajadores.length > 0) {
+      console.log("[v0] Inicialización: Verificando sincronización de trabajadores con grupos")
       updateTrabajadoresAndGrupos(
-        formData?.trabajadores || [], // Use loaded workers if available
+        formData.trabajadores, // Use loaded workers
         setTrabajadores,
-        formData?.empresa?.grupos || [], // Use loaded groups if available
+        formData.empresa?.grupos || [], // Use loaded groups
         setGrupos,
         ensureGrupoByName,
       )
     }
+    // </CHANGE>
 
     // Set default turns if none are loaded
     if (formData.turnos.length === 0) {
@@ -3733,7 +3764,7 @@ function OnboardingTurnosCliente() {
         const zohoPromise = fetch("/api/submit-to-zoho", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(zohoPayload),
+          body: JSON.JSON.stringify(zohoPayload),
         })
 
         // Esperar ambas peticiones
@@ -3976,6 +4007,8 @@ function OnboardingTurnosCliente() {
                 }))
               }
               errorGlobal={validationErrors.join(" ")}
+              fieldErrors={fieldErrors} // Pass fieldErrors down
+              formData={formData} // Pass formData down
               ensureGrupoByName={ensureGrupoByName}
             />
             <NavigationButtons />
@@ -4007,26 +4040,37 @@ function OnboardingTurnosCliente() {
             <NavigationButtons />
           </>
         )
-      case 9:
-        return (
-          <>
-            <AsignacionStep
-              asignaciones={formData.asignaciones}
-              setAsignaciones={(newAsignaciones) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  asignaciones:
-                    typeof newAsignaciones === "function" ? newAsignaciones(prev.asignaciones) : newAsignaciones,
-                }))
-              }
-              trabajadores={trabajadores} // Use the state variable directly
-              planificaciones={formData.planificaciones}
-              grupos={formData.empresa.grupos}
-              errorGlobal={validationErrors.join(" ")}
-            />
-            <NavigationButtons />
-          </>
+      case 9: {
+        console.log("[v0] Renderizando AsignacionStep - Trabajadores:", trabajadores.length, "Grupos:", grupos.length)
+        console.log(
+          "[v0] Primeros 3 trabajadores con grupoId:",
+          trabajadores.slice(0, 3).map((t) => ({
+            nombre: t.nombre,
+            grupoId: t.grupoId,
+          })),
         )
+        console.log(
+          "[v0] Grupos disponibles:",
+          grupos.map((g) => ({ id: g.id, nombre: g.nombre })),
+        )
+
+        return (
+          <AsignacionStep
+            asignaciones={formData.asignaciones}
+            setAsignaciones={(updater) =>
+              setFormData((prev) => ({
+                ...prev,
+                asignaciones: typeof updater === "function" ? updater(prev.asignaciones) : updater,
+              }))
+            }
+            trabajadores={trabajadores}
+            planificaciones={formData.planificaciones}
+            grupos={grupos}
+            errorGlobal={validationErrors.join(" ")}
+          />
+        )
+      }
+
       case 10: // Resumen
         return (
           <section className="space-y-6">
