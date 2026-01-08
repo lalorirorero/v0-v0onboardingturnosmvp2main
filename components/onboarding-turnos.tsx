@@ -3936,11 +3936,12 @@ function OnboardingTurnosCliente() {
           </>
         )
       case 9:
-        return (
+        return (             
+          
           <>
             <AsignacionStep
               asignaciones={formData.asignaciones}
-                            setAsignaciones={(newAsignaciones) =>
+              setAsignaciones={(newAsignaciones) =>
                 setFormData((prev) => ({
                   ...prev,
                   asignaciones:
@@ -3955,8 +3956,7 @@ function OnboardingTurnosCliente() {
               errorGlobal={validationErrors.join(" ")}
             />
             <NavigationButtons />
-          </>
-        )
+          </>)
       case 10: // Resumen
         return (
           <section className="space-y-6">
