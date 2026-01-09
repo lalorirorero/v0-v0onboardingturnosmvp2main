@@ -2051,7 +2051,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         const tieneAsignacionValida = asignaciones.some(
           (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
         )
-        return t.grupoId === selectedGrupoId && !tieneAsignacionValida
+        return Number(t.grupoId) === selectedGrupoId && !tieneAsignacionValida
       })
     : trabajadores.filter((t) => {
         const tieneAsignacionValida = asignaciones.some(
@@ -2293,7 +2293,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             <tbody>
               {trabajadoresFiltrados.map((t) => {
                 const isSelected = selectedTrabajadoresIds.includes(t.id)
-                const grupo = grupos.find((g) => g.id === t.grupoId)
+                const grupo = grupos.find((g) => g.id === Number(t.grupoId))
                 return (
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="px-3 py-1 text-center">
