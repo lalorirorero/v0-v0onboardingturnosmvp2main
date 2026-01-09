@@ -997,6 +997,7 @@ const TrabajadoresStep = ({
         rut: rutCompleto,
         correo: correoPersonal,
         grupoId,
+        grupoNombre: grupoNombre,
         telefono1,
         telefono2,
         telefono3,
@@ -1028,7 +1029,14 @@ const TrabajadoresStep = ({
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
-    const updated = trabajadores.map((t) => (t.id === id ? { ...t, [field]: value } : t))
+    const updated = trabajadores.map((t) => {
+      if (t.id !== id) return t
+      if (field === "grupoId") {
+        const grupo = grupos.find((g) => g.id === Number(value))
+        return { ...t, grupoId: value, grupoNombre: grupo?.nombre || "" }
+      }
+      return { ...t, [field]: value }
+    })
     setTrabajadores(updated)
 
     if (localFieldErrors?.byId?.[id]?.[field]) {
@@ -1054,6 +1062,7 @@ const TrabajadoresStep = ({
         rut: "",
         correo: "",
         grupoId: "",
+        grupoNombre: "",
         telefono1: "",
         telefono2: "",
         telefono3: "",
@@ -2051,7 +2060,13 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         const tieneAsignacionValida = asignaciones.some(
           (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
         )
-        return Number(t.grupoId) === selectedGrupoId && !tieneAsignacionValida
+        const grupoSeleccionado = grupos.find((g) => g.id === selectedGrupoId)
+        const matchesGrupoId = Number(t.grupoId) === selectedGrupoId
+        const matchesGrupoNombre =
+          grupoSeleccionado &&
+          t.grupoNombre &&
+          t.grupoNombre.trim().toLowerCase() === grupoSeleccionado.nombre.trim().toLowerCase()
+        return (matchesGrupoId || matchesGrupoNombre) && !tieneAsignacionValida
       })
     : trabajadores.filter((t) => {
         const tieneAsignacionValida = asignaciones.some(
@@ -2293,7 +2308,11 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             <tbody>
               {trabajadoresFiltrados.map((t) => {
                 const isSelected = selectedTrabajadoresIds.includes(t.id)
-                const grupo = grupos.find((g) => g.id === Number(t.grupoId))
+                const grupo =
+                  grupos.find((g) => g.id === Number(t.grupoId)) ||
+                  (t.grupoNombre
+                    ? grupos.find((g) => g.nombre?.trim().toLowerCase() === t.grupoNombre?.trim().toLowerCase())
+                    : undefined)
                 return (
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="px-3 py-1 text-center">
@@ -3077,6 +3096,7 @@ type Trabajador = {
   rut: string
   correo: string
   grupoId: string
+  grupoNombre?: string
   telefono1: string
   telefono2: string
   telefono3: string
