@@ -54,8 +54,73 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const supabase = await getSupabaseServerClient()
 
+    const { data: existingRow, error: existingError } = await supabase
+      .from("onboardings")
+      .select("datos_actuales")
+      .eq("id", id)
+      .single()
+
+    if (existingError) {
+      console.error("[v0] Error obteniendo onboarding para merge:", existingError)
+      return NextResponse.json({ success: false, error: "Onboarding no encontrado" }, { status: 404 })
+    }
+
+    const isNonEmptyArray = (value: unknown): value is unknown[] => Array.isArray(value) && value.length > 0
+
+    const shouldUseArray = (incoming: unknown, step: number, allowedSteps: number[]) => {
+      if (isNonEmptyArray(incoming)) return true
+      return Array.isArray(incoming) && allowedSteps.includes(step)
+    }
+
+    const mergeFormData = (existing: any, incoming: any, step: number) => {
+      const mergedEmpresa = {
+        ...(existing?.empresa || {}),
+        ...(incoming?.empresa || {}),
+      }
+
+      if (shouldUseArray(incoming?.empresa?.grupos, step, [5])) {
+        mergedEmpresa.grupos = incoming.empresa.grupos
+      } else if (Array.isArray(existing?.empresa?.grupos)) {
+        mergedEmpresa.grupos = existing.empresa.grupos
+      }
+
+      const merged = {
+        ...existing,
+        ...incoming,
+        empresa: mergedEmpresa,
+      }
+
+      if (shouldUseArray(incoming?.admins, step, [3])) merged.admins = incoming.admins
+      else if (Array.isArray(existing?.admins)) merged.admins = existing.admins
+
+      if (shouldUseArray(incoming?.trabajadores, step, [5])) merged.trabajadores = incoming.trabajadores
+      else if (Array.isArray(existing?.trabajadores)) merged.trabajadores = existing.trabajadores
+
+      if (shouldUseArray(incoming?.turnos, step, [7])) merged.turnos = incoming.turnos
+      else if (Array.isArray(existing?.turnos)) merged.turnos = existing.turnos
+
+      if (shouldUseArray(incoming?.planificaciones, step, [8])) merged.planificaciones = incoming.planificaciones
+      else if (Array.isArray(existing?.planificaciones)) merged.planificaciones = existing.planificaciones
+
+      if (shouldUseArray(incoming?.asignaciones, step, [9])) merged.asignaciones = incoming.asignaciones
+      else if (Array.isArray(existing?.asignaciones)) merged.asignaciones = existing.asignaciones
+
+      if (incoming?.configureNow === undefined && existing?.configureNow !== undefined) {
+        merged.configureNow = existing.configureNow
+      }
+
+      if (incoming?.loadWorkersNow === undefined && existing?.loadWorkersNow !== undefined) {
+        merged.loadWorkersNow = existing.loadWorkersNow
+      }
+
+      return merged
+    }
+
+    const mergedFormData = mergeFormData(existingRow?.datos_actuales || {}, formData, currentStep)
+
+
     const updateData: any = {
-      datos_actuales: formData,
+      datos_actuales: mergedFormData,
       ultimo_paso: currentStep,
       navigation_history: navigationHistory,
       fecha_ultima_actualizacion: new Date().toISOString(),
