@@ -4090,19 +4090,22 @@ function OnboardingTurnosCliente() {
         )
 
         return (
-          <AsignacionStep
-            asignaciones={formData.asignaciones}
-            setAsignaciones={(updater) =>
-              setFormData((prev) => ({
-                ...prev,
-                asignaciones: typeof updater === "function" ? updater(prev.asignaciones) : updater,
-              }))
-            }
-            trabajadores={trabajadores}
-            planificaciones={formData.planificaciones}
-            grupos={grupos}
-            errorGlobal={validationErrors.join(" ")}
-          />
+          <>
+            <AsignacionStep
+              asignaciones={formData.asignaciones}
+              setAsignaciones={(updater) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  asignaciones: typeof updater === "function" ? updater(prev.asignaciones) : updater,
+                }))
+              }
+              trabajadores={trabajadores}
+              planificaciones={formData.planificaciones}
+              grupos={grupos}
+              errorGlobal={validationErrors.join(" ")}
+            />
+            <NavigationButtons />
+          </>
         )
       }
 
