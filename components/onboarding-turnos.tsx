@@ -919,6 +919,9 @@ const TrabajadoresStep = ({
     grupoIdCounter.current = Date.now()
 
     console.log("[v0] Grupos limpiados. Contador de IDs reseteado a:", grupoIdCounter.current)
+    setValidationErrors([])
+    setFieldErrors({})
+    setNoAdminsError(false)
     // </CHANGE>
 
     console.log("[v0] === INICIO DE PARSEO DE EXCEL ===")
@@ -3739,6 +3742,9 @@ function OnboardingTurnosCliente() {
       })
       return
     }
+    setValidationErrors([])
+    setFieldErrors({})
+    setNoAdminsError(false)
     // </CHANGE>
 
     if (onboardingId) {
@@ -3867,9 +3873,12 @@ function OnboardingTurnosCliente() {
     if (navigationHistory.length <= 1) return // Cannot go back further than the first step
 
     const previousStep = navigationHistory[navigationHistory.length - 2]
+    setValidationErrors([])
+    setFieldErrors({})
+    setNoAdminsError(false)
     setNavigationHistory((prev) => prev.slice(0, -1)) // Remove current step from history
     setCurrentStep(previousStep)
-  }, [navigationHistory, setCurrentStep, setNavigationHistory])
+  }, [navigationHistory, setCurrentStep, setNavigationHistory, setFieldErrors, setValidationErrors, setNoAdminsError])
 
   // Helper to render navigation buttons
   const NavigationButtons = ({ showNext = true }: { showNext?: boolean }) => (
