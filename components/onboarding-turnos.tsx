@@ -3932,7 +3932,6 @@ function OnboardingTurnosCliente() {
         return (
           <>
             <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
-            <NavigationButtons />
           </>
         )
 
