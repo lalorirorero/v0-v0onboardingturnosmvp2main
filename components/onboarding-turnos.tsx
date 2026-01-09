@@ -68,6 +68,21 @@ const TOOLTIP_GRUPO =
 const TOOLTIP_PERIODO_PLAN =
   "Estas fechas indican el periodo de vigencia de la planificación asignada a cada trabajador (por ejemplo, del 01-10 al 31-10)."
 
+const stringifyPayload = (value: unknown, pretty = false) => {
+  const json = typeof globalThis !== "undefined" ? globalThis.JSON : undefined
+  const space = pretty ? 2 : undefined
+
+  if (json && typeof json.stringify === "function") {
+    return json.stringify(value, null, space)
+  }
+
+  if (typeof JSON !== "undefined" && typeof JSON.stringify === "function") {
+    return JSON.stringify(value, null, space)
+  }
+
+  throw new Error("JSON.stringify no disponible en este entorno.")
+}
+
 // Helpers de validación
 const normalizeRut = (rut) => {
   if (!rut) return ""
@@ -3511,7 +3526,7 @@ function OnboardingTurnosCliente() {
         const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
+          body: stringifyPayload(dataToSave),
         })
 
         await dbPromise
@@ -3540,13 +3555,13 @@ function OnboardingTurnosCliente() {
         excelFile: null,
       }
 
-      console.log("[v0] handleFinalizar: Payload para Zoho:", JSON.stringify(zohoPayload, null, 2))
+      console.log("[v0] handleFinalizar: Payload para Zoho:", stringifyPayload(zohoPayload, true))
       console.log("[v0] handleFinalizar: Enviando a /api/submit-to-zoho...")
 
       const zohoResponse = await fetch("/api/submit-to-zoho", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(zohoPayload),
+        body: stringifyPayload(zohoPayload),
       })
 
       console.log("[v0] handleFinalizar: Status del envío:", zohoResponse.status, zohoResponse.statusText)
@@ -3736,7 +3751,7 @@ function OnboardingTurnosCliente() {
         const dbPromise = fetch(`/api/onboarding/${onboardingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
+          body: stringifyPayload(dataToSave),
         })
 
         // Enviar a Zoho en paralelo (mismo JSON que se guarda en BD)
@@ -3764,7 +3779,7 @@ function OnboardingTurnosCliente() {
         const zohoPromise = fetch("/api/submit-to-zoho", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.JSON.stringify(zohoPayload),
+          body: stringifyPayload(zohoPayload),
         })
 
         // Esperar ambas peticiones
