@@ -3334,6 +3334,7 @@ function OnboardingTurnosCliente() {
   // CHANGE: Updated initialization logic to use token from URL
   const initializeOnboarding = async () => {
     setIsInitialized(false)
+    let loadedFormData: OnboardingFormData | null = null
 
     console.log("[v0] Initial load: INICIO")
 
@@ -3366,8 +3367,11 @@ function OnboardingTurnosCliente() {
             if (result.formData) {
               console.log("[v0] Cargando formData:", result.formData)
               // Ensure default turns are present if not in loaded data
-              result.formData.turnos = result.formData.turnos?.length ? result.formData.turnos : DEFAULT_TURNOS
-              setFormData(result.formData)
+              loadedFormData = {
+                ...result.formData,
+                turnos: result.formData.turnos?.length ? result.formData.turnos : DEFAULT_TURNOS,
+              }
+              setFormData(loadedFormData)
             }
 
             // Load last step
@@ -3428,9 +3432,11 @@ function OnboardingTurnosCliente() {
     }
 
     // Initialize groups and workers
-    if (token && formData?.empresa?.grupos) {
+    const hydratedFormData = loadedFormData || formData
+    if (token && hydratedFormData?.empresa?.grupos) {
       // If data was loaded with a token, use its groups
-      setGrupos(formData.empresa.grupos)
+      console.log("[v0] Inicializacion: Cargando grupos desde BD:", hydratedFormData.empresa.grupos.length)
+      setGrupos(hydratedFormData.empresa.grupos)
     } else {
       // Otherwise, set default groups for a new onboarding
       const defaultGroups = [
@@ -3447,23 +3453,18 @@ function OnboardingTurnosCliente() {
       }
     }
 
-    if (token && formData?.trabajadores) {
-      console.log("[v0] Inicialización: Cargando trabajadores desde BD:", formData.trabajadores.length)
-      setTrabajadores(formData.trabajadores)
-    }
-
-    if (token && formData?.empresa?.grupos) {
-      console.log("[v0] Inicialización: Cargando grupos desde BD:", formData.empresa.grupos.length)
-      setGrupos(formData.empresa.grupos)
+    if (token && hydratedFormData?.trabajadores) {
+      console.log("[v0] Inicializacion: Cargando trabajadores desde BD:", hydratedFormData.trabajadores.length)
+      setTrabajadores(hydratedFormData.trabajadores)
     }
 
     // If data was loaded, ensure workers and groups are in sync
-    if (token && formData?.trabajadores && formData?.trabajadores.length > 0) {
-      console.log("[v0] Inicialización: Verificando sincronización de trabajadores con grupos")
+    if (token && hydratedFormData?.trabajadores && hydratedFormData?.trabajadores.length > 0) {
+      console.log("[v0] Inicializacion: Verificando sincronizacion de trabajadores con grupos")
       updateTrabajadoresAndGrupos(
-        formData.trabajadores, // Use loaded workers
+        hydratedFormData.trabajadores, // Use loaded workers
         setTrabajadores,
-        formData.empresa?.grupos || [], // Use loaded groups
+        hydratedFormData.empresa?.grupos || [], // Use loaded groups
         setGrupos,
         ensureGrupoByName,
       )
