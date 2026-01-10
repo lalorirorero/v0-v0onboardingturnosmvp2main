@@ -108,12 +108,38 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
   setExcelCell(sheet, "J25", "Col")
   setExcelCell(sheet, "C22", admin?.email || "")
 
-  setExcelCell(sheet, "J25", "Col")
-
   const turnos = payload.formData?.turnos || []
   const planificaciones = payload.formData?.planificaciones || []
   const asignaciones = payload.formData?.asignaciones || []
   const trabajadores = payload.formData?.trabajadores || []
+  const admins = payload.formData?.admins || []
+
+  const workerHeaderRowIndex = 25
+  const workerHeaderRow = sheet.getRow(workerHeaderRowIndex)
+  const cloneStyle = (style: ExcelJS.Style | undefined) =>
+    style ? (JSON.parse(JSON.stringify(style)) as ExcelJS.Style) : undefined
+  const headerStyles = Array.from({ length: 5 }, (_, idx) => cloneStyle(workerHeaderRow.getCell(2 + idx).style))
+
+  const adminRows = admins.length > 0 ? admins : [null]
+  const adminTableRows = [
+    [null, "Nombre", "RUT", "Email", "Telefono", "Cargo"],
+    ...adminRows.map((admin: any) => {
+      if (!admin) return [null, "Sin administradores", "", "", "", ""]
+      const adminNombre = [admin?.nombre, admin?.apellido].filter(Boolean).join(" ")
+      return [null, adminNombre, admin?.rut || "", admin?.email || "", admin?.telefono || "", admin?.cargo || ""]
+    }),
+    [null],
+  ]
+
+  sheet.spliceRows(workerHeaderRowIndex, 0, ...adminTableRows)
+
+  const adminHeaderRow = sheet.getRow(workerHeaderRowIndex)
+  headerStyles.forEach((style, index) => {
+    if (style) adminHeaderRow.getCell(2 + index).style = style
+  })
+
+  const newWorkerHeaderRowIndex = workerHeaderRowIndex + adminTableRows.length
+  setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col")
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
@@ -132,7 +158,7 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
         asig.hasta,
     )
 
-  const startRow = 26
+  const startRow = newWorkerHeaderRowIndex + 1
   trabajadores.forEach((trabajador: any, index: number) => {
     const rowIndex = startRow + index
     const { nombres, apellidos } = splitNombre(trabajador?.nombre)
