@@ -895,9 +895,7 @@ const TrabajadoresStep = ({
     grupoIdCounter.current = Date.now()
 
     console.log("[v0] Grupos limpiados. Contador de IDs reseteado a:", grupoIdCounter.current)
-    setValidationErrors([])
-    setFieldErrors({})
-    setNoAdminsError(false)
+    setLocalFieldErrors({ byId: {}, global: [] })
     // </CHANGE>
 
     console.log("[v0] === INICIO DE PARSEO DE EXCEL ===")
