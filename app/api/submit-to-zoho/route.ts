@@ -99,15 +99,6 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
   )
   setExcelCell(sheet, "C16", empresa.rubro || "")
 
-  const adminNombre = [admin?.nombre, admin?.apellido].filter(Boolean).join(" ")
-  setExcelCell(sheet, "C19", adminNombre)
-  setExcelCell(sheet, "C20", admin?.rut || "")
-  setExcelCell(sheet, "C21", admin?.telefono || "")
-  setExcelCell(sheet, "C22", admin?.email || "")
-
-  setExcelCell(sheet, "J25", "Col")
-  setExcelCell(sheet, "C22", admin?.email || "")
-
   const turnos = payload.formData?.turnos || []
   const planificaciones = payload.formData?.planificaciones || []
   const asignaciones = payload.formData?.asignaciones || []
@@ -115,30 +106,66 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
   const admins = payload.formData?.admins || []
 
   const workerHeaderRowIndex = 25
-  const workerHeaderRow = sheet.getRow(workerHeaderRowIndex)
+  const adminBlockStartRow = 18
+  const adminBlockHeight = 5
+  const adminSpacerRows = 1
   const cloneStyle = (style: ExcelJS.Style | undefined) =>
     style ? (JSON.parse(JSON.stringify(style)) as ExcelJS.Style) : undefined
-  const headerStyles = Array.from({ length: 5 }, (_, idx) => cloneStyle(workerHeaderRow.getCell(2 + idx).style))
+  const adminCount = admins.length > 0 ? admins.length : 1
 
-  const adminRows = admins.length > 0 ? admins : [null]
-  const adminTableRows = [
-    [null, "Nombre", "RUT", "Email", "Telefono", "Cargo"],
-    ...adminRows.map((admin: any) => {
-      if (!admin) return [null, "Sin administradores", "", "", "", ""]
-      const adminNombre = [admin?.nombre, admin?.apellido].filter(Boolean).join(" ")
-      return [null, adminNombre, admin?.rut || "", admin?.email || "", admin?.telefono || "", admin?.cargo || ""]
-    }),
-    [null],
-  ]
+  const merges = ((sheet as any)._merges && Object.keys((sheet as any)._merges)) || []
+  const baseMergeRanges = merges
+    .map((range: string) => {
+      const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
+      if (!match) return null
+      const startRow = Number(match[2])
+      const endRow = Number(match[4])
+      if (startRow >= adminBlockStartRow && endRow <= adminBlockStartRow + adminBlockHeight - 1) {
+        return { range, startRow, endRow }
+      }
+      return null
+    })
+    .filter(Boolean) as Array<{ range: string; startRow: number; endRow: number }>
 
-  sheet.spliceRows(workerHeaderRowIndex, 0, ...adminTableRows)
+  for (let i = 1; i < adminCount; i += 1) {
+    const insertRow = adminBlockStartRow + i * (adminBlockHeight + adminSpacerRows)
+    sheet.spliceRows(insertRow, 0, ...Array(adminBlockHeight + adminSpacerRows).fill([]))
 
-  const adminHeaderRow = sheet.getRow(workerHeaderRowIndex)
-  headerStyles.forEach((style, index) => {
-    if (style) adminHeaderRow.getCell(2 + index).style = style
-  })
+    for (let rowOffset = 0; rowOffset < adminBlockHeight; rowOffset += 1) {
+      const sourceRow = sheet.getRow(adminBlockStartRow + rowOffset)
+      const targetRow = sheet.getRow(insertRow + rowOffset)
+      targetRow.height = sourceRow.height
+      sourceRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const targetCell = targetRow.getCell(colNumber)
+        targetCell.style = cloneStyle(cell.style) || {}
+        if (colNumber === 2) {
+          targetCell.value = cell.value
+        } else {
+          targetCell.value = null
+        }
+      })
+    }
 
-  const newWorkerHeaderRowIndex = workerHeaderRowIndex + adminTableRows.length
+    baseMergeRanges.forEach((merge) => {
+      const rowOffset = insertRow - adminBlockStartRow
+      const range = merge.range.replace(/(\d+)/g, (match) => String(Number(match) + rowOffset))
+      sheet.mergeCells(range)
+    })
+  }
+
+  for (let i = 0; i < adminCount; i += 1) {
+    const admin = admins[i] || null
+    const blockStartRow = adminBlockStartRow + i * (adminBlockHeight + adminSpacerRows)
+    const adminNombre = admin ? [admin?.nombre, admin?.apellido].filter(Boolean).join(" ") : "Sin administradores"
+    setExcelCell(sheet, `B${blockStartRow}`, `Datos Administrador ${i + 1} del Sistema`)
+    setExcelCell(sheet, `C${blockStartRow + 1}`, adminNombre)
+    setExcelCell(sheet, `C${blockStartRow + 2}`, admin?.rut || "")
+    setExcelCell(sheet, `C${blockStartRow + 3}`, admin?.telefono || "")
+    setExcelCell(sheet, `C${blockStartRow + 4}`, admin?.email || "")
+  }
+
+  const insertedRows = (adminCount - 1) * (adminBlockHeight + adminSpacerRows)
+  const newWorkerHeaderRowIndex = workerHeaderRowIndex + insertedRows
   setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col")
 
   const findTurno = (turnoId: string | number | null | undefined) =>
