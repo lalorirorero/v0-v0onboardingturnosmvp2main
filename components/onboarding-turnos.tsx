@@ -119,6 +119,12 @@ const isValidEmail = (email) => {
   return re.test(email.trim())
 }
 
+const isValidPhone = (phone) => {
+  if (!phone) return false
+  const phoneRegex = /^\+?[0-9]{8,15}$/
+  return phoneRegex.test(phone.replace(/\s/g, ""))
+}
+
 const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
 
@@ -968,6 +974,10 @@ const TrabajadoresStep = ({
       })),
     )
 
+    const fieldErrorsById = {}
+    const globalErrors = []
+    let invalidCount = 0
+
     const nuevos = parsedLines.map((cols, index) => {
       const rutCompleto = cols[0] || ""
       const correoPersonal = cols[1] || ""
@@ -979,6 +989,39 @@ const TrabajadoresStep = ({
       const telefono3 = cols[7] || ""
 
       const nombreCompleto = `${nombres} ${apellidos}`.trim()
+      const id = Date.now() + index
+      const rowErrors: Record<string, string> = {}
+
+      if (!nombres.trim() || !apellidos.trim()) {
+        rowErrors.nombre = "Nombre y apellido son obligatorios."
+      }
+
+      if (!rutCompleto.trim()) {
+        rowErrors.rut = "El RUT es obligatorio."
+      } else if (!isValidRut(rutCompleto)) {
+        rowErrors.rut = "Formato de RUT inválido."
+      }
+
+      if (correoPersonal.trim() && !isValidEmail(correoPersonal)) {
+        rowErrors.correo = "Formato de correo inválido."
+      }
+
+      if (telefono1.trim() && !isValidPhone(telefono1)) {
+        rowErrors.telefono1 = "Formato de teléfono inválido."
+      }
+
+      if (telefono2.trim() && !isValidPhone(telefono2)) {
+        rowErrors.telefono2 = "Formato de teléfono inválido."
+      }
+
+      if (telefono3.trim() && !isValidPhone(telefono3)) {
+        rowErrors.telefono3 = "Formato de teléfono inválido."
+      }
+
+      if (Object.keys(rowErrors).length > 0) {
+        fieldErrorsById[id] = rowErrors
+        invalidCount += 1
+      }
 
       let grupoId = ""
       if (grupoNombre) {
@@ -995,7 +1038,7 @@ const TrabajadoresStep = ({
       }
 
       return {
-        id: Date.now() + index,
+        id,
         nombre: nombreCompleto,
         rut: rutCompleto,
         correo: correoPersonal,
@@ -1021,14 +1064,20 @@ const TrabajadoresStep = ({
       }, {}),
     )
 
+    if (invalidCount > 0) {
+      globalErrors.push(
+        `Se detectaron ${invalidCount} trabajador${invalidCount === 1 ? "" : "es"} con datos inválidos.`,
+      )
+    }
+
     setTrabajadores([...trabajadores, ...nuevos])
     setBulkStatus({
       total: lines.length,
       added: lines.length,
-      error: "",
+      error: globalErrors.join(" "),
     })
     setBulkText("")
-    setLocalFieldErrors({ byId: {}, global: [] })
+    setLocalFieldErrors({ byId: fieldErrorsById, global: globalErrors })
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
