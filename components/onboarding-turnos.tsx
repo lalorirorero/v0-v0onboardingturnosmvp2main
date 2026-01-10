@@ -217,14 +217,13 @@ const Stepper = ({ currentStep }) => {
   )
 }
 
-const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin, isEditMode }) => {
+const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
   const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
     rut: "",
     email: "",
     telefono: "",
-    grupo: "",
   })
 
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
@@ -296,12 +295,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
       return
     }
 
-    // Crear el grupo si es nuevo
-    let grupoId = ""
-    if (formData.grupo.trim()) {
-      grupoId = ensureGrupoByName(formData.grupo.trim())
-    }
-
     const newAdmin = {
       id: Date.now(),
       nombre: `${formData.nombre.trim()} ${formData.apellido.trim()}`,
@@ -309,8 +302,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
       rut: formData.rut,
       email: formData.email,
       telefono: formData.telefono,
-      grupoId: grupoId,
-      grupoNombre: formData.grupo,
     }
 
     setAdmins([...admins, newAdmin])
@@ -321,10 +312,9 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
       rut: "",
       email: "",
       telefono: "",
-      grupo: "",
     })
     setFieldErrors({})
-  }, [formData, admins, setAdmins, ensureGrupoByName, validateAdminForm])
+  }, [formData, admins, setAdmins, validateAdminForm])
 
   return (
     <section className="space-y-6">
@@ -470,21 +460,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
               </p>
             )}
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">
-              <span>Grupo</span>
-              <span className="ml-1 cursor-help text-slate-400" title="Grupo o departamento al que pertenece">
-                ⓘ
-              </span>
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              type="text"
-              value={formData.grupo}
-              onChange={(e) => handleFormChange("grupo", e.target.value)}
-              placeholder="Ej: Recursos Humanos, Operaciones, etc."
-            />
-          </div>
         </div>
         <button
           type="button"
@@ -509,11 +484,6 @@ const AdminStep = ({ admins, setAdmins, grupos, ensureGrupoByName, onRemoveAdmin
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-slate-900">{admin.nombre}</span>
-                    {admin.grupoNombre && (
-                      <span className="rounded-full bg-info-muted px-2 py-0.5 text-[10px] font-medium text-info-foreground">
-                        {admin.grupoNombre}
-                      </span>
-                    )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                     {admin.rut && <span>RUT: {admin.rut}</span>}
@@ -3095,8 +3065,6 @@ type OnboardingFormData = {
     rut: string
     email: string
     telefono: string
-    grupoId: string
-    grupoNombre: string
   }[]
   trabajadores: {
     id: number
@@ -4063,8 +4031,6 @@ function OnboardingTurnosCliente() {
                   admins: typeof updater === "function" ? updater(prev.admins) : updater,
                 }))
               }}
-              grupos={grupos}
-              ensureGrupoByName={ensureGrupoByName}
               onRemoveAdmin={removeAdmin}
               isEditMode={false}
             />
@@ -4217,8 +4183,7 @@ function OnboardingTurnosCliente() {
                   <ul>
                     {formData.admins.map((admin, index) => (
                       <li key={admin.id || index} className="mb-2 text-sm">
-                        <strong>{admin.nombre}</strong> (RUT: {admin.rut}, Email: {admin.email}, Tel: {admin.telefono}){" "}
-                        {admin.grupoNombre && `[${admin.grupoNombre}]`}
+                        <strong>{admin.nombre}</strong> (RUT: {admin.rut}, Email: {admin.email}, Tel: {admin.telefono})
                       </li>
                     ))}
                   </ul>
