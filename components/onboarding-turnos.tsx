@@ -828,6 +828,49 @@ const EmpresaStep = React.memo<{
 
 EmpresaStep.displayName = "EmpresaStep"
 
+class StepErrorBoundary extends React.Component<
+  { onReset?: () => void; children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[v0] Error en paso de onboarding:", error, info)
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined })
+    if (this.props.onReset) this.props.onReset()
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-semibold">Ocurri\u00f3 un error en este paso.</p>
+          <p className="mt-1 text-xs">Puedes reintentar sin perder el resto del progreso.</p>
+          <button
+            type="button"
+            onClick={this.handleReset}
+            className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+          >
+            Reintentar
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 const TrabajadoresStep = ({
   trabajadores,
   setTrabajadores,
@@ -869,10 +912,11 @@ const TrabajadoresStep = ({
 
   // CHANGE: Updated useEffect to use ensureGrupoByName and clear groups
   useEffect(() => {
-    const lines = bulkText
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0)
+    try {
+      const lines = bulkText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0)
 
     if (lines.length === 0) return
 
@@ -1045,7 +1089,16 @@ const TrabajadoresStep = ({
       error: globalErrors.join(" "),
     })
     setBulkText("")
-    setLocalFieldErrors({ byId: fieldErrorsById, global: globalErrors })
+      setLocalFieldErrors({ byId: fieldErrorsById, global: globalErrors })
+    } catch (error) {
+      console.error("[v0] Error procesando pegado masivo:", error)
+      setBulkStatus({
+        total: 0,
+        added: 0,
+        error: "Ocurrió un error al procesar la carga masiva. Reintenta.",
+      })
+      setLocalFieldErrors({ byId: {}, global: ["Ocurrió un error al procesar la carga masiva. Reintenta."] })
+    }
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
@@ -3238,6 +3291,7 @@ function OnboardingTurnosCliente() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [grupos, setGrupos] = useState<Grupo[]>([])
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([])
+  const [trabajadoresStepKey, setTrabajadoresStepKey] = useState(0)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -4053,21 +4107,23 @@ function OnboardingTurnosCliente() {
               </div>
             )}
             {/* </CHANGE> */}
-            <TrabajadoresStep
-              trabajadores={trabajadores} // Use the state variable directly
-              setTrabajadores={setTrabajadores} // Use the state setter directly
-              grupos={grupos}
-              setGrupos={(newGrupos) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  empresa: { ...prev.empresa, grupos: newGrupos },
-                }))
-              }
-              errorGlobal={validationErrors.join(" ")}
-              fieldErrors={fieldErrors} // Pass fieldErrors down
-              formData={formData} // Pass formData down
-              ensureGrupoByName={ensureGrupoByName}
-            />
+            <StepErrorBoundary onReset={() => setTrabajadoresStepKey((prev) => prev + 1)} key={trabajadoresStepKey}>
+              <TrabajadoresStep
+                trabajadores={trabajadores} // Use the state variable directly
+                setTrabajadores={setTrabajadores} // Use the state setter directly
+                grupos={grupos}
+                setGrupos={(newGrupos) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    empresa: { ...prev.empresa, grupos: newGrupos },
+                  }))
+                }
+                errorGlobal={validationErrors.join(" ")}
+                fieldErrors={fieldErrors} // Pass fieldErrors down
+                formData={formData} // Pass formData down
+                ensureGrupoByName={ensureGrupoByName}
+              />
+            </StepErrorBoundary>
             <NavigationButtons />
           </div>
         )
