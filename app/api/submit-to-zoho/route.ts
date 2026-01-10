@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendToZohoFlow, type ZohoPayload } from "@/lib/backend"
+import ExcelJS from "exceljs"
 import * as XLSX from "xlsx"
-import fs from "fs"
 import path from "path"
 
 const TEMPLATE_PATH = path.join(process.cwd(), "assets", "templates", "PLANTILLA_INGRESO.xlsx")
@@ -27,9 +27,13 @@ const splitNombre = (nombreCompleto?: string) => {
   return { nombres: parts.slice(0, -1).join(" "), apellidos: parts.slice(-1).join(" ") }
 }
 
-const setCell = (sheet: XLSX.WorkSheet, cellAddress: string, value: string | number | null | undefined) => {
+const setExcelCell = (
+  sheet: ExcelJS.Worksheet,
+  cellAddress: string,
+  value: string | number | null | undefined,
+) => {
   if (value === undefined || value === null || value === "") return
-  sheet[cellAddress] = { t: "s", v: String(value) }
+  sheet.getCell(cellAddress).value = value
 }
 
 const buildUsuariosWorkbook = (payload: ZohoPayload) => {
@@ -69,35 +73,42 @@ const buildUsuariosWorkbook = (payload: ZohoPayload) => {
   return wb
 }
 
-const buildPlanificacionWorkbook = (payload: ZohoPayload) => {
-  const templateBuffer = fs.readFileSync(TEMPLATE_PATH)
-  const wb = XLSX.read(templateBuffer, { type: "buffer" })
-  const sheet = wb.Sheets["Trabajadores"]
+const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.readFile(TEMPLATE_PATH)
+  const sheet = wb.getWorksheet("Trabajadores")
   if (!sheet) {
-    throw new Error("No se encontró la hoja 'Trabajadores' en la plantilla.")
+    throw new Error("No se encontro la hoja 'Trabajadores' en la plantilla.")
   }
 
   const empresa = payload.formData?.empresa || ({} as any)
   const admin = payload.formData?.admins?.[0] || {}
 
-  setCell(sheet, "C7", empresa.rut || "")
-  setCell(sheet, "C8", empresa.nombreFantasia || "")
-  setCell(sheet, "C9", empresa.rut || "")
-  setCell(sheet, "C10", empresa.giro || "")
-  setCell(sheet, "C11", empresa.direccion || "")
-  setCell(sheet, "C12", empresa.comuna || "")
-  setCell(sheet, "C13", empresa.emailFacturacion || "")
-  setCell(sheet, "C14", empresa.telefonoContacto || "")
-  setCell(sheet, "C15", Array.isArray(empresa.sistema) ? empresa.sistema.join(", ") : empresa.sistema || "")
-  setCell(sheet, "C16", empresa.rubro || "")
+  setExcelCell(sheet, "C7", empresa.rut || "")
+  setExcelCell(sheet, "C8", empresa.nombreFantasia || "")
+  setExcelCell(sheet, "C9", empresa.rut || "")
+  setExcelCell(sheet, "C10", empresa.giro || "")
+  setExcelCell(sheet, "C11", empresa.direccion || "")
+  setExcelCell(sheet, "C12", empresa.comuna || "")
+  setExcelCell(sheet, "C13", empresa.emailFacturacion || "")
+  setExcelCell(sheet, "C14", empresa.telefonoContacto || "")
+  setExcelCell(
+    sheet,
+    "C15",
+    Array.isArray(empresa.sistema) ? empresa.sistema.join(", ") : empresa.sistema || "",
+  )
+  setExcelCell(sheet, "C16", empresa.rubro || "")
 
   const adminNombre = [admin?.nombre, admin?.apellido].filter(Boolean).join(" ")
-  setCell(sheet, "C19", adminNombre)
-  setCell(sheet, "C20", admin?.rut || "")
-  setCell(sheet, "C21", admin?.telefono || "")
-  setCell(sheet, "C22", admin?.email || "")
+  setExcelCell(sheet, "C19", adminNombre)
+  setExcelCell(sheet, "C20", admin?.rut || "")
+  setExcelCell(sheet, "C21", admin?.telefono || "")
+  setExcelCell(sheet, "C22", admin?.email || "")
 
-  setCell(sheet, "J25", "Col")
+  setExcelCell(sheet, "J25", "Col")
+  setExcelCell(sheet, "C22", admin?.email || "")
+
+  setExcelCell(sheet, "J25", "Col")
 
   const turnos = payload.formData?.turnos || []
   const planificaciones = payload.formData?.planificaciones || []
@@ -153,7 +164,11 @@ const buildPlanificacionWorkbook = (payload: ZohoPayload) => {
       rowValues.push(turno.horaInicio || "", turno.colacionMinutos || "", turno.horaFin || "")
     })
 
-    XLSX.utils.sheet_add_aoa(sheet, [rowValues], { origin: `B${rowIndex}` })
+    const row = sheet.getRow(rowIndex)
+    rowValues.forEach((value, valueIndex) => {
+      if (value === undefined || value === null || value === "") return
+      row.getCell(2 + valueIndex).value = value
+    })
   })
 
   return wb
@@ -210,10 +225,10 @@ export async function POST(request: NextRequest) {
           const planificacionesPath = `onboarding/${rutKey}/${planificacionesFilename}`
 
           const usuariosWorkbook = buildUsuariosWorkbook(payload)
-          const planificacionesWorkbook = buildPlanificacionWorkbook(payload)
+          const planificacionesWorkbook = await buildPlanificacionWorkbook(payload)
 
           const usuariosBuffer = XLSX.write(usuariosWorkbook, { type: "buffer", bookType: "xlsx" })
-          const planificacionesBuffer = XLSX.write(planificacionesWorkbook, { type: "buffer", bookType: "xlsx" })
+          const planificacionesBuffer = Buffer.from(await planificacionesWorkbook.xlsx.writeBuffer())
 
           const uploadOptions = {
             contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
