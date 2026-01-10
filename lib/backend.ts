@@ -249,6 +249,18 @@ export interface ZohoPayload {
     totalPasos: number
     porcentajeProgreso: number
   }
+  excelUrls?: {
+    usuarios?: {
+      filename: string
+      url: string
+    }
+    planificaciones?: {
+      filename: string
+      url: string
+    }
+  }
+  excelUrlUsuarios?: string
+  excelUrlPlanificaciones?: string
   excelFile: {
     filename: string
     base64: string

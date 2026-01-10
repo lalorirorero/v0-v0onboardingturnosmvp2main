@@ -1,6 +1,163 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 import { sendToZohoFlow, type ZohoPayload } from "@/lib/backend"
 import * as XLSX from "xlsx"
+import fs from "fs"
+import path from "path"
+
+const TEMPLATE_PATH = path.join(process.cwd(), "assets", "templates", "PLANTILLA_INGRESO.xlsx")
+const STORAGE_BUCKET = "onboarding-excels"
+const SIGNED_URL_TTL_SECONDS = 14 * 24 * 60 * 60
+
+const sanitizeRut = (rut?: string) => (rut || "sin-rut").replace(/\./g, "").replace(/-/g, "").trim() || "sin-rut"
+
+const formatTimestamp = () => {
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, "0")
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(
+    now.getMinutes(),
+  )}${pad(now.getSeconds())}`
+}
+
+const splitNombre = (nombreCompleto?: string) => {
+  const trimmed = (nombreCompleto || "").trim()
+  if (!trimmed) return { nombres: "", apellidos: "" }
+  const parts = trimmed.split(/\s+/)
+  if (parts.length === 1) return { nombres: parts[0], apellidos: "" }
+  return { nombres: parts.slice(0, -1).join(" "), apellidos: parts.slice(-1).join(" ") }
+}
+
+const setCell = (sheet: XLSX.WorkSheet, cellAddress: string, value: string | number | null | undefined) => {
+  if (value === undefined || value === null || value === "") return
+  sheet[cellAddress] = { t: "s", v: String(value) }
+}
+
+const buildUsuariosWorkbook = (payload: ZohoPayload) => {
+  const headers = [
+    "identificador",
+    "email",
+    "email alternativo comprobantes",
+    "nombre",
+    "apellido",
+    "grupo",
+    "fono1",
+    "fono2",
+    "fono3",
+    "identificador razon social",
+  ]
+
+  const empresaRut = payload.formData?.empresa?.rut || ""
+  const rows = (payload.formData?.trabajadores || []).map((trabajador: any) => {
+    const { nombres, apellidos } = splitNombre(trabajador?.nombre)
+    return [
+      trabajador?.rut || "",
+      trabajador?.correo || "",
+      "",
+      nombres,
+      apellidos,
+      trabajador?.grupoNombre || trabajador?.grupo || "",
+      trabajador?.telefono1 || "",
+      trabajador?.telefono2 || "",
+      trabajador?.telefono3 || "",
+      empresaRut,
+    ]
+  })
+
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, sheet, "Usuarios")
+  return wb
+}
+
+const buildPlanificacionWorkbook = (payload: ZohoPayload) => {
+  const templateBuffer = fs.readFileSync(TEMPLATE_PATH)
+  const wb = XLSX.read(templateBuffer, { type: "buffer" })
+  const sheet = wb.Sheets["Trabajadores"]
+  if (!sheet) {
+    throw new Error("No se encontró la hoja 'Trabajadores' en la plantilla.")
+  }
+
+  const empresa = payload.formData?.empresa || ({} as any)
+  const admin = payload.formData?.admins?.[0] || {}
+
+  setCell(sheet, "C7", empresa.rut || "")
+  setCell(sheet, "C8", empresa.nombreFantasia || "")
+  setCell(sheet, "C9", empresa.rut || "")
+  setCell(sheet, "C10", empresa.giro || "")
+  setCell(sheet, "C11", empresa.direccion || "")
+  setCell(sheet, "C12", empresa.comuna || "")
+  setCell(sheet, "C13", empresa.emailFacturacion || "")
+  setCell(sheet, "C14", empresa.telefonoContacto || "")
+  setCell(sheet, "C15", Array.isArray(empresa.sistema) ? empresa.sistema.join(", ") : empresa.sistema || "")
+  setCell(sheet, "C16", empresa.rubro || "")
+
+  const adminNombre = [admin?.nombre, admin?.apellido].filter(Boolean).join(" ")
+  setCell(sheet, "C19", adminNombre)
+  setCell(sheet, "C20", admin?.rut || "")
+  setCell(sheet, "C21", admin?.telefono || "")
+  setCell(sheet, "C22", admin?.email || "")
+
+  setCell(sheet, "J25", "Col")
+
+  const turnos = payload.formData?.turnos || []
+  const planificaciones = payload.formData?.planificaciones || []
+  const asignaciones = payload.formData?.asignaciones || []
+  const trabajadores = payload.formData?.trabajadores || []
+
+  const findTurno = (turnoId: string | number | null | undefined) =>
+    turnos.find((turno: any) => String(turno.id) === String(turnoId))
+
+  const hasLibre = (turno: any) => {
+    const nombre = String(turno?.nombre || "").toLowerCase()
+    return nombre.includes("libre") || nombre.includes("descanso")
+  }
+
+  const findAsignacion = (trabajadorId: string | number) =>
+    asignaciones.find(
+      (asig: any) =>
+        String(asig.trabajadorId) === String(trabajadorId) &&
+        asig.planificacionId &&
+        asig.desde &&
+        asig.hasta,
+    )
+
+  const startRow = 26
+  trabajadores.forEach((trabajador: any, index: number) => {
+    const rowIndex = startRow + index
+    const { nombres, apellidos } = splitNombre(trabajador?.nombre)
+    const grupo = trabajador?.grupoNombre || trabajador?.grupo || ""
+
+    const asignacion = findAsignacion(trabajador?.id)
+    const plan = planificaciones.find((p: any) => String(p.id) === String(asignacion?.planificacionId))
+    const fechaInicio = asignacion?.desde || ""
+    const fechaFin = asignacion?.hasta === "permanente" ? "PERMANENTE" : asignacion?.hasta || ""
+
+    const rowValues: (string | number)[] = [
+      trabajador?.rut || "",
+      trabajador?.correo || "",
+      nombres,
+      apellidos,
+      grupo,
+      fechaInicio,
+      fechaFin,
+    ]
+
+    const diasTurnos = Array.isArray(plan?.diasTurnos) ? plan.diasTurnos : Array(7).fill(null)
+
+    diasTurnos.forEach((turnoId: any) => {
+      const turno = findTurno(turnoId)
+      if (!turno || hasLibre(turno)) {
+        rowValues.push("", "", "")
+        return
+      }
+      rowValues.push(turno.horaInicio || "", turno.colacionMinutos || "", turno.horaFin || "")
+    })
+
+    XLSX.utils.sheet_add_aoa(sheet, [rowValues], { origin: `B${rowIndex}` })
+  })
+
+  return wb
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,57 +190,73 @@ export async function POST(request: NextRequest) {
       safeFormData.empresa.razonSocial &&
       safeFormData.empresa.razonSocial.trim() !== ""
     ) {
-      console.log("[v0] /api/submit-to-zoho: Generando archivo Excel...")
+      console.log("[v0] /api/submit-to-zoho: Generando archivos Excel...")
 
-      const workbook = XLSX.utils.book_new()
+      const supabaseUrl = process.env.SUPABASE_URL
+      const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-      // Hoja 1: Empresa
-      const empresaSheet = XLSX.utils.json_to_sheet([safeFormData.empresa])
-      XLSX.utils.book_append_sheet(workbook, empresaSheet, "Empresa")
+      if (!supabaseUrl || !supabaseServiceRoleKey) {
+        console.error("[v0] /api/submit-to-zoho: Faltan credenciales de Supabase.")
+      } else {
+        try {
+          const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+            auth: { persistSession: false },
+          })
+          const rutKey = sanitizeRut(safeFormData.empresa.rut)
+          const timestamp = formatTimestamp()
+          const usuariosFilename = `usuarios-${rutKey}-${timestamp}.xlsx`
+          const planificacionesFilename = `planificaciones-${rutKey}-${timestamp}.xlsx`
+          const usuariosPath = `onboarding/${rutKey}/${usuariosFilename}`
+          const planificacionesPath = `onboarding/${rutKey}/${planificacionesFilename}`
 
-      // Hoja 2: Administradores
-      const adminsSheet = XLSX.utils.json_to_sheet(
-        safeFormData.admins.length > 0 ? safeFormData.admins : [{ mensaje: "Sin administradores" }],
-      )
-      XLSX.utils.book_append_sheet(workbook, adminsSheet, "Administradores")
+          const usuariosWorkbook = buildUsuariosWorkbook(payload)
+          const planificacionesWorkbook = buildPlanificacionWorkbook(payload)
 
-      // Hoja 3: Trabajadores
-      const trabajadoresSheet = XLSX.utils.json_to_sheet(
-        safeFormData.trabajadores.length > 0 ? safeFormData.trabajadores : [{ mensaje: "Sin trabajadores" }],
-      )
-      XLSX.utils.book_append_sheet(workbook, trabajadoresSheet, "Trabajadores")
+          const usuariosBuffer = XLSX.write(usuariosWorkbook, { type: "buffer", bookType: "xlsx" })
+          const planificacionesBuffer = XLSX.write(planificacionesWorkbook, { type: "buffer", bookType: "xlsx" })
 
-      // Hoja 4: Turnos
-      const turnosSheet = XLSX.utils.json_to_sheet(
-        safeFormData.turnos.length > 0 ? safeFormData.turnos : [{ mensaje: "Sin turnos" }],
-      )
-      XLSX.utils.book_append_sheet(workbook, turnosSheet, "Turnos")
+          const uploadOptions = {
+            contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            upsert: true,
+          }
 
-      // Hoja 5: Planificaciones
-      const planificacionesSheet = XLSX.utils.json_to_sheet(
-        safeFormData.planificaciones.length > 0
-          ? safeFormData.planificaciones
-          : [{ mensaje: "Sin planificaciones" }],
-      )
-      XLSX.utils.book_append_sheet(workbook, planificacionesSheet, "Planificaciones")
+          const { error: usuariosUploadError } = await supabase.storage
+            .from(STORAGE_BUCKET)
+            .upload(usuariosPath, usuariosBuffer, uploadOptions)
+          if (usuariosUploadError) throw usuariosUploadError
 
-      // Hoja 6: Asignaciones
-      const asignacionesSheet = XLSX.utils.json_to_sheet(
-        safeFormData.asignaciones.length > 0 ? safeFormData.asignaciones : [{ mensaje: "Sin asignaciones" }],
-      )
-      XLSX.utils.book_append_sheet(workbook, asignacionesSheet, "Asignaciones")
+          const { error: planificacionesUploadError } = await supabase.storage
+            .from(STORAGE_BUCKET)
+            .upload(planificacionesPath, planificacionesBuffer, uploadOptions)
+          if (planificacionesUploadError) throw planificacionesUploadError
 
-      // Generar archivo Excel en base64
-      const excelBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })
-      const base64 = Buffer.from(excelBuffer).toString("base64")
+          const { data: usuariosSigned, error: usuariosSignedError } = await supabase.storage
+            .from(STORAGE_BUCKET)
+            .createSignedUrl(usuariosPath, SIGNED_URL_TTL_SECONDS)
+          if (usuariosSignedError) throw usuariosSignedError
 
-      payload.excelFile = {
-        filename: `onboarding-${safeFormData.empresa.rut.replace(/\./g, "").replace(/-/g, "")}.xlsx`,
-        base64: base64,
-        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          const { data: planificacionesSigned, error: planificacionesSignedError } = await supabase.storage
+            .from(STORAGE_BUCKET)
+            .createSignedUrl(planificacionesPath, SIGNED_URL_TTL_SECONDS)
+          if (planificacionesSignedError) throw planificacionesSignedError
+
+          payload.excelUrls = {
+            usuarios: { filename: usuariosFilename, url: usuariosSigned?.signedUrl || "" },
+            planificaciones: { filename: planificacionesFilename, url: planificacionesSigned?.signedUrl || "" },
+          }
+          payload.excelUrlUsuarios = usuariosSigned?.signedUrl || ""
+          payload.excelUrlPlanificaciones = planificacionesSigned?.signedUrl || ""
+          payload.excelFile = null
+
+          console.log(
+            "[v0] /api/submit-to-zoho: Excel subidos:",
+            payload.excelUrlUsuarios,
+            payload.excelUrlPlanificaciones,
+          )
+        } catch (uploadError) {
+          console.error("[v0] /api/submit-to-zoho: Error subiendo Excel:", uploadError)
+        }
       }
-
-      console.log("[v0] /api/submit-to-zoho: ✅ Excel generado:", payload.excelFile.filename)
     }
 
     console.log("[v0] /api/submit-to-zoho: Llamando a sendToZohoFlow()...")
