@@ -270,6 +270,10 @@ export async function POST(request: NextRequest) {
           const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
             auth: { persistSession: false },
           })
+          const { error: bucketError } = await supabase.storage.createBucket(STORAGE_BUCKET, { public: false })
+          if (bucketError && !bucketError.message.toLowerCase().includes("already exists")) {
+            throw bucketError
+          }
           const rutKey = sanitizeRut(safeFormData.empresa.rut)
           const timestamp = formatTimestamp()
           const usuariosFilename = `usuarios-${rutKey}-${timestamp}.xlsx`
