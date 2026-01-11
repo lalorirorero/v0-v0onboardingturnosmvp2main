@@ -193,6 +193,7 @@ export interface ZohoPayload {
   fechaHoraEnvio: string
   eventType: "progress" | "complete"
   id_zoho: string | null
+  onboardingId?: string | null
   formData: {
     empresa: {
       id_zoho: string | null

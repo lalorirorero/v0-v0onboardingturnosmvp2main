@@ -3631,6 +3631,7 @@ function OnboardingTurnosCliente() {
         accion: "completado",
         eventType: "complete",
         id_zoho: idZoho,
+        onboardingId: onboardingId,
         fechaHoraEnvio: new Date().toISOString(),
         formData: updatedFormData,
         metadata: {

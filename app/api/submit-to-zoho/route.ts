@@ -325,6 +325,60 @@ export async function POST(request: NextRequest) {
             payload.excelUrlUsuarios,
             payload.excelUrlPlanificaciones,
           )
+
+          const expiresAt = new Date(Date.now() + SIGNED_URL_TTL_SECONDS * 1000).toISOString()
+          if (payload.onboardingId) {
+            const { data: onboardingRow, error: onboardingFetchError } = await supabase
+              .from("onboardings")
+              .select("datos_actuales")
+              .eq("id", payload.onboardingId)
+              .single()
+            if (onboardingFetchError) {
+              console.error("[v0] /api/submit-to-zoho: Error obteniendo onboarding:", onboardingFetchError)
+            } else {
+              const mergedDatos = {
+                ...(onboardingRow?.datos_actuales || {}),
+                ...safeFormData,
+                excelUrls: payload.excelUrls,
+                excelUrlUsuarios: payload.excelUrlUsuarios,
+                excelUrlPlanificaciones: payload.excelUrlPlanificaciones,
+              }
+              const { error: onboardingUpdateError } = await supabase
+                .from("onboardings")
+                .update({
+                  datos_actuales: mergedDatos,
+                  fecha_ultima_actualizacion: new Date().toISOString(),
+                })
+                .eq("id", payload.onboardingId)
+              if (onboardingUpdateError) {
+                console.error("[v0] /api/submit-to-zoho: Error actualizando onboarding:", onboardingUpdateError)
+              }
+            }
+
+            const rows = [
+              {
+                onboarding_id: payload.onboardingId,
+                empresa_rut: safeFormData.empresa?.rut || null,
+                tipo: "usuarios",
+                filename: usuariosFilename,
+                url: payload.excelUrlUsuarios,
+                expires_at: expiresAt,
+              },
+              {
+                onboarding_id: payload.onboardingId,
+                empresa_rut: safeFormData.empresa?.rut || null,
+                tipo: "planificaciones",
+                filename: planificacionesFilename,
+                url: payload.excelUrlPlanificaciones,
+                expires_at: expiresAt,
+              },
+            ]
+
+            const { error: insertError } = await supabase.from("onboarding_excels").insert(rows)
+            if (insertError) {
+              console.error("[v0] /api/submit-to-zoho: Error insertando onboarding_excels:", insertError)
+            }
+          }
         } catch (uploadError) {
           console.error("[v0] /api/submit-to-zoho: Error subiendo Excel:", uploadError)
         }
