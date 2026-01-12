@@ -181,30 +181,8 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
   const newWorkerHeaderRowIndex = workerHeaderRowIndex + insertedRows
   setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col")
 
-  const normalizeHeader = (value: unknown) =>
-    String(value || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "")
-
-  const findPhoneStartCol = () => {
-    for (let rowOffset = 0; rowOffset <= 2; rowOffset += 1) {
-      const row = sheet.getRow(newWorkerHeaderRowIndex + rowOffset)
-      let foundCol: number | undefined
-      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        const key = normalizeHeader(cell.value)
-        if (key.includes("telefonosmarcajeporvictoriacall")) {
-          foundCol = colNumber
-        }
-      })
-      if (foundCol) return foundCol
-    }
-    return undefined
-  }
-
-  const phoneStartCol = findPhoneStartCol()
-  const phoneColumns = phoneStartCol ? [phoneStartCol, phoneStartCol + 1, phoneStartCol + 2] : []
+  // Columnas fijas de la plantilla para teléfonos (AD, AE, AF).
+  const phoneColumns = [30, 31, 32]
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
