@@ -3646,6 +3646,12 @@ function OnboardingTurnosCliente() {
         navigationHistory: newHistory,
         estado: "completado",
         fecha_completado: dataToSave.fecha_completado,
+        excelUrls: {
+          usuarios: { filename: "", url: "" },
+          planificaciones: { filename: "", url: "" },
+        },
+        excelUrlUsuarios: "",
+        excelUrlPlanificaciones: "",
         excelFile: null,
       }
 
@@ -3856,6 +3862,7 @@ function OnboardingTurnosCliente() {
           accion: "progreso",
           eventType: "progress",
           id_zoho: idZoho,
+          onboardingId: onboardingId,
           fechaHoraEnvio: new Date().toISOString(),
           formData: updatedFormData,
           metadata: {
@@ -3871,6 +3878,14 @@ function OnboardingTurnosCliente() {
           currentStep: nextStep,
           navigationHistory: newHistory,
           estado: "en_progreso",
+          fecha_completado: null,
+          excelUrls: {
+            usuarios: { filename: "", url: "" },
+            planificaciones: { filename: "", url: "" },
+          },
+          excelUrlUsuarios: "",
+          excelUrlPlanificaciones: "",
+          excelFile: null,
         }
 
         const zohoPromise = fetch("/api/submit-to-zoho", {

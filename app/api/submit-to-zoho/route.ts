@@ -273,6 +273,18 @@ export async function POST(request: NextRequest) {
       configureNow: Boolean(formData.configureNow),
     }
     payload.formData = safeFormData
+    if (!payload.excelUrls) {
+      payload.excelUrls = {
+        usuarios: { filename: "", url: "" },
+        planificaciones: { filename: "", url: "" },
+      }
+    }
+    if (payload.excelUrls) {
+      payload.excelUrls.usuarios = payload.excelUrls.usuarios || { filename: "", url: "" }
+      payload.excelUrls.planificaciones = payload.excelUrls.planificaciones || { filename: "", url: "" }
+    }
+    if (!payload.excelUrlUsuarios) payload.excelUrlUsuarios = ""
+    if (!payload.excelUrlPlanificaciones) payload.excelUrlPlanificaciones = ""
 
     console.log("[v0] /api/submit-to-zoho: Payload recibido")
     console.log("[v0] /api/submit-to-zoho: id_zoho:", payload.id_zoho)

@@ -194,6 +194,10 @@ export interface ZohoPayload {
   eventType: "progress" | "complete"
   id_zoho: string | null
   onboardingId?: string | null
+  currentStep?: number
+  navigationHistory?: number[]
+  estado?: string
+  fecha_completado?: string | null
   formData: {
     empresa: {
       id_zoho: string | null
