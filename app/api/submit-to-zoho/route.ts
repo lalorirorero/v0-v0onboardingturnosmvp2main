@@ -183,6 +183,12 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
 
   // Columnas fijas de la plantilla para teléfonos (AD, AE, AF).
   const phoneColumns = [30, 31, 32]
+  phoneColumns.forEach((col) => {
+    const column = sheet.getColumn(col)
+    if (!column.width || column.width < 16) {
+      column.width = 16
+    }
+  })
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
