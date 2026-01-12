@@ -188,23 +188,23 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "")
 
-  const headerRow = sheet.getRow(newWorkerHeaderRowIndex)
-  const headerIndexByKey = new Map<string, number>()
-  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-    const key = normalizeHeader(cell.value)
-    if (key) headerIndexByKey.set(key, colNumber)
-  })
-
-  const getPhoneColumn = (index: number) => {
-    const keys = [`telefono${index}`, `fono${index}`]
-    for (const key of keys) {
-      const col = headerIndexByKey.get(key)
-      if (col) return col
+  const findPhoneStartCol = () => {
+    for (let rowOffset = 0; rowOffset <= 2; rowOffset += 1) {
+      const row = sheet.getRow(newWorkerHeaderRowIndex + rowOffset)
+      let foundCol: number | undefined
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const key = normalizeHeader(cell.value)
+        if (key.includes("telefonosmarcajeporvictoriacall")) {
+          foundCol = colNumber
+        }
+      })
+      if (foundCol) return foundCol
     }
     return undefined
   }
 
-  const phoneColumns = [getPhoneColumn(1), getPhoneColumn(2), getPhoneColumn(3)]
+  const phoneStartCol = findPhoneStartCol()
+  const phoneColumns = phoneStartCol ? [phoneStartCol, phoneStartCol + 1, phoneStartCol + 2] : []
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
