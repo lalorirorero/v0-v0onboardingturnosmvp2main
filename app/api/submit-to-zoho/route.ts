@@ -179,27 +179,32 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
 
   const insertedRows = (adminCount - 1) * (adminBlockHeight + adminSpacerRows)
   const newWorkerHeaderRowIndex = workerHeaderRowIndex + insertedRows
+  setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col")
 
-  // Insert phone columns after Grupo (column F) so they appear in the planificaciones sheet.
-  sheet.spliceColumns(7, 0, [], [], [])
+  const normalizeHeader = (value: unknown) =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "")
 
   const headerRow = sheet.getRow(newWorkerHeaderRowIndex)
-  const grupoHeaderCell = headerRow.getCell(6)
-  const grupoHeaderStyle = cloneStyle(grupoHeaderCell.style)
-  ;[
-    { col: 7, label: "Telefono 1" },
-    { col: 8, label: "Telefono 2" },
-    { col: 9, label: "Telefono 3" },
-  ].forEach(({ col, label }) => {
-    const cell = headerRow.getCell(col)
-    cell.value = label
-    if (grupoHeaderStyle) {
-      cell.style = grupoHeaderStyle
-    }
+  const headerIndexByKey = new Map<string, number>()
+  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    const key = normalizeHeader(cell.value)
+    if (key) headerIndexByKey.set(key, colNumber)
   })
 
-  // Column for Col header shifts by 3 after insertion (J -> M).
-  headerRow.getCell(13).value = "Col"
+  const getPhoneColumn = (index: number) => {
+    const keys = [`telefono${index}`, `fono${index}`]
+    for (const key of keys) {
+      const col = headerIndexByKey.get(key)
+      if (col) return col
+    }
+    return undefined
+  }
+
+  const phoneColumns = [getPhoneColumn(1), getPhoneColumn(2), getPhoneColumn(3)]
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
@@ -235,9 +240,6 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
       nombres,
       apellidos,
       grupo,
-      pickPhone(trabajador, 1),
-      pickPhone(trabajador, 2),
-      pickPhone(trabajador, 3),
       fechaInicio,
       fechaFin,
     ]
@@ -257,6 +259,13 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
     rowValues.forEach((value, valueIndex) => {
       if (value === undefined || value === null || value === "") return
       row.getCell(2 + valueIndex).value = value
+    })
+    phoneColumns.forEach((col, idx) => {
+      if (!col) return
+      const phoneValue = pickPhone(trabajador, idx + 1)
+      if (phoneValue) {
+        row.getCell(col).value = phoneValue
+      }
     })
   })
 
