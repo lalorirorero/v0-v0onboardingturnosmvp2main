@@ -198,6 +198,7 @@ export interface ZohoPayload {
   navigationHistory?: number[]
   estado?: string
   fecha_completado?: string | null
+  totalTrabajadores?: number
   formData: {
     empresa: {
       id_zoho: string | null

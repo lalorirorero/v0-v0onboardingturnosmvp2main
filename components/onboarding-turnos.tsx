@@ -3604,6 +3604,7 @@ function OnboardingTurnosCliente() {
         currentStep: 11,
         navigationHistory: newHistory,
         estado: "completado",
+        totalTrabajadores: trabajadores.length,
         fecha_completado: new Date().toISOString(),
         // Make sure to save the updated groups and workers too
         trabajadores: trabajadores,
@@ -3641,6 +3642,8 @@ function OnboardingTurnosCliente() {
           pasoNombre: steps[11]?.label || "Completado",
           totalPasos: steps.length,
           porcentajeProgreso: 100,
+          totalTrabajadores: trabajadores.length,
+          totalGrupos: grupos.length,
         },
         currentStep: 11,
         navigationHistory: newHistory,
@@ -3848,6 +3851,7 @@ function OnboardingTurnosCliente() {
           currentStep: nextStep,
           navigationHistory: newHistory,
           estado: "en_progreso",
+          totalTrabajadores: trabajadores.length,
         }
 
         // Guardar en BD
