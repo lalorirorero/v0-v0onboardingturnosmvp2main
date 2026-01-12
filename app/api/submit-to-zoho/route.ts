@@ -27,6 +27,19 @@ const splitNombre = (nombreCompleto?: string) => {
   return { nombres: parts.slice(0, -1).join(" "), apellidos: parts.slice(-1).join(" ") }
 }
 
+const pickPhone = (trabajador: any, index: number) => {
+  const direct = trabajador?.[`telefono${index}`] || trabajador?.[`telefono_${index}`]
+  if (direct) return direct
+  if (Array.isArray(trabajador?.telefonos)) {
+    const fromArray = trabajador.telefonos[index - 1]
+    if (fromArray) return fromArray
+  }
+  if (index === 1) {
+    return trabajador?.telefono || trabajador?.telefonoContacto || ""
+  }
+  return ""
+}
+
 const setExcelCell = (
   sheet: ExcelJS.Worksheet,
   cellAddress: string,
@@ -60,9 +73,9 @@ const buildUsuariosWorkbook = (payload: ZohoPayload) => {
       nombres,
       apellidos,
       trabajador?.grupoNombre || trabajador?.grupo || "",
-      trabajador?.telefono1 || "",
-      trabajador?.telefono2 || "",
-      trabajador?.telefono3 || "",
+      pickPhone(trabajador, 1),
+      pickPhone(trabajador, 2),
+      pickPhone(trabajador, 3),
       empresaRut,
     ]
   })
@@ -166,7 +179,27 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
 
   const insertedRows = (adminCount - 1) * (adminBlockHeight + adminSpacerRows)
   const newWorkerHeaderRowIndex = workerHeaderRowIndex + insertedRows
-  setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col")
+
+  // Insert phone columns after Grupo (column F) so they appear in the planificaciones sheet.
+  sheet.spliceColumns(7, 0, [], [], [])
+
+  const headerRow = sheet.getRow(newWorkerHeaderRowIndex)
+  const grupoHeaderCell = headerRow.getCell(6)
+  const grupoHeaderStyle = cloneStyle(grupoHeaderCell.style)
+  ;[
+    { col: 7, label: "Telefono 1" },
+    { col: 8, label: "Telefono 2" },
+    { col: 9, label: "Telefono 3" },
+  ].forEach(({ col, label }) => {
+    const cell = headerRow.getCell(col)
+    cell.value = label
+    if (grupoHeaderStyle) {
+      cell.style = grupoHeaderStyle
+    }
+  })
+
+  // Column for Col header shifts by 3 after insertion (J -> M).
+  headerRow.getCell(13).value = "Col"
 
   const findTurno = (turnoId: string | number | null | undefined) =>
     turnos.find((turno: any) => String(turno.id) === String(turnoId))
@@ -202,6 +235,9 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
       nombres,
       apellidos,
       grupo,
+      pickPhone(trabajador, 1),
+      pickPhone(trabajador, 2),
+      pickPhone(trabajador, 3),
       fechaInicio,
       fechaFin,
     ]
