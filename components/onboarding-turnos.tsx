@@ -1518,6 +1518,21 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       return
     }
 
+    if (formTurno.tipoColacion === "libre") {
+      const minutos = Number(formTurno.colacionMinutos)
+      if (!formTurno.colacionMinutos || Number.isNaN(minutos) || minutos <= 0) {
+        alert("Debes ingresar los minutos de colación libre.")
+        return
+      }
+    }
+
+    if (formTurno.tipoColacion === "fija") {
+      if (!formTurno.colacionInicio || !formTurno.colacionFin) {
+        alert("Debes ingresar hora de inicio y fin para colación fija.")
+        return
+      }
+    }
+
     // Agregar el nuevo turno
     setTurnos([
       ...turnos,
