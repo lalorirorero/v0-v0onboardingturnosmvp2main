@@ -258,7 +258,9 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
         rowValues.push("", "", "")
         return
       }
-      rowValues.push(turno.horaInicio || "", turno.colacionMinutos || "", turno.horaFin || "")
+      const colacionValue =
+        turno?.tipoColacion && turno.tipoColacion.toLowerCase() === "sin" ? "Sin Colaci\u00f3n" : turno.colacionMinutos || ""
+      rowValues.push(turno.horaInicio || "", colacionValue, turno.horaFin || "")
     })
 
     const row = sheet.getRow(rowIndex)
