@@ -1747,13 +1747,17 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeTurno(turno.id)}
-                  className="text-xs text-slate-500 hover:text-red-500"
-                >
-                  Eliminar
-                </button>
+                {["libre", "descanso"].includes((turno.nombre || "").toLowerCase()) ? (
+                  <span className="text-[10px] text-slate-400">Obligatorio</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => removeTurno(turno.id)}
+                    className="text-xs text-slate-500 hover:text-red-500"
+                  >
+                    Eliminar
+                  </button>
+                )}
               </div>
             ))}
           </div>
