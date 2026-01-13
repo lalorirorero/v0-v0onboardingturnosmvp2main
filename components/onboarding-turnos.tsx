@@ -1747,9 +1747,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                     )}
                   </div>
                 </div>
-                {["libre", "descanso"].includes((turno.nombre || "").toLowerCase()) ? (
-                  <span className="text-[10px] text-slate-400">Obligatorio</span>
-                ) : (
+                {["libre", "descanso"].includes((turno.nombre || "").toLowerCase()) ? null : (
                   <button
                     type="button"
                     onClick={() => removeTurno(turno.id)}
