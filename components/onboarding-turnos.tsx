@@ -83,6 +83,13 @@ const stringifyPayload = (value: unknown, pretty = false) => {
   throw new Error("JSON.stringify no disponible en este entorno.")
 }
 
+const getEstadoByStep = (step) => {
+  if (step >= 11) return "Completado"
+  if (step <= 1) return "No iniciado"
+  return "En Curso"
+}
+
+
 // Helpers de validación
 const normalizeRut = (rut) => {
   if (!rut) return ""
@@ -3620,7 +3627,7 @@ function OnboardingTurnosCliente() {
         formData: updatedFormData, // Use updatedFormData instead of formData
         currentStep: 11,
         navigationHistory: newHistory,
-        estado: "completado",
+        estado: getEstadoByStep(11),
         totalTrabajadores: trabajadores.length,
         fecha_completado: new Date().toISOString(),
         // Make sure to save the updated groups and workers too
@@ -3664,7 +3671,7 @@ function OnboardingTurnosCliente() {
         },
         currentStep: 11,
         navigationHistory: newHistory,
-        estado: "completado",
+        estado: getEstadoByStep(11),
         fecha_completado: dataToSave.fecha_completado,
         excelUrls: {
           usuarios: { filename: "", url: "" },
@@ -3867,7 +3874,7 @@ function OnboardingTurnosCliente() {
           formData: updatedFormData, // Use updatedFormData instead of formData
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
           totalTrabajadores: trabajadores.length,
         }
 
@@ -3898,7 +3905,7 @@ function OnboardingTurnosCliente() {
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
           fecha_completado: null,
           excelUrls: {
             usuarios: { filename: "", url: "" },
@@ -4427,7 +4434,7 @@ function OnboardingTurnosCliente() {
           formData: updatedFormData,
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
         }
 
         // Guardar en BD
@@ -4456,7 +4463,7 @@ function OnboardingTurnosCliente() {
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
         }
 
         const zohoPromise = fetch("/api/submit-to-zoho", {
@@ -4513,7 +4520,7 @@ function OnboardingTurnosCliente() {
           formData: updatedFormData,
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
         }
 
         // Guardar en BD
@@ -4542,7 +4549,7 @@ function OnboardingTurnosCliente() {
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
-          estado: "en_progreso",
+          estado: getEstadoByStep(nextStep),
         }
 
         const zohoPromise = fetch("/api/submit-to-zoho", {
