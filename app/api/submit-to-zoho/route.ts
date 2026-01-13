@@ -63,10 +63,11 @@ const buildUsuariosWorkbook = (payload: ZohoPayload) => {
     "fono2",
     "fono3",
     "identificador razon social",
+    "tipo",
   ]
 
   const empresaRut = normalizeRutForExcel(payload.formData?.empresa?.rut)
-  const rows = (payload.formData?.trabajadores || []).map((trabajador: any) => {
+  const trabajadoresRows = (payload.formData?.trabajadores || []).map((trabajador: any) => {
     const { nombres, apellidos } = splitNombre(trabajador?.nombre)
     return [
       normalizeRutForExcel(trabajador?.rut),
@@ -79,8 +80,27 @@ const buildUsuariosWorkbook = (payload: ZohoPayload) => {
       pickPhone(trabajador, 2),
       pickPhone(trabajador, 3),
       empresaRut,
+      "usuario",
     ]
   })
+  const adminsRows = (payload.formData?.admins || []).map((admin: any) => {
+    const nombres = admin?.nombre || ""
+    const apellidos = admin?.apellido || ""
+    return [
+      normalizeRutForExcel(admin?.rut),
+      admin?.email || "",
+      "",
+      nombres,
+      apellidos,
+      "",
+      admin?.telefono || "",
+      "",
+      "",
+      empresaRut,
+      "administrador",
+    ]
+  })
+  const rows = [...adminsRows, ...trabajadoresRows]
 
   const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
   const wb = XLSX.utils.book_new()
