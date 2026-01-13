@@ -258,8 +258,22 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
         rowValues.push("", "", "")
         return
       }
-      const colacionValue =
-        turno?.tipoColacion && turno.tipoColacion.toLowerCase() === "sin" ? "Sin Colaci\u00f3n" : turno.colacionMinutos || ""
+      let colacionValue = ""
+      if (turno?.tipoColacion) {
+        const tipo = turno.tipoColacion.toLowerCase()
+        if (tipo === "sin") {
+          colacionValue = "Sin Colaci\u00f3n"
+        } else if (tipo === "libre") {
+          colacionValue = turno.colacionMinutos ? `${turno.colacionMinutos} min libre` : "Colaci\u00f3n libre"
+        } else if (tipo === "fija") {
+          colacionValue =
+            turno.colacionInicio && turno.colacionFin
+              ? `${turno.colacionInicio} - ${turno.colacionFin}`
+              : "Colaci\u00f3n fija"
+        }
+      } else {
+        colacionValue = turno.colacionMinutos || ""
+      }
       rowValues.push(turno.horaInicio || "", colacionValue, turno.horaFin || "")
     })
 
