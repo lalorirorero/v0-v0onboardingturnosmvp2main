@@ -27,6 +27,8 @@ const splitNombre = (nombreCompleto?: string) => {
   return { nombres: parts.slice(0, -1).join(" "), apellidos: parts.slice(-1).join(" ") }
 }
 
+const normalizeRutForExcel = (rut?: string) => (rut || "").replace(/[^0-9A-Za-z]/g, "").toUpperCase()
+
 const pickPhone = (trabajador: any, index: number) => {
   const direct = trabajador?.[`telefono${index}`] || trabajador?.[`telefono_${index}`]
   if (direct) return direct
@@ -63,11 +65,11 @@ const buildUsuariosWorkbook = (payload: ZohoPayload) => {
     "identificador razon social",
   ]
 
-  const empresaRut = payload.formData?.empresa?.rut || ""
+  const empresaRut = normalizeRutForExcel(payload.formData?.empresa?.rut)
   const rows = (payload.formData?.trabajadores || []).map((trabajador: any) => {
     const { nombres, apellidos } = splitNombre(trabajador?.nombre)
     return [
-      trabajador?.rut || "",
+      normalizeRutForExcel(trabajador?.rut),
       trabajador?.correo || "",
       "",
       nombres,
