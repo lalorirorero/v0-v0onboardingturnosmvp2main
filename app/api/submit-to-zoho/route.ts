@@ -324,6 +324,32 @@ export async function POST(request: NextRequest) {
     if (!payload.excelUrlUsuarios) payload.excelUrlUsuarios = ""
     if (!payload.excelUrlPlanificaciones) payload.excelUrlPlanificaciones = ""
 
+    const historySupabaseUrl = process.env.SUPABASE_URL
+    const historySupabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (historySupabaseUrl && historySupabaseServiceRoleKey) {
+      try {
+        const historyClient = createClient(historySupabaseUrl, historySupabaseServiceRoleKey, {
+          auth: { persistSession: false },
+        })
+        const { error: historyError } = await historyClient.from("onboarding_history").insert({
+          onboarding_id: payload.onboardingId || null,
+          source: "submit_to_zoho",
+          event_type: payload.eventType || payload.accion || null,
+          current_step: typeof payload.currentStep === "number" ? payload.currentStep : null,
+          estado: payload.estado || null,
+          payload,
+          created_at: new Date().toISOString(),
+        })
+        if (historyError) {
+          console.error("[v0] /api/submit-to-zoho: Error insertando onboarding_history:", historyError)
+        }
+      } catch (historyInsertError) {
+        console.error("[v0] /api/submit-to-zoho: Error inesperado insertando onboarding_history:", historyInsertError)
+      }
+    } else {
+      console.warn("[v0] /api/submit-to-zoho: Supabase env no disponible para onboarding_history.")
+    }
+
     console.log("[v0] /api/submit-to-zoho: Payload recibido")
     console.log("[v0] /api/submit-to-zoho: id_zoho:", payload.id_zoho)
     console.log("[v0] /api/submit-to-zoho: eventType:", payload.eventType)

@@ -150,6 +150,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     console.log(`[v0] Onboarding ${id} actualizado - Paso: ${currentStep}`)
 
+    try {
+      const { error: historyError } = await supabase.from("onboarding_history").insert({
+        onboarding_id: id,
+        source: "api_onboarding_patch",
+        event_type: "patch",
+        current_step: currentStep,
+        estado: estado || null,
+        payload: body,
+        created_at: new Date().toISOString(),
+      })
+      if (historyError) {
+        console.error("[v0] Error insertando onboarding_history:", historyError)
+      }
+    } catch (historyInsertError) {
+      console.error("[v0] Error inesperado insertando onboarding_history:", historyInsertError)
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Error en PATCH /api/onboarding/[id]:", error)
