@@ -3237,9 +3237,9 @@ const WhatsAppFloatingButton = ({
 }) => {
   const normalized = normalizeWhatsappNumber(phone)
   if (!normalized) return null
-  const sender = companyName || "cliente"
-  const contactName = executiveName ? `Soy ${executiveName}` : "Soy tu ejecutivo comercial"
-  const text = `Hola, ${contactName}. Soy ${sender} y tengo dudas sobre el onboarding.${onboardingId ? ` ID: ${onboardingId}` : ""}`
+  const sender = companyName || "mi empresa"
+  const contactName = executiveName || "tu ejecutivo comercial"
+  const text = `Hola ${contactName}, soy de la empresa ${sender} y tengo dudas sobre mi onboarding, ¿podrías ayudarme por favor?`
   const link = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`
   const label = executiveName
     ? `¿Tienes dudas sobre tu onboarding? Soy ${executiveName}, tu ejecutivo comercial. Hablemos por WhatsApp.`
