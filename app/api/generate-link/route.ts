@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
         comuna: body.empresa?.comuna || body.empresaData?.comuna || "",
         emailFacturacion: body.empresa?.emailFacturacion || body.empresaData?.emailFacturacion || "",
         telefonoContacto: body.empresa?.telefonoContacto || body.empresaData?.telefonoContacto || "",
+        ejecutivoTelefono: body.empresa?.ejecutivoTelefono || body.empresaData?.ejecutivoTelefono || "",
+        ejecutivoNombre: body.empresa?.ejecutivoNombre || body.empresaData?.ejecutivoNombre || "",
         sistema: body.empresa?.sistema || body.empresaData?.sistema || [],
         rubro: body.empresa?.rubro || body.empresaData?.rubro || "",
         grupos: [],

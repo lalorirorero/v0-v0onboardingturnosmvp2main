@@ -29,6 +29,8 @@ export interface EmpresaData {
   comuna?: string
   emailFacturacion?: string
   telefonoContacto?: string
+  ejecutivoTelefono?: string
+  ejecutivoNombre?: string
   sistema?: string[]
   rubro?: string
   admins?: any[]
@@ -210,6 +212,8 @@ export interface ZohoPayload {
       comuna: string
       emailFacturacion: string
       telefonoContacto: string
+      ejecutivoTelefono?: string
+      ejecutivoNombre?: string
       sistema: string[]
       rubro: string
     }
