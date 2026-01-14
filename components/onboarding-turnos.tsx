@@ -3242,8 +3242,8 @@ const WhatsAppFloatingButton = ({
   const text = `Hola, ${contactName}. Soy ${sender} y tengo dudas sobre el onboarding.${onboardingId ? ` ID: ${onboardingId}` : ""}`
   const link = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`
   const label = executiveName
-    ? `Soy ${executiveName}, tu ejecutivo comercial. Escríbeme si tienes dudas.`
-    : "Soy tu ejecutivo comercial. Escríbeme si tienes dudas."
+    ? `¿Tienes dudas sobre tu onboarding? Soy ${executiveName}, tu ejecutivo comercial. Hablemos por WhatsApp.`
+    : "¿Tienes dudas sobre tu onboarding? Soy tu ejecutivo comercial. Hablemos por WhatsApp."
 
   return (
     <a
