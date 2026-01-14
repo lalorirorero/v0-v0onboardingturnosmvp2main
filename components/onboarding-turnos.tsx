@@ -3228,22 +3228,29 @@ const WhatsAppFloatingButton = ({
   phone,
   companyName,
   onboardingId,
+  executiveName,
 }: {
   phone?: string
   companyName?: string
   onboardingId?: string | null
+  executiveName?: string
 }) => {
   const normalized = normalizeWhatsappNumber(phone)
   if (!normalized) return null
-  const text = `Hola, soy ${companyName || "cliente"} y tengo dudas sobre el onboarding.${onboardingId ? ` ID: ${onboardingId}` : ""}`
+  const sender = companyName || "cliente"
+  const contactName = executiveName ? `Soy ${executiveName}` : "Soy tu ejecutivo comercial"
+  const text = `Hola, ${contactName}. Soy ${sender} y tengo dudas sobre el onboarding.${onboardingId ? ` ID: ${onboardingId}` : ""}`
   const link = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`
+  const label = executiveName
+    ? `Soy ${executiveName}, tu ejecutivo comercial. Escríbeme si tienes dudas.`
+    : "Soy tu ejecutivo comercial. Escríbeme si tienes dudas."
 
   return (
     <a
       href={link}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600"
+      className="fixed bottom-6 right-6 z-50 inline-flex max-w-xs items-center gap-3 rounded-2xl bg-emerald-500 px-4 py-3 text-left text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600"
       aria-label="Contactar por WhatsApp"
     >
       <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
@@ -3251,7 +3258,7 @@ const WhatsAppFloatingButton = ({
           <path d="M16 3C9.4 3 4 8.4 4 15c0 2.3.7 4.6 2 6.6L4 29l7.7-2c1.9 1 4 1.5 6.3 1.5 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 22.1c-2 0-3.9-.6-5.6-1.7l-.4-.2-4.6 1.2 1.2-4.5-.3-.5C5.4 18 5 16.5 5 15c0-6.1 4.9-11 11-11s11 4.9 11 11-4.9 11.1-11 11.1zm6-8.3c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-.9 1.2-.4.3-.7.1c-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.8-1-2.4c-.3-.7-.6-.6-.7-.6h-.6c-.2 0-.5.1-.7.3s-1 1-1 2.5 1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.8-.7 2-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4z" />
         </svg>
       </span>
-      WhatsApp
+      <span className="leading-snug">{label}</span>
     </a>
   )
 }
@@ -4677,6 +4684,7 @@ function OnboardingTurnosCliente() {
         phone={formData.empresa.ejecutivoTelefono}
         companyName={formData.empresa.nombreFantasia || formData.empresa.razonSocial}
         onboardingId={onboardingId}
+        executiveName={formData.empresa.ejecutivoNombre}
       />
     </div>
   )
