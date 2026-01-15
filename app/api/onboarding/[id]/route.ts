@@ -26,9 +26,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       success: true,
       formData: data.datos_actuales,
-      lastStep: data.ultimo_paso,
+      lastStep: data.estado === "Completado" ? 11 : data.ultimo_paso,
       navigationHistory: data.navigation_history,
       estado: data.estado,
+      isLocked: data.estado === "Completado",
     })
   } catch (error) {
     console.error("[v0] Error en GET /api/onboarding/[id]:", error)
@@ -56,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { data: existingRow, error: existingError } = await supabase
       .from("onboardings")
-      .select("datos_actuales")
+      .select("datos_actuales, estado, ultimo_paso, navigation_history")
       .eq("id", id)
       .single()
 
@@ -114,6 +115,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       return merged
+    }
+
+    if (existingRow?.estado === "Completado") {
+      console.log(`[v0] Onboarding ${id} bloqueado (Completado). Ignorando actualizacion.`)
+      return NextResponse.json({ success: true, locked: true })
+    }
+
+    const existingStep = typeof existingRow?.ultimo_paso === "number" ? existingRow.ultimo_paso : 0
+    if (currentStep < existingStep) {
+      console.log(
+        `[v0] Onboarding ${id} ignorado: paso actual ${currentStep} menor que ultimo paso ${existingStep}.`,
+      )
+      return NextResponse.json({ success: true, ignored: true })
     }
 
     const mergedFormData = mergeFormData(existingRow?.datos_actuales || {}, formData, currentStep)
