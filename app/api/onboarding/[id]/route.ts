@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       success: true,
       formData: data.datos_actuales,
       lastStep: data.estado === "Completado" ? 11 : data.ultimo_paso,
+      currentStep: data.ultimo_paso,
       navigationHistory: data.navigation_history,
       estado: data.estado,
       isLocked: data.estado === "Completado",
@@ -122,26 +123,31 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ success: true, locked: true })
     }
 
-    const existingStep = typeof existingRow?.ultimo_paso === "number" ? existingRow.ultimo_paso : 0
-    if (currentStep < existingStep) {
+    const existingStep = Number(existingRow?.ultimo_paso ?? 0)
+    const incomingStep = Number(currentStep)
+    const nextStep = Math.max(existingStep, incomingStep)
+    if (incomingStep < existingStep) {
       console.log(
-        `[v0] Onboarding ${id} ignorado: paso actual ${currentStep} menor que ultimo paso ${existingStep}.`,
+        `[v0] Onboarding ${id}: paso entrante ${incomingStep} menor que ultimo paso ${existingStep}. Conservando ultimo paso.`,
       )
-      return NextResponse.json({ success: true, ignored: true })
     }
 
     const mergedFormData = mergeFormData(existingRow?.datos_actuales || {}, formData, currentStep)
 
 
+    const existingHistory = Array.isArray(existingRow?.navigation_history) ? existingRow.navigation_history : []
+    const incomingHistory = Array.isArray(navigationHistory) ? navigationHistory : []
+    const nextHistory = incomingStep < existingStep && existingHistory.length > 0 ? existingHistory : incomingHistory
+
     const updateData: any = {
       datos_actuales: mergedFormData,
-      ultimo_paso: currentStep,
-      navigation_history: navigationHistory,
+      ultimo_paso: nextStep,
+      navigation_history: nextHistory,
       fecha_ultima_actualizacion: new Date().toISOString(),
     }
 
     // Si se pasa estado, actualizarlo
-    if (estado) {
+    if (estado && incomingStep >= existingStep) {
       updateData.estado = estado
     }
 
@@ -151,7 +157,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     // Si no está en estado pendiente, cambiar a en_progreso
-    if (!estado && currentStep > 0) {
+    if (!estado && nextStep > 0) {
       updateData.estado = "en_progreso"
     }
 

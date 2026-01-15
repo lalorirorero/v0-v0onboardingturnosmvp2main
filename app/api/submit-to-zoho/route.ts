@@ -119,7 +119,7 @@ const buildPlanificacionWorkbook = async (payload: ZohoPayload) => {
   const empresa = payload.formData?.empresa || ({} as any)
   const admin = payload.formData?.admins?.[0] || {}
 
-  setExcelCell(sheet, "C7", empresa.rut || "")
+  setExcelCell(sheet, "C7", empresa.razonSocial || "")
   setExcelCell(sheet, "C8", empresa.nombreFantasia || "")
   setExcelCell(sheet, "C9", empresa.rut || "")
   setExcelCell(sheet, "C10", empresa.giro || "")
