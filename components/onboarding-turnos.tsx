@@ -138,6 +138,12 @@ const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string
   if (!empresa.razonSocial?.trim()) errors.push("Razón Social")
   if (!empresa.nombreFantasia?.trim()) errors.push("Nombre de fantasía")
   if (!empresa.rut?.trim()) errors.push("RUT")
+  if (empresa.rut?.trim()) {
+    const rutRegex = /^[0-9]{7,8}-[0-9Kk]$/
+    if (!rutRegex.test(empresa.rut.trim())) {
+      errors.push("RUT (formato invalido)")
+    }
+  }
   if (!empresa.giro?.trim()) errors.push("Giro")
   if (!empresa.direccion?.trim()) errors.push("Dirección")
   if (!empresa.comuna?.trim()) errors.push("Comuna")
@@ -650,9 +656,10 @@ const EmpresaStep = React.memo<{
   const handleEmpresaChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target
-      setEmpresa((prev) => ({ ...prev, [name]: value }))
+      const nextValue = name === "rut" ? value.replace(/\./g, "").toUpperCase() : value
+      setEmpresa((prev) => ({ ...prev, [name]: nextValue }))
       if (isFieldPrefilled(`empresa.${name}`)) {
-        trackFieldChange(`empresa.${name}`, value)
+        trackFieldChange(`empresa.${name}`, nextValue)
       }
     },
     [setEmpresa, isFieldPrefilled, trackFieldChange],
@@ -707,7 +714,7 @@ const EmpresaStep = React.memo<{
         <ProtectedInput
           name="rut"
           label="RUT"
-          placeholder="Ej: 12.345.678-9"
+          placeholder="Ej: 12345678-9"
           value={empresa.rut || ""}
           onChange={handleEmpresaChange}
           error={fieldErrors["empresa.rut"]}
@@ -3516,7 +3523,7 @@ function OnboardingTurnosCliente() {
             }
 
             // Load last step
-            const lastStep = result.lastStep || 0
+            const lastStep = Math.max(result.lastStep ?? 0, result.currentStep ?? 0)
             console.log("[v0] lastStep:", lastStep)
 
             // Load navigation history
@@ -3671,6 +3678,7 @@ function OnboardingTurnosCliente() {
       const dataToSave = {
         formData: updatedFormData, // Use updatedFormData instead of formData
         currentStep: 11,
+        lastStep: 11,
         navigationHistory: newHistory,
         estado: getEstadoByStep(11),
         totalTrabajadores: trabajadores.length,
@@ -3805,7 +3813,11 @@ function OnboardingTurnosCliente() {
             // Mapear el error al campo específico
             if (err.includes("Razón Social")) stepErrors["empresa.razonSocial"] = "Este campo es obligatorio"
             if (err.includes("Nombre de fantasía")) stepErrors["empresa.nombreFantasia"] = "Este campo es obligatorio"
-            if (err.includes("RUT")) stepErrors["empresa.rut"] = "Este campo es obligatorio"
+            if (err.includes("RUT (formato invalido)")) {
+              stepErrors["empresa.rut"] = "Formato invalido (ej: 12345678-9)"
+            } else if (err.includes("RUT")) {
+              stepErrors["empresa.rut"] = "Este campo es obligatorio"
+            }
             if (err.includes("Giro")) stepErrors["empresa.giro"] = "Este campo es obligatorio"
             if (err.includes("Dirección")) stepErrors["empresa.direccion"] = "Este campo es obligatorio"
             if (err.includes("Comuna")) stepErrors["empresa.comuna"] = "Este campo es obligatorio"
@@ -3918,6 +3930,7 @@ function OnboardingTurnosCliente() {
         const dataToSave = {
           formData: updatedFormData, // Use updatedFormData instead of formData
           currentStep: nextStep,
+          lastStep: nextStep,
           navigationHistory: newHistory,
           estado: getEstadoByStep(nextStep),
           totalTrabajadores: trabajadores.length,
@@ -4478,6 +4491,7 @@ function OnboardingTurnosCliente() {
         const dataToSave = {
           formData: updatedFormData,
           currentStep: nextStep,
+          lastStep: nextStep,
           navigationHistory: newHistory,
           estado: getEstadoByStep(nextStep),
         }
@@ -4564,6 +4578,7 @@ function OnboardingTurnosCliente() {
         const dataToSave = {
           formData: updatedFormData,
           currentStep: nextStep,
+          lastStep: nextStep,
           navigationHistory: newHistory,
           estado: getEstadoByStep(nextStep),
         }
