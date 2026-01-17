@@ -2873,7 +2873,7 @@ const BienvenidaMarketingStep = ({
       </div>
 
       {/* Beneficios destacados */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {beneficiosGeoVictoria.map((beneficio, index) => (
           <div
             key={index}
@@ -2890,17 +2890,17 @@ const BienvenidaMarketingStep = ({
 
       {/* Estadísticas de confianza */}
       <div className="bg-gradient-to-r from-sky-600 to-sky-700 rounded-xl p-6 text-white">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
-            <p className="text-3xl md:text-4xl font-bold">+5,000</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold">+5,000</p>
             <p className="text-sky-200 text-sm">Empresas activas</p>
           </div>
           <div>
-            <p className="text-3xl md:text-4xl font-bold">+1M</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold">+1M</p>
             <p className="text-sky-200 text-sm">Trabajadores gestionados</p>
           </div>
           <div>
-            <p className="text-3xl md:text-4xl font-bold">15+</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold">15+</p>
             <p className="text-sky-200 text-sm">Países en Latam</p>
           </div>
         </div>
@@ -2957,14 +2957,14 @@ const BienvenidaMarketingStep = ({
             {/* Botones de navegación */}
             <button
               onClick={prevSlide}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10 hidden sm:inline-flex"
               aria-label="Video anterior"
             >
               <ChevronLeft className="w-5 h-5 text-slate-600" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10 hidden sm:inline-flex"
               aria-label="Video siguiente"
             >
               <ChevronRight className="w-5 h-5 text-slate-600" />
@@ -3099,11 +3099,11 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
       </div>
 
       {/* Botón continuar */}
-      <div className="flex justify-center items-center gap-4 py-4">
+      <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4 py-4">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 w-full sm:w-auto"
         >
           <ArrowLeft className="w-5 h-5" />
           Atrás
@@ -3111,7 +3111,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <button
           type="button"
           onClick={onContinue}
-          className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25 w-full sm:w-auto"
         >
           Entendido, continuar
           <ArrowRight className="w-5 h-5" />
