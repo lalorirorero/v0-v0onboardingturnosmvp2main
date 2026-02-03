@@ -235,7 +235,7 @@ const Stepper = ({ currentStep }) => {
       </div>
       <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-background to-transparent md:hidden">
         <div className="mr-1 flex h-7 w-7 items-center justify-center rounded-full border border-muted bg-white text-xs text-muted-foreground">
-          &gt;
+          >
         </div>
       </div>
     </div>
@@ -505,7 +505,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               <div
                 key={admin.id || index}
                 className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
-              &gt;
+              >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-slate-900">{admin.nombre}</span>
@@ -521,7 +521,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
                   onClick={() => onRemoveAdmin(index)}
                   className="ml-2 text-xs text-destructive hover:text-error-foreground focus:outline-none"
                   title="Eliminar administrador"
-                &gt;
+                >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -815,7 +815,7 @@ const EmpresaStep = React.memo<{
                 className={`relative rounded-xl border-2 p-4 text-left transition-all ${
                   isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
-              &gt;
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-slate-900 text-sm">{info.titulo}</h3>
@@ -825,7 +825,7 @@ const EmpresaStep = React.memo<{
                     className={`ml-3 flex h-5 w-5 items-center justify-center rounded border-2 ${
                       isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
                     }`}
-                  &gt;
+                  >
                     {isSelected && <Check className="h-3 w-3 text-white" />}
                   </div>
                 </div>
@@ -886,7 +886,7 @@ class StepErrorBoundary extends React.Component<
             type="button"
             onClick={this.handleReset}
             className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
-          &gt;
+          >
             Reintentar
           </button>
         </div>
@@ -1227,7 +1227,7 @@ const TrabajadoresStep = ({
             type="button"
             onClick={() => setShowVideoModal(true)}
             className="flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition-colors"
-          &gt;
+          >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
               <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z" />
             </svg>
@@ -1243,7 +1243,7 @@ const TrabajadoresStep = ({
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
-              &gt;
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
@@ -1263,7 +1263,7 @@ const TrabajadoresStep = ({
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 className="w-4 h-4 text-green-500"
-              &gt;
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
@@ -1311,13 +1311,13 @@ const TrabajadoresStep = ({
                 type="button"
                 onClick={() => setShowVideoModal(false)}
                 className="rounded-full p-2 hover:bg-slate-100 transition-colors"
-              &gt;
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                   className="w-5 h-5 text-slate-600"
-                &gt;
+                >
                   <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L10 8.94 6.28 5.22z" />
                 </svg>
               </button>
@@ -1373,7 +1373,7 @@ const TrabajadoresStep = ({
                   <span
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[10px] text-slate-600"
                     title={TOOLTIP_GRUPO}
-                  &gt;
+                  >
                     ?
                   </span>
                 </span>
@@ -1395,7 +1395,7 @@ const TrabajadoresStep = ({
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
                         isAdmin ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"
                       }`}
-                    &gt;
+                    >
                       {isAdmin ? "Admin" : "Usuario"}
                     </span>
                   </td>
@@ -1446,7 +1446,7 @@ const TrabajadoresStep = ({
                       value={t.grupoId}
                       onChange={(e) => updateTrabajador(t.id, "grupoId", e.target.value ? Number(e.target.value) : "")}
                       disabled={isAdmin}
-                    &gt;
+                    >
                       <option value="">Sin asignar</option>
                       {grupos.map((g) => (
                         <option key={g.id} value={g.id}>
@@ -1503,7 +1503,7 @@ const TrabajadoresStep = ({
                         isAdmin ? "cursor-not-allowed text-slate-300" : "text-slate-500 hover:text-red-500"
                       }`}
                       disabled={isAdmin}
-                    &gt;
+                    >
                       Eliminar
                     </button>
                   </td>
@@ -1651,7 +1651,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   ? "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
-            &gt;
+            >
               Sin Colación
             </button>
             <button
@@ -1662,7 +1662,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   ? "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
-            &gt;
+            >
               Colación Libre
             </button>
             <button
@@ -1673,7 +1673,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   ? "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
-            &gt;
+            >
               Colación Fija
             </button>
           </div>
@@ -1744,7 +1744,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
               <div
                 key={turno.id}
                 className="flex items-start justify-between rounded-lg border border-slate-200 bg-slate-50 p-3"
-              &gt;
+              >
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-semibold text-slate-900">{turno.nombre}</h4>
@@ -1778,7 +1778,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                     type="button"
                     onClick={() => removeTurno(turno.id)}
                     className="text-xs text-slate-500 hover:text-red-500"
-                  &gt;
+                  >
                     Eliminar
                   </button>
                 )}
@@ -1882,7 +1882,7 @@ const GruposStep = ({ grupos, setGrupos }) => {
               <div
                 key={grupo.id}
                 className="flex items-start justify-between rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
-              &gt;
+              >
                 <div className="flex-1">
                   <div className="text-sm font-medium text-slate-900">{grupo.nombre}</div>
                   {grupo.descripcion && <div className="mt-1 text-xs text-slate-500">{grupo.descripcion}</div>}
@@ -1892,7 +1892,7 @@ const GruposStep = ({ grupos, setGrupos }) => {
                   onClick={() => removeGrupo(grupo.id)}
                   className="ml-2 text-xs text-red-500 hover:text-red-700 focus:outline-none"
                   title="Eliminar grupo"
-                &gt;
+                >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -2042,7 +2042,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                         className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         value={turnoAsignado ?? ""}
                         onChange={(e) => updateDiaTurno(dayIndex, e.target.value ? Number(e.target.value) : null)}
-                      &gt;
+                      >
                         <option value="">Seleccionar</option>
                         {turnos.map((turno) => (
                           <option key={turno.id} value={turno.id}>
@@ -2068,7 +2068,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
             type="button"
             onClick={addPlanificacion}
             className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          &gt;
+          >
             + Agregar planificación
           </button>
         </div>
@@ -2099,7 +2099,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                       onClick={() => removePlanificacion(plan.id)}
                       className="text-xs text-red-500 hover:text-red-700 focus:outline-none"
                       title="Eliminar planificación"
-                    &gt;
+                    >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                           strokeLinecap="round"
@@ -2306,7 +2306,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={selectedGrupoId}
               onChange={(e) => setSelectedGrupoId(e.target.value ? Number(e.target.value) : "")}
-            &gt;
+            >
               <option value="">Todos los grupos</option>
               {grupos.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -2322,7 +2322,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={bulkPlanificacionId}
               onChange={(e) => setBulkPlanificacionId(e.target.value ? Number(e.target.value) : "")}
-            &gt;
+            >
               <option value="">Seleccionar…</option>
               {planificaciones.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -2338,7 +2338,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               <span
                 className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                 title={TOOLTIP_PERIODO_PLAN}
-              &gt;
+              >
                 ?
               </span>
             </label>
@@ -2356,7 +2356,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               <span
                 className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                 title={TOOLTIP_PERIODO_PLAN}
-              &gt;
+              >
                 ?
               </span>
             </label>
@@ -2371,7 +2371,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     setBulkHasta("")
                   }
                 }}
-              &gt;
+              >
                 <option value="fecha">Fecha específica</option>
                 <option value="permanente">Permanente</option>
               </select>
@@ -2399,14 +2399,14 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               type="button"
               onClick={seleccionarTodos}
               className="rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
-            &gt;
+            >
               Seleccionar todos
             </button>
             <button
               type="button"
               onClick={limpiarSeleccion}
               className="rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
-            &gt;
+            >
               Limpiar selección
             </button>
           </div>
@@ -2469,7 +2469,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   <span
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                     title={TOOLTIP_PERIODO_PLAN}
-                  &gt;
+                  >
                     ?
                   </span>
                 </span>
@@ -2480,7 +2480,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   <span
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                     title={TOOLTIP_PERIODO_PLAN}
-                  &gt;
+                  >
                     ?
                   </span>
                 </span>
@@ -2498,7 +2498,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     onChange={(e) =>
                       updateAsignacion(a.id, "trabajadorId", e.target.value ? Number(e.target.value) : "")
                     }
-                  &gt;
+                  >
                     <option value="">Seleccionar…</option>
                     {trabajadores.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -2514,7 +2514,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     onChange={(e) =>
                       updateAsignacion(a.id, "planificacionId", e.target.value ? Number(e.target.value) : "")
                     }
-                  &gt;
+                  >
                     <option value="">Seleccionar…</option>
                     {planificaciones.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -2543,7 +2543,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                           updateAsignacion(a.id, "hasta", "")
                         }
                       }}
-                    &gt;
+                    >
                       <option value="fecha">Fecha</option>
                       <option value="permanente">Permanente</option>
                     </select>
@@ -2562,7 +2562,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     type="button"
                     onClick={() => removeAsignacion(a.id)}
                     className="rounded-full px-2 py-1 text-[11px] text-slate-500 hover:bg-red-50 hover:text-red-600"
-                  &gt;
+                  >
                     Eliminar
                   </button>
                 </td>
@@ -2655,7 +2655,7 @@ const DecisionStep = ({ onDecision }) => {
               strokeWidth="2"
               stroke="currentColor"
               className="h-6 w-6"
-            &gt;
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -2678,7 +2678,7 @@ const DecisionStep = ({ onDecision }) => {
               strokeWidth="2"
               stroke="currentColor"
               className="h-6 w-6"
-            &gt;
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -2720,7 +2720,7 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
               strokeWidth="2"
               stroke="currentColor"
               className="h-6 w-6"
-            &gt;
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5" />
             </svg>
@@ -2742,7 +2742,7 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
               strokeWidth="2"
               stroke="currentColor"
               className="h-6 w-6"
-            &gt;
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -2876,7 +2876,7 @@ const BienvenidaMarketingStep = ({
             onClick={onContinue}
             size="lg"
             className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 transition-all duration-300 text-base px-8 py-6 rounded-full"
-          &gt;
+          >
             <Zap className="w-5 h-5 mr-2" />
             Comenzar mi implementación
             <ArrowRight className="w-5 h-5 ml-2" />
@@ -2890,7 +2890,7 @@ const BienvenidaMarketingStep = ({
           <div
             key={index}
             className="bg-white rounded-xl border border-slate-200 p-4 text-center hover:shadow-md hover:border-sky-200 transition-all"
-          &gt;
+          >
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sky-100 mb-3">
               <beneficio.icon className="w-6 h-6 text-sky-600" />
             </div>
@@ -2932,7 +2932,7 @@ const BienvenidaMarketingStep = ({
               <div
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-              &gt;
+              >
                 {casosDeExitoVideos.map((caso, index) => (
                   <div key={index} className="w-full flex-shrink-0 px-2">
                     <div className="space-y-3">
@@ -2971,14 +2971,14 @@ const BienvenidaMarketingStep = ({
               onClick={prevSlide}
               className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10 hidden sm:inline-flex"
               aria-label="Video anterior"
-            &gt;
+            >
               <ChevronLeft className="w-5 h-5 text-slate-600" />
             </button>
             <button
               onClick={nextSlide}
               className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10 hidden sm:inline-flex"
               aria-label="Video siguiente"
-            &gt;
+            >
               <ChevronRight className="w-5 h-5 text-slate-600" />
             </button>
           </div>
@@ -4114,7 +4114,7 @@ function OnboardingTurnosCliente() {
             type="button"
             onClick={goNext}
             className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
-          &gt;
+          >
             Continuar
             <ArrowRight className="w-5 h-5" />
           </button>
@@ -4475,7 +4475,7 @@ function OnboardingTurnosCliente() {
                 type="button"
                 onClick={goBack}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
-              &gt;
+              >
                 <ArrowLeft className="w-5 h-5" />
                 Atrás
               </button>
@@ -4483,7 +4483,7 @@ function OnboardingTurnosCliente() {
                 type="button"
                 onClick={handleFinalizar}
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25"
-              &gt;
+              >
                 Confirmar y Enviar
                 <Check className="w-5 h-5" />
               </button>
@@ -4718,7 +4718,7 @@ function OnboardingTurnosCliente() {
             <button
               onClick={() => setShowResumeModal(false)}
               className="w-full rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-            &gt;
+            >
               Continuar
             </button>
           </div>
