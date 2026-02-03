@@ -217,7 +217,7 @@ const Stepper = ({ currentStep }) => {
                 ${status === "current" ? "bg-primary text-primary-foreground" : ""}
                 ${status === "completed" ? "bg-success text-success-foreground" : ""}
                 ${status === "pending" ? "bg-muted text-muted-foreground" : ""}`}
-                &gt;
+                >
                   {status === "completed" ? "OK" : index + 1}
                 </div>
                 <div className="flex flex-col min-w-0">
