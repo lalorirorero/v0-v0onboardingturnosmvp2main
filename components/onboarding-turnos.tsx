@@ -69,8 +69,8 @@ const TOOLTIP_PERIODO_PLAN =
   "Estas fechas indican el periodo de vigencia de la planificación asignada a cada trabajador (por ejemplo, del 01-10 al 31-10)."
 
 const stringifyPayload = (value: unknown, pretty = false) => {
-  const json = typeof globalThis !== "undefined" ? globalThis.JSON : undefined
-  const space = pretty ? 2 : undefined
+  const json = typeof globalThis !== "undefined"  globalThis.JSON : undefined
+  const space = pretty  2 : undefined
 
   if (json && typeof json.stringify === "function") {
     return json.stringify(value, null, space)
@@ -108,7 +108,7 @@ const isValidRut = (rut) => {
 
   for (let i = body.length - 1; i >= 0; i -= 1) {
     sum += Number.parseInt(body[i], 10) * multiplier
-    multiplier = multiplier === 7 ? 2 : multiplier + 1
+    multiplier = multiplier === 7  2 : multiplier + 1
   }
 
   const mod = 11 - (sum % 11)
@@ -128,32 +128,32 @@ const isValidEmail = (email) => {
 
 const isValidPhone = (phone) => {
   if (!phone) return false
-  const phoneRegex = /^\+?[0-9]{8,15}$/
+  const phoneRegex = /^\+[0-9]{8,15}$/
   return phoneRegex.test(phone.replace(/\s/g, ""))
 }
 
 const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
 
-  if (!empresa.razonSocial?.trim()) errors.push("Razón Social")
-  if (!empresa.nombreFantasia?.trim()) errors.push("Nombre de fantasía")
-  if (!empresa.rut?.trim()) errors.push("RUT")
-  if (empresa.rut?.trim()) {
+  if (!empresa.razonSocial.trim()) errors.push("Razón Social")
+  if (!empresa.nombreFantasia.trim()) errors.push("Nombre de fantasía")
+  if (!empresa.rut.trim()) errors.push("RUT")
+  if (empresa.rut.trim()) {
     const rutRegex = /^[0-9]{7,8}-[0-9Kk]$/
     if (!rutRegex.test(empresa.rut.trim())) {
       errors.push("RUT (formato invalido)")
     }
   }
-  if (!empresa.giro?.trim()) errors.push("Giro")
-  if (!empresa.direccion?.trim()) errors.push("Dirección")
-  if (!empresa.comuna?.trim()) errors.push("Comuna")
-  if (!empresa.emailFacturacion?.trim()) errors.push("Email de facturación")
-  if (!empresa.telefonoContacto?.trim()) errors.push("Teléfono de contacto")
-  if (!empresa.rubro?.trim()) errors.push("Rubro")
+  if (!empresa.giro.trim()) errors.push("Giro")
+  if (!empresa.direccion.trim()) errors.push("Dirección")
+  if (!empresa.comuna.trim()) errors.push("Comuna")
+  if (!empresa.emailFacturacion.trim()) errors.push("Email de facturación")
+  if (!empresa.telefonoContacto.trim()) errors.push("Teléfono de contacto")
+  if (!empresa.rubro.trim()) errors.push("Rubro")
   if (!empresa.sistema || empresa.sistema.length === 0) errors.push("Sistema")
 
   // Validación de email
-  if (empresa.emailFacturacion?.trim()) {
+  if (empresa.emailFacturacion.trim()) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(empresa.emailFacturacion)) {
       errors.push("Email de facturación (formato inválido)")
@@ -176,15 +176,15 @@ const validateAdminsFields = (admins: any[]): { isValid: boolean; errors: string
 
   admins.forEach((admin, index) => {
     const adminNum = index + 1
-    if (!admin.nombre?.trim()) errors.push(`Administrador ${adminNum}: Nombre`)
-    if (!admin.email?.trim()) errors.push(`Administrador ${adminNum}: Email`)
+    if (!admin.nombre.trim()) errors.push(`Administrador ${adminNum}: Nombre`)
+    if (!admin.email.trim()) errors.push(`Administrador ${adminNum}: Email`)
     else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(admin.email)) {
         errors.push(`Administrador ${adminNum}: Email (formato inválido)`)
       }
     }
-    if (!admin.telefono?.trim()) errors.push(`Administrador ${adminNum}: Teléfono`)
+    if (!admin.telefono.trim()) errors.push(`Administrador ${adminNum}: Teléfono`)
   })
 
   return {
@@ -195,37 +195,49 @@ const validateAdminsFields = (admins: any[]): { isValid: boolean; errors: string
 
 const Stepper = ({ currentStep }) => {
   return (
-    <div className="w-full overflow-hidden">
-      <ol className="flex justify-between gap-1">
-        {steps.map((step, index) => {
-          const status = index < currentStep ? "completed" : index === currentStep ? "current" : "pending"
+    <div className="relative w-full">
+      <div className="overflow-x-auto pb-2">
+        <ol className="flex gap-2 pr-10">
+          {steps.map((step, index) => {
+            const status = index < currentStep ? "completed" : index === currentStep ? "current" : "pending"
 
-          const base = "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm bg-white min-w-0"
-          const stateClass =
-            status === "current"
-              ? "border-primary bg-primary/10"
-              : status === "completed"
-                ? "border-success bg-success/10"
-                : "border-muted"
+            const base =
+              "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm bg-white min-w-[170px] max-w-[220px]"
+            const stateClass =
+              status === "current"
+                ? "border-primary bg-primary/10"
+                : status === "completed"
+                  ? "border-success bg-success/10"
+                  : "border-muted"
 
-          return (
-            <li key={step.id} className={`${base} ${stateClass}`}>
-              <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold flex-shrink-0
-              ${status === "current" ? "bg-primary text-primary-foreground" : ""}
-              ${status === "completed" ? "bg-success text-success-foreground" : ""}
-              ${status === "pending" ? "bg-muted text-muted-foreground" : ""}`}
-              >
-                {status === "completed" ? "✓" : index + 1}
-              </div>
-              <div className="flex flex-col min-w-0 overflow-hidden">
-                <div className="font-medium text-foreground text-[11px] truncate">{step.label}</div>
-                <div className="text-muted-foreground text-[9px] truncate hidden lg:block">{step.description}</div>
-              </div>
-            </li>
-          )
-        })}
-      </ol>
+            return (
+              <li key={step.id} className={`${base} ${stateClass}`}>
+                <div
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold flex-shrink-0
+                ${status === "current" ? "bg-primary text-primary-foreground" : ""}
+                ${status === "completed" ? "bg-success text-success-foreground" : ""}
+                ${status === "pending" ? "bg-muted text-muted-foreground" : ""}`}
+                >
+                  {status === "completed" ? "OK" : index + 1}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="font-medium text-foreground text-[11px] leading-tight whitespace-normal">
+                    {step.label}
+                  </div>
+                  <div className="text-muted-foreground text-[9px] leading-tight whitespace-normal hidden lg:block">
+                    {step.description}
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-background to-transparent md:hidden">
+        <div className="mr-1 flex h-7 w-7 items-center justify-center rounded-full border border-muted bg-white text-xs text-muted-foreground">
+          >
+        </div>
+      </div>
     </div>
   )
 }
@@ -289,7 +301,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
       errors.telefono = "El teléfono es obligatorio"
     } else {
       // Validar formato de teléfono (debe empezar con + y tener al menos 8 dígitos)
-      const phoneRegex = /^\+?[0-9]{8,15}$/
+      const phoneRegex = /^\+[0-9]{8,15}$/
       if (!phoneRegex.test(formData.telefono.replace(/\s/g, ""))) {
         errors.telefono = "Formato inválido (ej: +56912345678)"
       }
@@ -355,7 +367,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             <input
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                 fieldErrors.nombre
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                   "border-red-500 focus:border-red-500 focus:ring-red-500"
                   : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
               }`}
               type="text"
@@ -377,7 +389,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             <input
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                 fieldErrors.apellido
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                   "border-red-500 focus:border-red-500 focus:ring-red-500"
                   : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
               }`}
               type="text"
@@ -404,7 +416,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             <input
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                 fieldErrors.rut
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                   "border-red-500 focus:border-red-500 focus:ring-red-500"
                   : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
               }`}
               type="text"
@@ -431,7 +443,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             <input
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                 fieldErrors.email
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                   "border-red-500 focus:border-red-500 focus:ring-red-500"
                   : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
               }`}
               type="email"
@@ -458,7 +470,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             <input
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                 fieldErrors.telefono
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                   "border-red-500 focus:border-red-500 focus:ring-red-500"
                   : "border-slate-200 bg-white focus:border-sky-500 focus:ring-sky-500"
               }`}
               type="tel"
@@ -543,9 +555,9 @@ const ProtectedInput = React.memo<{
   label: string
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  type?: string
-  placeholder?: string
-  error?: string // Nueva prop para mostrar error
+  type: string
+  placeholder: string
+  error: string // Nueva prop para mostrar error
 }>(({ name, label, value, onChange, type = "text", placeholder, error }) => {
   return (
     <div>
@@ -561,7 +573,7 @@ const ProtectedInput = React.memo<{
         placeholder={placeholder}
         className={`w-full rounded-lg border ${
           error
-            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+             "border-red-500 focus:border-red-500 focus:ring-red-500"
             : "border-slate-300 focus:border-sky-500 focus:ring-sky-500"
         } px-4 py-2.5 focus:outline-none focus:ring-1`}
       />
@@ -591,7 +603,7 @@ const EmpresaStep = React.memo<{
   isFieldPrefilled: (fieldKey: string) => boolean
   isFieldEdited: (fieldKey: string) => boolean
   trackFieldChange: (fieldKey: string, newValue: any) => void
-  fieldErrors?: Record<string, string> // Nueva prop
+  fieldErrors: Record<string, string> // Nueva prop
 }>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange, fieldErrors = {} }) => {
   const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
 
@@ -656,7 +668,7 @@ const EmpresaStep = React.memo<{
   const handleEmpresaChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target
-      const nextValue = name === "rut" ? value.replace(/\./g, "").toUpperCase() : value
+      const nextValue = name === "rut"  value.replace(/\./g, "").toUpperCase() : value
       setEmpresa((prev) => ({ ...prev, [name]: nextValue }))
       if (isFieldPrefilled(`empresa.${name}`)) {
         trackFieldChange(`empresa.${name}`, nextValue)
@@ -672,7 +684,7 @@ const EmpresaStep = React.memo<{
         const isSelected = currentSistemas.includes(sistemaValue)
 
         const newSistemas = isSelected
-          ? currentSistemas.filter((s) => s !== sistemaValue)
+           currentSistemas.filter((s) => s !== sistemaValue)
           : [...currentSistemas, sistemaValue]
 
         if (isFieldPrefilled("empresa.sistema")) {
@@ -773,7 +785,7 @@ const EmpresaStep = React.memo<{
           value={empresa.rubro || ""}
           onChange={handleEmpresaChange}
           className={`w-full rounded-lg border ${
-            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
+            fieldErrors["empresa.rubro"]  "border-red-500" : "border-slate-300"
           } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
         >
           <option value="">Selecciona un rubro</option>
@@ -793,7 +805,7 @@ const EmpresaStep = React.memo<{
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SISTEMAS.map((sistema) => {
             const info = SISTEMAS_INFO[sistema]
-            const isSelected = empresa.sistema?.includes(sistema)
+            const isSelected = empresa.sistema.includes(sistema)
 
             return (
               <button
@@ -801,7 +813,7 @@ const EmpresaStep = React.memo<{
                 type="button"
                 onClick={() => handleSistemaChange(sistema)}
                 className={`relative rounded-xl border-2 p-4 text-left transition-all ${
-                  isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
+                  isSelected  "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -811,7 +823,7 @@ const EmpresaStep = React.memo<{
                   </div>
                   <div
                     className={`ml-3 flex h-5 w-5 items-center justify-center rounded border-2 ${
-                      isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
+                      isSelected  "border-sky-500 bg-sky-500" : "border-slate-300"
                     }`}
                   >
                     {isSelected && <Check className="h-3 w-3 text-white" />}
@@ -843,8 +855,8 @@ const EmpresaStep = React.memo<{
 EmpresaStep.displayName = "EmpresaStep"
 
 class StepErrorBoundary extends React.Component<
-  { onReset?: () => void; children: React.ReactNode },
-  { hasError: boolean; error?: Error }
+  { onReset: () => void; children: React.ReactNode },
+  { hasError: boolean; error: Error }
 > {
   constructor(props) {
     super(props)
@@ -928,7 +940,7 @@ const TrabajadoresStep = ({
   useEffect(() => {
     try {
       const lines = bulkText
-        .split(/\r?\n/)
+        .split(/\r\n/)
         .map((l) => l.trim())
         .filter((l) => l.length > 0)
 
@@ -1092,7 +1104,7 @@ const TrabajadoresStep = ({
 
     if (invalidCount > 0) {
       globalErrors.push(
-        `Se detectaron ${invalidCount} trabajador${invalidCount === 1 ? "" : "es"} con datos inválidos.`,
+        `Se detectaron ${invalidCount} trabajador${invalidCount === 1  "" : "es"} con datos inválidos.`,
       )
     }
 
@@ -1120,13 +1132,13 @@ const TrabajadoresStep = ({
       if (t.id !== id) return t
       if (field === "grupoId") {
         const grupo = grupos.find((g) => g.id === Number(value))
-        return { ...t, grupoId: value, grupoNombre: grupo?.nombre || "" }
+        return { ...t, grupoId: value, grupoNombre: grupo.nombre || "" }
       }
       return { ...t, [field]: value }
     })
     setTrabajadores(updated)
 
-    if (localFieldErrors?.byId?.[id]?.[field]) {
+    if (localFieldErrors.byId.[id].[field]) {
       // errors is undeclared, this needs to be fixed.
       const newById = { ...(localFieldErrors.byId || {}) }
       const row = { ...(newById[id] || {}) }
@@ -1160,12 +1172,12 @@ const TrabajadoresStep = ({
 
   const removeTrabajador = (id) => {
     const trabajador = trabajadores.find((t) => t.id === id)
-    if (trabajador?.tipo === "administrador") {
+    if (trabajador.tipo === "administrador") {
       alert("No se puede eliminar un administrador desde aquí. Elimínalo desde el paso de Administradores.")
       return
     }
     setTrabajadores(trabajadores.filter((t) => t.id !== id))
-    if (localFieldErrors?.byId?.[id]) {
+    if (localFieldErrors.byId.[id]) {
       // errors is undeclared, this needs to be fixed.
       const newById = { ...(localFieldErrors.byId || {}) }
       delete newById[id]
@@ -1173,7 +1185,7 @@ const TrabajadoresStep = ({
     }
   }
 
-  const globalErrors = localFieldErrors?.global || []
+  const globalErrors = localFieldErrors.global || []
 
   return (
     <section className="space-y-4">
@@ -1259,8 +1271,8 @@ const TrabajadoresStep = ({
                 />
               </svg>
               <p className="text-xs text-green-700 font-medium">
-                ✓ {bulkStatus.added} trabajador{bulkStatus.added !== 1 ? "es" : ""} agregado
-                {bulkStatus.added !== 1 ? "s" : ""} correctamente
+                ✓ {bulkStatus.added} trabajador{bulkStatus.added !== 1  "es" : ""} agregado
+                {bulkStatus.added !== 1  "s" : ""} correctamente
               </p>
             </div>
           </div>
@@ -1362,7 +1374,7 @@ const TrabajadoresStep = ({
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[10px] text-slate-600"
                     title={TOOLTIP_GRUPO}
                   >
-                    ?
+                    
                   </span>
                 </span>
               </th>
@@ -1377,21 +1389,21 @@ const TrabajadoresStep = ({
               const rowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
               const isAdmin = t.tipo === "administrador"
               return (
-                <tr key={t.id} className={`border-t border-slate-100 ${isAdmin ? "bg-blue-50" : ""}`}>
+                <tr key={t.id} className={`border-t border-slate-100 ${isAdmin  "bg-blue-50" : ""}`}>
                   <td className="px-3 py-1.5">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        isAdmin ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"
+                        isAdmin  "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"
                       }`}
                     >
-                      {isAdmin ? "Admin" : "Usuario"}
+                      {isAdmin  "Admin" : "Usuario"}
                     </span>
                   </td>
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.nombre ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.nombre  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="text"
                       value={t.nombre}
                       onChange={(e) => updateTrabajador(t.id, "nombre", e.target.value)}
@@ -1403,8 +1415,8 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.rut ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.rut  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="text"
                       value={t.rut}
                       onChange={(e) => updateTrabajador(t.id, "rut", e.target.value)}
@@ -1416,8 +1428,8 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.correo ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.correo  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="email"
                       value={t.correo}
                       onChange={(e) => updateTrabajador(t.id, "correo", e.target.value)}
@@ -1429,10 +1441,10 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <select
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.grupoId ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.grupoId  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       value={t.grupoId}
-                      onChange={(e) => updateTrabajador(t.id, "grupoId", e.target.value ? Number(e.target.value) : "")}
+                      onChange={(e) => updateTrabajador(t.id, "grupoId", e.target.value  Number(e.target.value) : "")}
                       disabled={isAdmin}
                     >
                       <option value="">Sin asignar</option>
@@ -1447,8 +1459,8 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.telefono1 ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.telefono1  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="tel"
                       value={t.telefono1 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono1", e.target.value)}
@@ -1460,8 +1472,8 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.telefono2 ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.telefono2  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="tel"
                       value={t.telefono2 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono2", e.target.value)}
@@ -1473,8 +1485,8 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.telefono3 ? "border-red-400" : "border-slate-200"
-                      } ${isAdmin ? "bg-blue-50" : ""}`}
+                        rowErrors.telefono3  "border-red-400" : "border-slate-200"
+                      } ${isAdmin  "bg-blue-50" : ""}`}
                       type="tel"
                       value={t.telefono3 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono3", e.target.value)}
@@ -1488,7 +1500,7 @@ const TrabajadoresStep = ({
                       type="button"
                       onClick={() => removeTrabajador(t.id)}
                       className={`text-xs ${
-                        isAdmin ? "cursor-not-allowed text-slate-300" : "text-slate-500 hover:text-red-500"
+                        isAdmin  "cursor-not-allowed text-slate-300" : "text-slate-500 hover:text-red-500"
                       }`}
                       disabled={isAdmin}
                     >
@@ -1553,7 +1565,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       {
         id: Date.now(),
         ...formTurno,
-        colacionMinutos: formTurno.colacionMinutos === "" ? 0 : Number(formTurno.colacionMinutos),
+        colacionMinutos: formTurno.colacionMinutos === ""  0 : Number(formTurno.colacionMinutos),
       },
     ])
 
@@ -1579,7 +1591,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Turnos</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm font-medium text-blue-900">¿Qué es un turno?</p>
+          <p className="text-sm font-medium text-blue-900">¿Qué es un turno</p>
           <p className="text-xs text-blue-800 leading-relaxed">
             Un <strong>turno</strong> es un bloque de horario laboral con hora de inicio, hora de término y tiempo de
             colación. Por ejemplo: "Turno Oficina" de 09:00 a 18:00 con 60 minutos de colación, o "Turno Noche" de 22:00
@@ -1636,7 +1648,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
               onClick={() => setFormTurno({ ...formTurno, tipoColacion: "sin", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "sin"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                   "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -1647,7 +1659,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
               onClick={() => setFormTurno({ ...formTurno, tipoColacion: "libre", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "libre"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                   "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -1658,7 +1670,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
               onClick={() => setFormTurno({ ...formTurno, tipoColacion: "fija", colacionMinutos: "" })}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                 formTurno.tipoColacion === "fija"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                   "border-sky-500 bg-sky-50 text-sky-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -1761,7 +1773,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                     )}
                   </div>
                 </div>
-                {["libre", "descanso"].includes((turno.nombre || "").toLowerCase()) ? null : (
+                {["libre", "descanso"].includes((turno.nombre || "").toLowerCase())  null : (
                   <button
                     type="button"
                     onClick={() => removeTurno(turno.id)}
@@ -1954,7 +1966,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
     // Limpiar el formulario
     const defaultTurno =
       turnos.find((t) => t.nombre.toLowerCase() === "libre" || t.nombre.toLowerCase() === "descanso") || turnos[0]
-    const defaultTurnoId = defaultTurno ? defaultTurno.id : null
+    const defaultTurnoId = defaultTurno  defaultTurno.id : null
 
     setFormData({
       nombre: "",
@@ -1978,7 +1990,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Planificaciones</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-purple-200 bg-purple-50 p-3">
-          <p className="text-sm font-medium text-purple-900">¿Qué es una planificación?</p>
+          <p className="text-sm font-medium text-purple-900">¿Qué es una planificación</p>
           <p className="text-xs text-purple-800 leading-relaxed">
             Una <strong>planificación</strong> es un patrón semanal que combina los turnos que creaste en el paso
             anterior. Define qué turno se trabaja cada día de la semana (Lunes a Domingo).
@@ -2028,8 +2040,8 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                       <label className="text-xs font-medium text-slate-600">{dia}</label>
                       <select
                         className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        value={turnoAsignado ?? ""}
-                        onChange={(e) => updateDiaTurno(dayIndex, e.target.value ? Number(e.target.value) : null)}
+                        value={turnoAsignado  ""}
+                        onChange={(e) => updateDiaTurno(dayIndex, e.target.value  Number(e.target.value) : null)}
                       >
                         <option value="">Seleccionar</option>
                         {turnos.map((turno) => (
@@ -2045,7 +2057,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
             </div>
 
             <div className="text-xs">
-              {verificarPlanificacionCompleta(formData.diasTurnos) ? (
+              {verificarPlanificacionCompleta(formData.diasTurnos)  (
                 <span className="text-emerald-700 font-medium">✓ Planificación completa</span>
               ) : (
                 <span className="text-amber-700 font-medium">⚠ Todos los días deben tener un turno asignado</span>
@@ -2075,7 +2087,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-slate-900">{plan.nombre}</div>
                       <div className="text-xs text-slate-500 mt-0.5">
-                        {esCompleta ? (
+                        {esCompleta  (
                           <span className="text-emerald-700 font-medium">✓ Completa</span>
                         ) : (
                           <span className="text-amber-700 font-medium">⚠ Incompleta</span>
@@ -2105,7 +2117,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                       return (
                         <div key={dayIndex} className="text-center">
                           <div className="font-medium text-slate-600 mb-0.5">{dia}</div>
-                          <div className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{turno?.nombre || "-"}</div>
+                          <div className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{turno.nombre || "-"}</div>
                         </div>
                       )
                     })}
@@ -2139,7 +2151,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
   const updateAsignacion = useCallback(
     (id, field, value) => {
-      setAsignaciones((prev) => prev.map((a) => (a.id === id ? { ...a, [field]: value } : a)))
+      setAsignaciones((prev) => prev.map((a) => (a.id === id  { ...a, [field]: value } : a)))
     },
     [setAsignaciones],
   )
@@ -2160,7 +2172,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
   )
 
   const trabajadoresFiltrados = selectedGrupoId
-    ? trabajadores.filter((t) => {
+     trabajadores.filter((t) => {
         const tieneAsignacionValida = asignaciones.some(
           (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
         )
@@ -2181,7 +2193,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
   const toggleTrabajadorSeleccionado = useCallback(
     (id) => {
-      setSelectedTrabajadoresIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+      setSelectedTrabajadoresIds((prev) => (prev.includes(id)  prev.filter((x) => x !== id) : [...prev, id]))
     },
     [setSelectedTrabajadoresIds],
   )
@@ -2239,7 +2251,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       )
       if (!asignacionValida) return null
       const plan = planificaciones.find((p) => p.id === asignacionValida.planificacionId)
-      return plan ? plan.nombre || "Sin nombre" : null
+      return plan  plan.nombre || "Sin nombre" : null
     },
     [asignaciones, planificaciones],
   )
@@ -2252,7 +2264,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Asignación de planificaciones</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm font-medium text-emerald-900">¿Qué es una asignación?</p>
+          <p className="text-sm font-medium text-emerald-900">¿Qué es una asignación</p>
           <p className="text-xs text-emerald-800 leading-relaxed">
             Una <strong>asignación</strong> es vincular a un trabajador específico con una planificación semanal durante
             un período determinado. Define <strong>quién</strong> trabaja <strong>qué patrón semanal</strong> y{" "}
@@ -2276,7 +2288,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         </p>
         <p className="text-[11px] text-slate-700">
           Trabajadores sin planificar:{" "}
-          <span className={trabajadoresSinPlan > 0 ? "font-semibold text-red-600" : "font-semibold text-emerald-700"}>
+          <span className={trabajadoresSinPlan > 0  "font-semibold text-red-600" : "font-semibold text-emerald-700"}>
             {trabajadoresSinPlan}
           </span>
         </p>
@@ -2293,7 +2305,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             <select
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={selectedGrupoId}
-              onChange={(e) => setSelectedGrupoId(e.target.value ? Number(e.target.value) : "")}
+              onChange={(e) => setSelectedGrupoId(e.target.value  Number(e.target.value) : "")}
             >
               <option value="">Todos los grupos</option>
               {grupos.map((g) => (
@@ -2309,7 +2321,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             <select
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={bulkPlanificacionId}
-              onChange={(e) => setBulkPlanificacionId(e.target.value ? Number(e.target.value) : "")}
+              onChange={(e) => setBulkPlanificacionId(e.target.value  Number(e.target.value) : "")}
             >
               <option value="">Seleccionar…</option>
               {planificaciones.map((p) => (
@@ -2327,7 +2339,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                 className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                 title={TOOLTIP_PERIODO_PLAN}
               >
-                ?
+                
               </span>
             </label>
             <input
@@ -2345,13 +2357,13 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                 className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                 title={TOOLTIP_PERIODO_PLAN}
               >
-                ?
+                
               </span>
             </label>
             <div className="flex gap-2">
               <select
                 className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                value={bulkHasta === "permanente" ? "permanente" : "fecha"}
+                value={bulkHasta === "permanente"  "permanente" : "fecha"}
                 onChange={(e) => {
                   if (e.target.value === "permanente") {
                     setBulkHasta("permanente")
@@ -2415,7 +2427,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                 const grupo =
                   grupos.find((g) => g.id === Number(t.grupoId)) ||
                   (t.grupoNombre
-                    ? grupos.find((g) => g.nombre?.trim().toLowerCase() === t.grupoNombre?.trim().toLowerCase())
+                     grupos.find((g) => g.nombre.trim().toLowerCase() === t.grupoNombre.trim().toLowerCase())
                     : undefined)
                 return (
                   <tr key={t.id} className="border-t border-slate-100">
@@ -2424,9 +2436,9 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     </td>
                     <td className="px-3 py-1">
                       {t.nombre || "Sin nombre"}
-                      {t.rut ? <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
+                      {t.rut  <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
                     </td>
-                    <td className="px-3 py-1">{grupo ? grupo.nombre : "Sin grupo"}</td>
+                    <td className="px-3 py-1">{grupo  grupo.nombre : "Sin grupo"}</td>
                   </tr>
                 )
               })}
@@ -2458,7 +2470,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                     title={TOOLTIP_PERIODO_PLAN}
                   >
-                    ?
+                    
                   </span>
                 </span>
               </th>
@@ -2469,7 +2481,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
                     title={TOOLTIP_PERIODO_PLAN}
                   >
-                    ?
+                    
                   </span>
                 </span>
               </th>
@@ -2484,7 +2496,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     value={a.trabajadorId}
                     onChange={(e) =>
-                      updateAsignacion(a.id, "trabajadorId", e.target.value ? Number(e.target.value) : "")
+                      updateAsignacion(a.id, "trabajadorId", e.target.value  Number(e.target.value) : "")
                     }
                   >
                     <option value="">Seleccionar…</option>
@@ -2500,7 +2512,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     value={a.planificacionId}
                     onChange={(e) =>
-                      updateAsignacion(a.id, "planificacionId", e.target.value ? Number(e.target.value) : "")
+                      updateAsignacion(a.id, "planificacionId", e.target.value  Number(e.target.value) : "")
                     }
                   >
                     <option value="">Seleccionar…</option>
@@ -2523,7 +2535,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   <div className="flex gap-2 items-center">
                     <select
                       className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                      value={a.hasta === "permanente" ? "permanente" : "fecha"}
+                      value={a.hasta === "permanente"  "permanente" : "fecha"}
                       onChange={(e) => {
                         if (e.target.value === "permanente") {
                           updateAsignacion(a.id, "hasta", "permanente")
@@ -2592,10 +2604,10 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="px-3 py-1.5">
                       {t.nombre || "Sin nombre"}
-                      {t.rut ? <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
+                      {t.rut  <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
                     </td>
                     <td className="px-3 py-1.5">
-                      {label ? (
+                      {label  (
                         <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                           {label}
                         </span>
@@ -2621,7 +2633,7 @@ const DecisionStep = ({ onDecision }) => {
     <section className="space-y-6">
       <header className="text-center">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-          ¿Deseas configurar turnos y planificaciones ahora?
+          ¿Deseas configurar turnos y planificaciones ahora
         </h2>
         <p className="mt-2 text-sm text-slate-600">
           Puedes configurar los turnos, planificaciones y asignaciones ahora, o verlo más tarde durante la capacitación
@@ -2688,7 +2700,7 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
   return (
     <section className="space-y-6">
       <header className="text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">¿Deseas cargar trabajadores ahora?</h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">¿Deseas cargar trabajadores ahora</h2>
         <p className="mt-2 text-sm text-slate-600">
           Puedes cargar los trabajadores ahora o hacerlo más tarde durante la capacitación de la plataforma.
         </p>
@@ -2814,7 +2826,7 @@ const BienvenidaMarketingStep = ({
   nombreEmpresa,
   onContinue,
 }: {
-  nombreEmpresa?: string
+  nombreEmpresa: string
   onContinue: () => void
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -2834,7 +2846,7 @@ const BienvenidaMarketingStep = ({
           <Rocket className="w-10 h-10 text-white" />
         </div>
 
-        {nombreEmpresa ? (
+        {nombreEmpresa  (
           <>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
               ¡Bienvenido, <span className="text-sky-600">{nombreEmpresa}</span>!
@@ -2941,7 +2953,7 @@ const BienvenidaMarketingStep = ({
                       {/* Video de YouTube */}
                       <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
                         <iframe
-                          src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
+                          src={`https://www.youtube.com/embed/${caso.videoId}rel=0`}
                           title={`Caso de éxito: ${caso.empresa}`}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -2979,7 +2991,7 @@ const BienvenidaMarketingStep = ({
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentSlide ? "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
+                    index === currentSlide  "bg-sky-500" : "bg-slate-300 hover:bg-slate-400"
                   }`}
                   aria-label={`Ir a video ${index + 1}`}
                 />
@@ -3011,7 +3023,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
 
       {/* Qué pediremos - Reorganizado en grid 2x2 */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos?</h3>
+        <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Fila 1 */}
           <div className="flex items-start gap-3">
@@ -3073,7 +3085,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
           <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-amber-600" />
-            ¿Qué es útil tener a mano?
+            ¿Qué es útil tener a mano
           </h2>
           <ul className="space-y-2 text-sm text-amber-700">
             <li className="flex items-center gap-2">
@@ -3131,8 +3143,8 @@ type Empresa = {
   comuna: string
   emailFacturacion: string
   telefonoContacto: string
-  ejecutivoTelefono?: string
-  ejecutivoNombre?: string
+  ejecutivoTelefono: string
+  ejecutivoNombre: string
   sistema: string[]
   rubro: string
   grupos: { id: number; nombre: string; descripcion: string }[]
@@ -3185,7 +3197,7 @@ type OnboardingFormData = {
     hasta: string
   }[]
   configureNow: boolean | undefined // Added undefined to allow initial state
-  loadWorkersNow?: boolean // Added loadWorkersNow to OnboardingFormData
+  loadWorkersNow: boolean // Added loadWorkersNow to OnboardingFormData
 }
 
 // Define Grupo and Trabajador types for clarity (assuming they might be used elsewhere)
@@ -3200,7 +3212,7 @@ type Trabajador = {
   rut: string
   correo: string
   grupoId: string
-  grupoNombre?: string
+  grupoNombre: string
   telefono1: string
   telefono2: string
   telefono3: string
@@ -3243,34 +3255,65 @@ const WhatsAppFloatingButton = ({
   executiveName?: string
 }) => {
   const normalized = normalizeWhatsappNumber(phone)
-  if (!normalized) return null
+  const dismissKey = `whatsapp_dismissed_${onboardingId || normalized}`
+  const [isDismissed, setIsDismissed] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(dismissKey)
+      if (stored === "1") setIsDismissed(true)
+    } catch {
+      // ignore storage errors
+    }
+  }, [dismissKey])
+
+  if (!normalized || isDismissed) return null
   const sender = companyName || "mi empresa"
   const contactName = executiveName || "tu ejecutivo comercial"
-  const text = `Hola ${contactName}, soy de la empresa ${sender} y tengo dudas sobre mi onboarding, ¿podrías ayudarme por favor?`
+  const text = `Hola ${contactName}, soy de la empresa ${sender} y tengo dudas sobre mi onboarding, podrias ayudarme por favor?`
   const link = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`
   const label = executiveName
-    ? `¿Tienes dudas sobre tu onboarding? Soy ${executiveName}, tu ejecutivo comercial. Hablemos por WhatsApp.`
-    : "¿Tienes dudas sobre tu onboarding? Soy tu ejecutivo comercial. Hablemos por WhatsApp."
+    ? `Tienes dudas sobre tu onboarding? Soy ${executiveName}, tu ejecutivo comercial. Hablemos por WhatsApp.`
+    : "Tienes dudas sobre tu onboarding? Soy tu ejecutivo comercial. Hablemos por WhatsApp."
+
+  const handleDismiss = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDismissed(true)
+    try {
+      window.localStorage.setItem(dismissKey, "1")
+    } catch {
+      // ignore storage errors
+    }
+  }
 
   return (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 inline-flex max-w-xs items-center gap-3 rounded-2xl bg-emerald-500 px-4 py-3 text-left text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600"
-      aria-label="Contactar por WhatsApp"
-    >
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
-        <svg viewBox="0 0 32 32" className="h-4 w-4 fill-white" aria-hidden="true">
-          <path d="M16 3C9.4 3 4 8.4 4 15c0 2.3.7 4.6 2 6.6L4 29l7.7-2c1.9 1 4 1.5 6.3 1.5 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 22.1c-2 0-3.9-.6-5.6-1.7l-.4-.2-4.6 1.2 1.2-4.5-.3-.5C5.4 18 5 16.5 5 15c0-6.1 4.9-11 11-11s11 4.9 11 11-4.9 11.1-11 11.1zm6-8.3c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-.9 1.2-.4.3-.7.1c-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.8-1-2.4c-.3-.7-.6-.6-.7-.6h-.6c-.2 0-.5.1-.7.3s-1 1-1 2.5 1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.8-.7 2-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4z" />
-        </svg>
-      </span>
-      <span className="leading-snug">{label}</span>
-    </a>
+    <div className="fixed bottom-6 right-6 z-50 max-w-xs">
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative inline-flex w-full items-center gap-3 rounded-2xl bg-emerald-500 px-4 py-3 text-left text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600"
+        aria-label="Contactar por WhatsApp"
+      >
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Cerrar aviso de WhatsApp"
+          className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-emerald-600 shadow"
+        >
+          x
+        </button>
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+          <svg viewBox="0 0 32 32" className="h-4 w-4 fill-white" aria-hidden="true">
+            <path d="M16 3C9.4 3 4 8.4 4 15c0 2.3.7 4.6 2 6.6L4 29l7.7-2c1.9 1 4 1.5 6.3 1.5 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 22.1c-2 0-3.9-.6-5.6-1.7l-.4-.2-4.6 1.2 1.2-4.5-.3-.5C5.4 18 5 16.5 5 15c0-6.1 4.9-11 11-11s11 4.9 11 11-4.9 11.1-11 11.1zm6-8.3c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-.9 1.2-.4.3-.7.1c-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.8-1-2.4c-.3-.7-.6-.6-.7-.6h-.6c-.2 0-.5.1-.7.3s-1 1-1 2.5 1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.8-.7 2-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4z" />
+          </svg>
+        </span>
+        <span className="leading-snug">{label}</span>
+      </a>
+    </div>
   )
 }
-
-// CHANGE: Adding NavigationButtons component and its usage
 const NavigationButtons = () => {
   const router = useRouter()
   const pathname = router.pathname
@@ -3303,7 +3346,7 @@ const getStepIndexByLabel = (label: string): number => {
 // Helper function to get the current step based on the navigation history
 // This is a simplified approach; in a real app, you might want to pass currentStep down
 const getCurrentStepFromHistory = (history: number[], defaultStep: number): number => {
-  return history.length > 0 ? history[history.length - 1] : defaultStep
+  return history.length > 0  history[history.length - 1] : defaultStep
 }
 
 // Helper function to update the state for `trabajadores` and `grupos`
@@ -3388,7 +3431,7 @@ function OnboardingTurnosCliente() {
     (updater: Empresa | ((prev: Empresa) => Empresa)) => {
       setFormData((prev) => ({
         ...prev,
-        empresa: typeof updater === "function" ? updater(prev.empresa) : updater,
+        empresa: typeof updater === "function"  updater(prev.empresa) : updater,
       }))
     },
     [setFormData],
@@ -3416,7 +3459,7 @@ function OnboardingTurnosCliente() {
           return {
             ...prev,
             [fieldKey]: {
-              originalValue: prev[fieldKey]?.originalValue ?? formData.empresa[fieldKey.split(".")[1]] ?? "", // Fallback
+              originalValue: prev[fieldKey].originalValue  formData.empresa[fieldKey.split(".")[1]]  "", // Fallback
               currentValue: newValue,
             },
           }
@@ -3517,13 +3560,13 @@ function OnboardingTurnosCliente() {
               // Ensure default turns are present if not in loaded data
               loadedFormData = {
                 ...result.formData,
-                turnos: result.formData.turnos?.length ? result.formData.turnos : DEFAULT_TURNOS,
+                turnos: result.formData.turnos.length  result.formData.turnos : DEFAULT_TURNOS,
               }
               setFormData(loadedFormData)
             }
 
             // Load last step
-            const lastStep = Math.max(result.lastStep ?? 0, result.currentStep ?? 0)
+            const lastStep = Math.max(result.lastStep  0, result.currentStep  0)
             console.log("[v0] lastStep:", lastStep)
 
             // Load navigation history
@@ -3533,12 +3576,12 @@ function OnboardingTurnosCliente() {
             }
 
             // Show resume message if returning to advanced step (>= 3) and not completed
-            console.log("[v0] lastStep >= 3?", lastStep >= 3)
-            console.log("[v0] lastStep < 11?", lastStep < 11)
+            console.log("[v0] lastStep >= 3", lastStep >= 3)
+            console.log("[v0] lastStep < 11", lastStep < 11)
 
             if (lastStep >= 3 && lastStep < 11) {
               console.log("[v0] Preparando mensaje de sesión retomada")
-              const stepName = steps[lastStep]?.label || `Paso ${lastStep}` // Use label from steps array
+              const stepName = steps[lastStep].label || `Paso ${lastStep}` // Use label from steps array
               console.log("[v0] Step name:", stepName)
 
               setTimeout(() => {
@@ -3581,7 +3624,7 @@ function OnboardingTurnosCliente() {
 
     // Initialize groups and workers
     const hydratedFormData = loadedFormData || formData
-    if (token && hydratedFormData?.empresa?.grupos) {
+    if (token && hydratedFormData.empresa.grupos) {
       // If data was loaded with a token, use its groups
       console.log("[v0] Inicializacion: Cargando grupos desde BD:", hydratedFormData.empresa.grupos.length)
       setGrupos(hydratedFormData.empresa.grupos)
@@ -3601,18 +3644,18 @@ function OnboardingTurnosCliente() {
       }
     }
 
-    if (token && hydratedFormData?.trabajadores) {
+    if (token && hydratedFormData.trabajadores) {
       console.log("[v0] Inicializacion: Cargando trabajadores desde BD:", hydratedFormData.trabajadores.length)
       setTrabajadores(hydratedFormData.trabajadores)
     }
 
     // If data was loaded, ensure workers and groups are in sync
-    if (token && hydratedFormData?.trabajadores && hydratedFormData?.trabajadores.length > 0) {
+    if (token && hydratedFormData.trabajadores && hydratedFormData.trabajadores.length > 0) {
       console.log("[v0] Inicializacion: Verificando sincronizacion de trabajadores con grupos")
       updateTrabajadoresAndGrupos(
         hydratedFormData.trabajadores, // Use loaded workers
         setTrabajadores,
-        hydratedFormData.empresa?.grupos || [], // Use loaded groups
+        hydratedFormData.empresa.grupos || [], // Use loaded groups
         setGrupos,
         ensureGrupoByName,
       )
@@ -3627,7 +3670,7 @@ function OnboardingTurnosCliente() {
     // Set default planning days if none are loaded
     if (formData.planificaciones.length > 0) {
       const defaultTurno = DEFAULT_TURNOS.find((t) => t.nombre.toLowerCase() === "libre") || DEFAULT_TURNOS[0] // Fallback to the first default turn
-      const defaultTurnoId = defaultTurno ? defaultTurno.id : null // Ensure defaultTurno is not undefined
+      const defaultTurnoId = defaultTurno  defaultTurno.id : null // Ensure defaultTurno is not undefined
 
       if (defaultTurnoId !== undefined) {
         // Set default diasTurnos for existing planificaciones if they are empty
@@ -3716,7 +3759,7 @@ function OnboardingTurnosCliente() {
           empresaRut: formData.empresa.rut || "Sin RUT",
           empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
           pasoActual: 11,
-          pasoNombre: steps[11]?.label || "Completado",
+          pasoNombre: steps[11].label || "Completado",
           totalPasos: steps.length,
           porcentajeProgreso: 100,
           totalTrabajadores: trabajadores.length,
@@ -3955,7 +3998,7 @@ function OnboardingTurnosCliente() {
             empresaRut: formData.empresa.rut || "Sin RUT",
             empresaNombre: formData.empresa.razonSocial || formData.empresa.nombreFantasia || "Sin nombre",
             pasoActual: nextStep,
-            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            pasoNombre: steps[nextStep].label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
             totalTrabajadores: trabajadores.length, // Add worker count to metadata
@@ -4052,7 +4095,7 @@ function OnboardingTurnosCliente() {
   }, [navigationHistory, setCurrentStep, setNavigationHistory, setFieldErrors, setValidationErrors, setNoAdminsError])
 
   // Helper to render navigation buttons
-  const NavigationButtons = ({ showNext = true }: { showNext?: boolean }) => (
+  const NavigationButtons = ({ showNext = true }: { showNext: boolean }) => (
     <div className="mt-8 flex items-center justify-center gap-4">
       <button
         type="button"
@@ -4182,7 +4225,7 @@ function OnboardingTurnosCliente() {
               setAdmins={(updater) => {
                 setFormData((prev) => ({
                   ...prev,
-                  admins: typeof updater === "function" ? updater(prev.admins) : updater,
+                  admins: typeof updater === "function"  updater(prev.admins) : updater,
                 }))
               }}
               onRemoveAdmin={removeAdmin}
@@ -4276,7 +4319,7 @@ function OnboardingTurnosCliente() {
               setAsignaciones={(updater) =>
                 setFormData((prev) => ({
                   ...prev,
-                  asignaciones: typeof updater === "function" ? updater(prev.asignaciones) : updater,
+                  asignaciones: typeof updater === "function"  updater(prev.asignaciones) : updater,
                 }))
               }
               trabajadores={trabajadores}
@@ -4388,7 +4431,7 @@ function OnboardingTurnosCliente() {
                             <span>
                               {" ("}
                               {turno.tipoColacion === "libre"
-                                ? `${turno.colacionMinutos} min libre`
+                                 `${turno.colacionMinutos} min libre`
                                 : `${turno.colacionInicio} - ${turno.colacionFin} fija`}
                               {")"}
                             </span>
@@ -4480,7 +4523,7 @@ function OnboardingTurnosCliente() {
     setFormData(updatedFormData)
 
     // Determinar el siguiente paso
-    const nextStep = loadNow ? currentStep + 1 : 6 // Si carga ahora va al paso 5, si no va al paso 6
+    const nextStep = loadNow  currentStep + 1 : 6 // Si carga ahora va al paso 5, si no va al paso 6
     const newHistory = [...navigationHistory, nextStep]
 
     // Guardar decisión en BD y enviar a Zoho
@@ -4515,10 +4558,10 @@ function OnboardingTurnosCliente() {
             empresaNombre:
               updatedFormData.empresa.razonSocial || updatedFormData.empresa.nombreFantasia || "Sin nombre",
             pasoActual: nextStep,
-            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            pasoNombre: steps[nextStep].label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
-            decision: loadNow ? "Cargar trabajadores ahora" : "Cargar trabajadores en capacitación",
+            decision: loadNow  "Cargar trabajadores ahora" : "Cargar trabajadores en capacitación",
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
@@ -4567,8 +4610,8 @@ function OnboardingTurnosCliente() {
     setFormData(updatedFormData)
 
     // Determinar el siguiente paso
-    const nextStep = configureNow ? currentStep + 1 : 10 // Si configura ahora va al paso 7, si no va al paso 10
-    const newHistory = configureNow ? [...navigationHistory, nextStep] : [...navigationHistory.slice(0, -1), 10]
+    const nextStep = configureNow  currentStep + 1 : 10 // Si configura ahora va al paso 7, si no va al paso 10
+    const newHistory = configureNow  [...navigationHistory, nextStep] : [...navigationHistory.slice(0, -1), 10]
 
     // Guardar decisión en BD y enviar a Zoho
     if (onboardingId) {
@@ -4602,10 +4645,10 @@ function OnboardingTurnosCliente() {
             empresaNombre:
               updatedFormData.empresa.razonSocial || updatedFormData.empresa.nombreFantasia || "Sin nombre",
             pasoActual: nextStep,
-            pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
+            pasoNombre: steps[nextStep].label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
-            decision: configureNow ? "Configurar turnos ahora" : "Configurar turnos en capacitación",
+            decision: configureNow  "Configurar turnos ahora" : "Configurar turnos en capacitación",
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
