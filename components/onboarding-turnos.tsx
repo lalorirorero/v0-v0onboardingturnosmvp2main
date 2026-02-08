@@ -20,7 +20,9 @@ import {
   Heart,
   Zap,
   Check,
+  Download,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 import { Button } from "@/components/ui/button" // Import added
 // REMOVED: useSearchParams import as it's unreliable
 import { useToast } from "@/components/ui/use-toast" // Added for toast notifications
@@ -921,6 +923,54 @@ const TrabajadoresStep = ({
   const [bulkStatus, setBulkStatus] = useState({ total: 0, added: 0, error: "" })
   const MAX_ROWS = 500
   const [localFieldErrors, setLocalFieldErrors] = useState({ byId: {}, global: [] }) // Declare errors here
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "Rut Completo",
+      "Correo Personal",
+      "Nombres",
+      "Apellidos",
+      "Grupo",
+      "Tel?fono 1",
+      "Tel?fono 2",
+      "Tel?fono 3",
+    ]
+
+    const rows = [
+      ["12345678-9", "ana.perez@empresa.cl", "Ana", "P?rez", "Operaciones", "+56912345678", "", ""],
+      ["98765432-1", "luis.rojas@empresa.cl", "Luis", "Rojas", "Ventas Terreno", "+56998765432", "+56911112222", ""],
+    ]
+
+    const dataSheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
+    dataSheet["!cols"] = [
+      { wch: 14 },
+      { wch: 26 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 16 },
+    ]
+
+    const instructions = [
+      ["Instrucciones para usar la plantilla"],
+      ["1) No cambies el orden de las columnas en la hoja Datos."],
+      ["2) Completa cada fila con un trabajador (los encabezados ya est?n incluidos)."],
+      ["3) RUT sin puntos y con gui?n (ej: 12345678-9)."],
+      ["4) Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche)."],
+      ["5) Tel?fonos opcionales; si no tienes, deja la celda vac?a."],
+      ["6) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
+    ]
+
+    const instructionsSheet = XLSX.utils.aoa_to_sheet(instructions)
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, "Instrucciones")
+    XLSX.utils.book_append_sheet(workbook, dataSheet, "Datos")
+
+    XLSX.writeFile(workbook, "plantilla-trabajadores.xlsx")
+  }
+
 
   useEffect(() => {
     if (isFirstMount) {
@@ -1226,20 +1276,33 @@ const TrabajadoresStep = ({
               </span>
               . Se procesa automáticamente.
             </p>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche).
+            </p>
             <p className="text-[11px] text-amber-600 font-medium mt-1">
               Límite: {MAX_ROWS} filas por lote. Puedes pegar múltiples lotes.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowVideoModal(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z" />
-            </svg>
-            Ver tutorial
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowVideoModal(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z" />
+              </svg>
+              Ver tutorial
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Descargar plantilla
+            </button>
+          </div>
         </div>
 
         {bulkStatus.error && (
