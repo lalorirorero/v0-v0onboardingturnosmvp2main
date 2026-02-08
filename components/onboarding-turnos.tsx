@@ -559,10 +559,14 @@ const ProtectedInput = React.memo<{
   placeholder?: string
   error?: string // Nueva prop para mostrar error
 }>(({ name, label, value, onChange, type = "text", placeholder, error }) => {
+  const hasAsterisk = label.trim().endsWith("*")
+  const labelText = label.replace(/\s*\*$/, "")
+
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
-        {label}
+        {labelText}
+        {hasAsterisk && <span className="text-slate-900"> *</span>}
       </label>
       <input
         type={type}
@@ -778,7 +782,7 @@ const EmpresaStep = React.memo<{
 
       <div>
         <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
-          Rubro <span className="text-red-500">*</span>
+          Rubro <span className="text-slate-900">*</span>
         </label>
         <select
           id="rubro"
@@ -801,7 +805,7 @@ const EmpresaStep = React.memo<{
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-3">
-          Sistema de marcaje <span className="text-red-500">*</span>
+          Sistema de marcaje <span className="text-slate-900">*</span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SISTEMAS.map((sistema) => {
