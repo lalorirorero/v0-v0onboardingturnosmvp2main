@@ -476,7 +476,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               type="tel"
               value={formData.telefono}
               onChange={(e) => handleFormChange("telefono", e.target.value)}
-              placeholder="+56912345678"
+              placeholder="Ej: +56912345678"
             />
             {fieldErrors.telefono && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
@@ -763,7 +763,7 @@ const EmpresaStep = React.memo<{
           name="emailFacturacion"
           label="Email de facturación"
           type="email"
-          placeholder="facturacion@empresa.com"
+          placeholder="Ej: facturacion@empresa.com"
           value={empresa.emailFacturacion || ""}
           onChange={handleEmpresaChange}
           error={fieldErrors["empresa.emailFacturacion"]}
@@ -772,7 +772,7 @@ const EmpresaStep = React.memo<{
           name="telefonoContacto"
           label="Teléfono de contacto"
           type="tel"
-          placeholder="+56912345678"
+          placeholder="Ej: +56912345678"
           value={empresa.telefonoContacto || ""}
           onChange={handleEmpresaChange}
           error={fieldErrors["empresa.telefonoContacto"]}
