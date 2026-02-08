@@ -930,13 +930,13 @@ const TrabajadoresStep = ({
       "Nombres",
       "Apellidos",
       "Grupo",
-      "Tel?fono 1",
-      "Tel?fono 2",
-      "Tel?fono 3",
+      "Teléfono 1",
+      "Teléfono 2",
+      "Teléfono 3",
     ]
 
     const rows = [
-      ["12345678-9", "ana.perez@empresa.cl", "Ana", "P?rez", "Operaciones", "+56912345678", "", ""],
+      ["12345678-9", "ana.perez@empresa.cl", "Ana", "Pérez", "Operaciones", "+56912345678", "", ""],
       ["98765432-1", "luis.rojas@empresa.cl", "Luis", "Rojas", "Ventas Terreno", "+56998765432", "+56911112222", ""],
     ]
 
@@ -955,10 +955,10 @@ const TrabajadoresStep = ({
     const instructions = [
       ["Instrucciones para usar la plantilla"],
       ["1) No cambies el orden de las columnas en la hoja Datos."],
-      ["2) Completa cada fila con un trabajador (los encabezados ya est?n incluidos)."],
-      ["3) RUT sin puntos y con gui?n (ej: 12345678-9)."],
+      ["2) Completa cada fila con un trabajador (los encabezados ya están incluidos)."],
+      ["3) RUT sin puntos y con guíon (ej: 12345678-9)."],
       ["4) Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche)."],
-      ["5) Tel?fonos opcionales; si no tienes, deja la celda vac?a."],
+      ["5) Teléfonos opcionales; si no tienes, deja la celda vacía."],
       ["6) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
     ]
 
