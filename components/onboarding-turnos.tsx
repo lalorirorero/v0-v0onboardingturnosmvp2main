@@ -3267,7 +3267,7 @@ const WhatsAppFloatingButton = ({
     }
   }, [dismissKey])
 
-  if (!normalized || isDismissed) return null
+  if (!normalized) return null
   const sender = companyName || "mi empresa"
   const contactName = executiveName || "tu ejecutivo comercial"
   const text = `Hola ${contactName}, soy de la empresa ${sender} y tengo dudas sobre mi onboarding, podrias ayudarme por favor?`
@@ -3285,6 +3285,33 @@ const WhatsAppFloatingButton = ({
     } catch {
       // ignore storage errors
     }
+  }
+
+  const handleRestore = () => {
+    setIsDismissed(false)
+    try {
+      window.localStorage.removeItem(dismissKey)
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  if (isDismissed) {
+    return (
+      <button
+        type="button"
+        onClick={handleRestore}
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-500/30"
+        aria-label="Mostrar WhatsApp"
+      >
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+          <svg viewBox="0 0 32 32" className="h-3.5 w-3.5 fill-white" aria-hidden="true">
+            <path d="M16 3C9.4 3 4 8.4 4 15c0 2.3.7 4.6 2 6.6L4 29l7.7-2c1.9 1 4 1.5 6.3 1.5 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 22.1c-2 0-3.9-.6-5.6-1.7l-.4-.2-4.6 1.2 1.2-4.5-.3-.5C5.4 18 5 16.5 5 15c0-6.1 4.9-11 11-11s11 4.9 11 11-4.9 11.1-11 11.1zm6-8.3c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-.9 1.2-.4.3-.7.1c-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.8-1-2.4c-.3-.7-.6-.6-.7-.6h-.6c-.2 0-.5.1-.7.3s-1 1-1 2.5 1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.8-.7 2-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4z" />
+          </svg>
+        </span>
+        WhatsApp
+      </button>
+    )
   }
 
   return (
