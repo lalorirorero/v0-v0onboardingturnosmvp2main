@@ -4251,7 +4251,12 @@ function OnboardingTurnosCliente() {
           </div>
         )
       case 4:
-        return <WorkersDecisionStep onDecision={handleWorkersDecision} />
+        return (
+          <div className="space-y-6">
+            <WorkersDecisionStep onDecision={handleWorkersDecision} />
+            <NavigationButtons />
+          </div>
+        )
 
       case 5: // Trabajadores (Paso 5)
         return (
