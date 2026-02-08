@@ -2655,7 +2655,7 @@ const DecisionStep = ({ onDecision }) => {
           className="group relative overflow-hidden rounded-2xl border-2 border-sky-300 bg-white p-6 text-left transition-all hover:border-sky-500 hover:shadow-lg"
         >
           <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-500 group-hover:text-white">
-            <Users className=\"h-6 w-6\" aria-hidden=\"true\" />
+            <Users className="h-6 w-6" aria-hidden="true" />
           </div>
           <h3 className="mb-2 text-lg font-semibold text-slate-900">Configurar ahora</h3>
           <p className="text-sm text-slate-600">
@@ -2669,7 +2669,7 @@ const DecisionStep = ({ onDecision }) => {
           className="group relative overflow-hidden rounded-2xl border-2 border-emerald-300 bg-white p-6 text-left transition-all hover:border-emerald-500 hover:shadow-lg"
         >
           <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white">
-            <Clock className=\"h-6 w-6\" aria-hidden=\"true\" />
+            <Clock className="h-6 w-6" aria-hidden="true" />
           </div>
           <h3 className="mb-2 text-lg font-semibold text-slate-900">Ver en capacitación</h3>
           <p className="text-sm text-slate-600">
