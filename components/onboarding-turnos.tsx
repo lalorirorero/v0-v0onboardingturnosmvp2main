@@ -3282,7 +3282,7 @@ const WhatsAppFloatingButton = ({
       <button
         type="button"
         onClick={handleRestore}
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-500/30"
+        className="fixed bottom-24 right-4 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-700"
         aria-label="Mostrar WhatsApp"
       >
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
