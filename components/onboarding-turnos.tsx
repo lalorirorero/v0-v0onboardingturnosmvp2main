@@ -352,6 +352,9 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
         <p className="text-sm text-slate-500">
           Puede ser el encargado de RRHH, jefe de operaciones o quien será responsable del control de asistencia.
         </p>
+        <p className="mt-2 text-sm text-slate-600">
+          Adem?s, este administrador debe completar el e-learning de incorporaci?n para configurar la plataforma y garantizar su correcta configuraci?n y uso.
+        </p>
       </header>
 
       {/* Formulario de nuevo administrador */}
