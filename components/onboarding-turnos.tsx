@@ -559,14 +559,13 @@ const ProtectedInput = React.memo<{
   placeholder?: string
   error?: string // Nueva prop para mostrar error
 }>(({ name, label, value, onChange, type = "text", placeholder, error }) => {
-  const hasAsterisk = label.trim().endsWith("*")
   const labelText = label.replace(/\s*\*$/, "")
 
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
         {labelText}
-        {hasAsterisk && <span className="text-slate-900"> *</span>}
+        <span className="text-slate-900"> *</span>
       </label>
       <input
         type={type}
