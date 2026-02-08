@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React from "react"
 
@@ -37,24 +37,24 @@ import { useRouter } from "next/navigation" // Import useRouter
 // REMOVED: PersistenceManager and persistence types
 // quita // <-- This line was removed as it was identified as an undeclared variable in the updates.
 const steps = [
-  { id: 0, label: "Bienvenida", description: "Comienza aquí" },
-  { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
+  { id: 0, label: "Bienvenida", description: "Comienza aquÃ­" },
+  { id: 1, label: "Antes de comenzar", description: "InformaciÃ³n del proceso" },
   { id: 2, label: "Empresa", description: "Datos base de la empresa" },
-  { id: 3, label: "Administrador principal", description: "Quién administrará la plataforma" },
-  { id: 4, label: "Carga de trabajadores", description: "Elige cómo agregar a tu equipo" }, // Actualizar array de steps
+  { id: 3, label: "Administrador principal", description: "QuiÃ©n administrarÃ¡ la plataforma" },
+  { id: 4, label: "Carga de trabajadores", description: "Elige cÃ³mo agregar a tu equipo" }, // Actualizar array de steps
   { id: 5, label: "Trabajadores", description: "Listado inicial" },
-  { id: 6, label: "Configuración de Turnos", description: "Decidir qué configurar" },
-  { id: 7, label: "Turnos", description: "Definición de turnos" },
-  { id: 8, label: "Planificaciones", description: "Tipos de planificación semanal" },
+  { id: 6, label: "ConfiguraciÃ³n de Turnos", description: "Decidir quÃ© configurar" },
+  { id: 7, label: "Turnos", description: "DefiniciÃ³n de turnos" },
+  { id: 8, label: "Planificaciones", description: "Tipos de planificaciÃ³n semanal" },
   { id: 9, label: "Asignaciones", description: "Asignar planificaciones a trabajadores" },
-  { id: 10, label: "Resumen", description: "Revisión final" },
-  { id: 11, label: "Agradecimiento", description: "¡Completado!" }, // Agregar paso de agradecimiento
+  { id: 10, label: "Resumen", description: "RevisiÃ³n final" },
+  { id: 11, label: "Agradecimiento", description: "Â¡Completado!" }, // Agregar paso de agradecimiento
 ]
 
 const PRIMER_PASO = 0
 
-// Días de la semana
-const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+// DÃ­as de la semana
+const DIAS = ["Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado", "Domingo"]
 
 // Define default turns (added because DEFAULT_TURNOS was undeclared)
 const DEFAULT_TURNOS = [
@@ -63,10 +63,10 @@ const DEFAULT_TURNOS = [
 ]
 
 const TOOLTIP_GRUPO =
-  '"Grupo" corresponde a una forma de clasificar a los colaboradores según características que tengan en común, como por ejemplo el lugar de trabajo, tipo de turno, área/departamento al que pertenece.'
+  '"Grupo" corresponde a una forma de clasificar a los colaboradores segÃºn caracterÃ­sticas que tengan en comÃºn, como por ejemplo el lugar de trabajo, tipo de turno, Ã¡rea/departamento al que pertenece.'
 
 const TOOLTIP_PERIODO_PLAN =
-  "Estas fechas indican el periodo de vigencia de la planificación asignada a cada trabajador (por ejemplo, del 01-10 al 31-10)."
+  "Estas fechas indican el periodo de vigencia de la planificaciÃ³n asignada a cada trabajador (por ejemplo, del 01-10 al 31-10)."
 
 const stringifyPayload = (value: unknown, pretty = false) => {
   const json = typeof globalThis !== "undefined" ? globalThis.JSON : undefined
@@ -90,7 +90,7 @@ const getEstadoByStep = (step) => {
 }
 
 
-// Helpers de validación
+// Helpers de validaciÃ³n
 const normalizeRut = (rut) => {
   if (!rut) return ""
   return rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
@@ -135,8 +135,8 @@ const isValidPhone = (phone) => {
 const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
 
-  if (!empresa.razonSocial?.trim()) errors.push("Razón Social")
-  if (!empresa.nombreFantasia?.trim()) errors.push("Nombre de fantasía")
+  if (!empresa.razonSocial?.trim()) errors.push("RazÃ³n Social")
+  if (!empresa.nombreFantasia?.trim()) errors.push("Nombre de fantasÃ­a")
   if (!empresa.rut?.trim()) errors.push("RUT")
   if (empresa.rut?.trim()) {
     const rutRegex = /^[0-9]{7,8}-[0-9Kk]$/
@@ -145,18 +145,18 @@ const validateEmpresaFields = (empresa: any): { isValid: boolean; errors: string
     }
   }
   if (!empresa.giro?.trim()) errors.push("Giro")
-  if (!empresa.direccion?.trim()) errors.push("Dirección")
+  if (!empresa.direccion?.trim()) errors.push("DirecciÃ³n")
   if (!empresa.comuna?.trim()) errors.push("Comuna")
-  if (!empresa.emailFacturacion?.trim()) errors.push("Email de facturación")
-  if (!empresa.telefonoContacto?.trim()) errors.push("Teléfono de contacto")
+  if (!empresa.emailFacturacion?.trim()) errors.push("Email de facturaciÃ³n")
+  if (!empresa.telefonoContacto?.trim()) errors.push("TelÃ©fono de contacto")
   if (!empresa.rubro?.trim()) errors.push("Rubro")
   if (!empresa.sistema || empresa.sistema.length === 0) errors.push("Sistema")
 
-  // Validación de email
+  // ValidaciÃ³n de email
   if (empresa.emailFacturacion?.trim()) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(empresa.emailFacturacion)) {
-      errors.push("Email de facturación (formato inválido)")
+      errors.push("Email de facturaciÃ³n (formato invÃ¡lido)")
     }
   }
 
@@ -181,10 +181,10 @@ const validateAdminsFields = (admins: any[]): { isValid: boolean; errors: string
     else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(admin.email)) {
-        errors.push(`Administrador ${adminNum}: Email (formato inválido)`)
+        errors.push(`Administrador ${adminNum}: Email (formato invÃ¡lido)`)
       }
     }
-    if (!admin.telefono?.trim()) errors.push(`Administrador ${adminNum}: Teléfono`)
+    if (!admin.telefono?.trim()) errors.push(`Administrador ${adminNum}: TelÃ©fono`)
   })
 
   return {
@@ -284,7 +284,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
       // Validar formato de RUT chileno
       const rutRegex = /^[0-9]{7,8}-[0-9Kk]$/
       if (!rutRegex.test(formData.rut)) {
-        errors.rut = "Formato inv?lido (ej: 12345678-9)"
+        errors.rut = "Formato inválido (ej: 12345678-9)"
       }
     }
 
@@ -293,17 +293,17 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(formData.email)) {
-        errors.email = "Formato de correo inválido (ej: correo@empresa.cl)"
+        errors.email = "Formato de correo invÃ¡lido (ej: correo@empresa.cl)"
       }
     }
 
     if (!formData.telefono.trim()) {
-      errors.telefono = "El teléfono es obligatorio"
+      errors.telefono = "El telÃ©fono es obligatorio"
     } else {
-      // Validar formato de teléfono (debe empezar con + y tener al menos 8 dígitos)
+      // Validar formato de telÃ©fono (debe empezar con + y tener al menos 8 dÃ­gitos)
       const phoneRegex = /^\+?[0-9]{8,15}$/
       if (!phoneRegex.test(formData.telefono.replace(/\s/g, ""))) {
-        errors.telefono = "Formato inválido (ej: +56912345678)"
+        errors.telefono = "Formato invÃ¡lido (ej: +56912345678)"
       }
     }
 
@@ -311,7 +311,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
   }, [formData])
 
   const handleAddAdminClick = useCallback(() => {
-    console.log("[v0] ===== BOTÓN AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
+    console.log("[v0] ===== BOTÃ“N AGREGAR ADMIN CLICKEADO (desde AdminStep) =====")
 
     const errors = validateAdminForm()
 
@@ -376,11 +376,11 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               type="text"
               value={formData.nombre}
               onChange={(e) => handleFormChange("nombre", e.target.value)}
-              placeholder="Ej: María"
+              placeholder="Ej: MarÃ­a"
             />
             {fieldErrors.nombre && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                <span>⚠</span>
+                <span>âš </span>
                 {fieldErrors.nombre}
               </p>
             )}
@@ -398,11 +398,11 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               type="text"
               value={formData.apellido}
               onChange={(e) => handleFormChange("apellido", e.target.value)}
-              placeholder="Ej: González"
+              placeholder="Ej: GonzÃ¡lez"
             />
             {fieldErrors.apellido && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                <span>⚠</span>
+                <span>âš </span>
                 {fieldErrors.apellido}
               </p>
             )}
@@ -412,8 +412,8 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               <span>
                 RUT <span className="text-destructive">*</span>
               </span>
-              <span className="ml-1 cursor-help text-slate-400" title="Ingresa el RUT sin puntos y con guión">
-                ⓘ
+              <span className="ml-1 cursor-help text-slate-400" title="Ingresa el RUT sin puntos y con guiÃ³n">
+                â“˜
               </span>
             </label>
             <input
@@ -429,7 +429,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             />
             {fieldErrors.rut && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                <span>⚠</span>
+                <span>âš </span>
                 {fieldErrors.rut}
               </p>
             )}
@@ -439,8 +439,8 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               <span>
                 Correo <span className="text-destructive">*</span>
               </span>
-              <span className="ml-1 cursor-help text-slate-400" title="Será usado para inicio de sesión">
-                ⓘ
+              <span className="ml-1 cursor-help text-slate-400" title="SerÃ¡ usado para inicio de sesiÃ³n">
+                â“˜
               </span>
             </label>
             <input
@@ -456,7 +456,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             />
             {fieldErrors.email && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                <span>⚠</span>
+                <span>âš </span>
                 {fieldErrors.email}
               </p>
             )}
@@ -464,10 +464,10 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">
               <span>
-                Teléfono <span className="text-destructive">*</span>
+                TelÃ©fono <span className="text-destructive">*</span>
               </span>
-              <span className="ml-1 cursor-help text-slate-400" title="Con código de país">
-                ⓘ
+              <span className="ml-1 cursor-help text-slate-400" title="Con cÃ³digo de paÃ­s">
+                â“˜
               </span>
             </label>
             <input
@@ -483,7 +483,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
             />
             {fieldErrors.telefono && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                <span>⚠</span>
+                <span>âš </span>
                 {fieldErrors.telefono}
               </p>
             )}
@@ -601,7 +601,7 @@ const ProtectedInput = React.memo<{
 
 ProtectedInput.displayName = "ProtectedInput"
 
-// START CHANGE: Definiendo EmpresaStep FUERA del componente principal para evitar re-creación
+// START CHANGE: Definiendo EmpresaStep FUERA del componente principal para evitar re-creaciÃ³n
 const EmpresaStep = React.memo<{
   empresa: Empresa
   setEmpresa: (updater: Empresa | ((prev: Empresa) => Empresa)) => void
@@ -616,25 +616,25 @@ const EmpresaStep = React.memo<{
   const SISTEMAS_INFO = {
     "GeoVictoria BOX": {
       imagen: "/images/box.png",
-      titulo: "Relojes Biométricos",
+      titulo: "Relojes BiomÃ©tricos",
       descripcion:
-        "Dispositivos físicos con huella digital o reconocimiento facial. Ideal para oficinas, plantas y lugares con acceso fijo.",
+        "Dispositivos fÃ­sicos con huella digital o reconocimiento facial. Ideal para oficinas, plantas y lugares con acceso fijo.",
     },
     "GeoVictoria CALL": {
       imagen: "/images/call.png",
       titulo: "Marcaje por Llamada",
       descripcion:
-        "El trabajador marca llamando a un número gratuito. Ideal para personal en terreno sin smartphone o con baja conectividad.",
+        "El trabajador marca llamando a un nÃºmero gratuito. Ideal para personal en terreno sin smartphone o con baja conectividad.",
     },
     "GeoVictoria APP": {
       imagen: "/images/app.png",
-      titulo: "Aplicación Móvil",
+      titulo: "AplicaciÃ³n MÃ³vil",
       descripcion:
-        "App para smartphone con geolocalización y foto. Ideal para equipos en terreno, vendedores y personal móvil.",
+        "App para smartphone con geolocalizaciÃ³n y foto. Ideal para equipos en terreno, vendedores y personal mÃ³vil.",
     },
     "GeoVictoria USB": {
       imagen: "/images/usb.png",
-      titulo: "Lector USB Biométrico",
+      titulo: "Lector USB BiomÃ©trico",
       descripcion:
         "Lector de huella conectado a computador. Ideal para recepciones, escritorios compartidos o puestos de trabajo fijos.",
     },
@@ -647,13 +647,13 @@ const EmpresaStep = React.memo<{
   }
 
   const RUBROS = [
-    "1. Agrícola",
+    "1. AgrÃ­cola",
     "2. Condominio",
-    "3. Construcción",
+    "3. ConstrucciÃ³n",
     "4. Inmobiliaria",
     "5. Consultoria",
     "6. Banca y Finanzas",
-    "7. Educación",
+    "7. EducaciÃ³n",
     "8. Municipio",
     "9. Gobierno",
     "10. Mineria",
@@ -668,7 +668,7 @@ const EmpresaStep = React.memo<{
     "19. Salud",
     "20. Servicios",
     "21. Transporte",
-    "22. Turismo, Hotelería y Gastronomía",
+    "22. Turismo, HotelerÃ­a y GastronomÃ­a",
   ]
 
   const handleEmpresaChange = useCallback(
@@ -716,7 +716,7 @@ const EmpresaStep = React.memo<{
       <div className="grid gap-6 md:grid-cols-2">
         <ProtectedInput
           name="razonSocial"
-          label="Razón Social"
+          label="RazÃ³n Social"
           placeholder="Ej: Tech Solutions S.A."
           value={empresa.razonSocial || ""}
           onChange={handleEmpresaChange}
@@ -724,7 +724,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="nombreFantasia"
-          label="Nombre de fantasía"
+          label="Nombre de fantasÃ­a"
           placeholder="Ej: TechSol"
           value={empresa.nombreFantasia || ""}
           onChange={handleEmpresaChange}
@@ -741,14 +741,14 @@ const EmpresaStep = React.memo<{
         <ProtectedInput
           name="giro"
           label="Giro *"
-          placeholder="Ej: Servicios de Tecnología"
+          placeholder="Ej: Servicios de TecnologÃ­a"
           value={empresa.giro || ""}
           onChange={handleEmpresaChange}
           error={fieldErrors["empresa.giro"]}
         />
         <ProtectedInput
           name="direccion"
-          label="Dirección"
+          label="DirecciÃ³n"
           placeholder="Ej: Av. Principal 123"
           value={empresa.direccion || ""}
           onChange={handleEmpresaChange}
@@ -764,7 +764,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="emailFacturacion"
-          label="Email de facturación"
+          label="Email de facturaciÃ³n"
           type="email"
           placeholder="Ej: facturacion@empresa.com"
           value={empresa.emailFacturacion || ""}
@@ -773,7 +773,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="telefonoContacto"
-          label="Teléfono de contacto"
+          label="TelÃ©fono de contacto"
           type="tel"
           placeholder="Ej: +56912345678"
           value={empresa.telefonoContacto || ""}
@@ -957,7 +957,7 @@ const TrabajadoresStep = ({
       setBulkStatus({
         total: lines.length,
         added: 0,
-        error: `Límite excedido. Máximo ${MAX_ROWS} filas por lote. Detectadas ${lines.length} filas.`,
+        error: `LÃ­mite excedido. MÃ¡ximo ${MAX_ROWS} filas por lote. Detectadas ${lines.length} filas.`,
       })
       return
     }
@@ -965,7 +965,7 @@ const TrabajadoresStep = ({
     console.log("[v0] === LIMPIANDO GRUPOS PREVIOS ===")
     console.log("[v0] Grupos antes de limpiar:", grupos.length)
 
-    // setGrupos automáticamente actualiza formData.empresa.grupos desde el componente padre
+    // setGrupos automÃ¡ticamente actualiza formData.empresa.grupos desde el componente padre
     setGrupos([])
 
     // Resetear el contador de IDs de grupos para empezar desde cero
@@ -976,7 +976,7 @@ const TrabajadoresStep = ({
     // </CHANGE>
 
     console.log("[v0] === INICIO DE PARSEO DE EXCEL ===")
-    console.log("[v0] Total de líneas detectadas:", lines.length)
+    console.log("[v0] Total de lÃ­neas detectadas:", lines.length)
 
     const parsedLines = lines
       .map((line) => line.split(/\t|;|,/).map((c) => c.trim()))
@@ -990,10 +990,10 @@ const TrabajadoresStep = ({
         return !looksLikeHeader
       })
 
-    console.log("[v0] Líneas parseadas (sin encabezados):", parsedLines.length)
+    console.log("[v0] LÃ­neas parseadas (sin encabezados):", parsedLines.length)
 
     if (parsedLines.length === 0) {
-      setBulkStatus({ total: 0, added: 0, error: "No se detectaron filas válidas para procesar." })
+      setBulkStatus({ total: 0, added: 0, error: "No se detectaron filas vÃ¡lidas para procesar." })
       return
     }
 
@@ -1001,7 +1001,7 @@ const TrabajadoresStep = ({
       setBulkStatus({
         total: parsedLines.length,
         added: 0,
-        error: `Límite excedido. Máximo ${MAX_ROWS} filas por lote. Detectadas ${parsedLines.length} filas.`,
+        error: `LÃ­mite excedido. MÃ¡ximo ${MAX_ROWS} filas por lote. Detectadas ${parsedLines.length} filas.`,
       })
       return
     }
@@ -1009,7 +1009,7 @@ const TrabajadoresStep = ({
     const nombreToId = new Map()
 
     console.log(
-      "[v0] Primeras 5 líneas parseadas:",
+      "[v0] Primeras 5 lÃ­neas parseadas:",
       parsedLines.slice(0, 5).map((cols) => ({
         rut: cols[0],
         correo: cols[1],
@@ -1044,23 +1044,23 @@ const TrabajadoresStep = ({
       if (!rutCompleto.trim()) {
         rowErrors.rut = "El RUT es obligatorio."
       } else if (!isValidRut(rutCompleto)) {
-        rowErrors.rut = "Formato de RUT inválido."
+        rowErrors.rut = "Formato de RUT invÃ¡lido."
       }
 
       if (correoPersonal.trim() && !isValidEmail(correoPersonal)) {
-        rowErrors.correo = "Formato de correo inválido."
+        rowErrors.correo = "Formato de correo invÃ¡lido."
       }
 
       if (telefono1.trim() && !isValidPhone(telefono1)) {
-        rowErrors.telefono1 = "Formato de teléfono inválido."
+        rowErrors.telefono1 = "Formato de telÃ©fono invÃ¡lido."
       }
 
       if (telefono2.trim() && !isValidPhone(telefono2)) {
-        rowErrors.telefono2 = "Formato de teléfono inválido."
+        rowErrors.telefono2 = "Formato de telÃ©fono invÃ¡lido."
       }
 
       if (telefono3.trim() && !isValidPhone(telefono3)) {
-        rowErrors.telefono3 = "Formato de teléfono inválido."
+        rowErrors.telefono3 = "Formato de telÃ©fono invÃ¡lido."
       }
 
       if (Object.keys(rowErrors).length > 0) {
@@ -1098,10 +1098,10 @@ const TrabajadoresStep = ({
 
     console.log("[v0] === RESUMEN DE PROCESAMIENTO ===")
     console.log("[v0] Total de trabajadores procesados:", nuevos.length)
-    console.log("[v0] Grupos únicos detectados:", nombreToId.size)
+    console.log("[v0] Grupos Ãºnicos detectados:", nombreToId.size)
     console.log("[v0] Mapa de grupos:", Array.from(nombreToId.entries()))
     console.log(
-      "[v0] Distribución de trabajadores por grupo:",
+      "[v0] DistribuciÃ³n de trabajadores por grupo:",
       nuevos.reduce((acc, t) => {
         const grupoNombre = parsedLines[nuevos.indexOf(t)][4] || "Sin grupo"
         acc[grupoNombre] = (acc[grupoNombre] || 0) + 1
@@ -1111,7 +1111,7 @@ const TrabajadoresStep = ({
 
     if (invalidCount > 0) {
       globalErrors.push(
-        `Se detectaron ${invalidCount} trabajador${invalidCount === 1 ? "" : "es"} con datos inválidos.`,
+        `Se detectaron ${invalidCount} trabajador${invalidCount === 1 ? "" : "es"} con datos invÃ¡lidos.`,
       )
     }
 
@@ -1128,9 +1128,9 @@ const TrabajadoresStep = ({
       setBulkStatus({
         total: 0,
         added: 0,
-        error: "Ocurrió un error al procesar la carga masiva. Reintenta.",
+        error: "OcurriÃ³ un error al procesar la carga masiva. Reintenta.",
       })
-      setLocalFieldErrors({ byId: {}, global: ["Ocurrió un error al procesar la carga masiva. Reintenta."] })
+      setLocalFieldErrors({ byId: {}, global: ["OcurriÃ³ un error al procesar la carga masiva. Reintenta."] })
     }
   }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
 
@@ -1180,7 +1180,7 @@ const TrabajadoresStep = ({
   const removeTrabajador = (id) => {
     const trabajador = trabajadores.find((t) => t.id === id)
     if (trabajador?.tipo === "administrador") {
-      alert("No se puede eliminar un administrador desde aquí. Elimínalo desde el paso de Administradores.")
+      alert("No se puede eliminar un administrador desde aquÃ­. ElimÃ­nalo desde el paso de Administradores.")
       return
     }
     setTrabajadores(trabajadores.filter((t) => t.id !== id))
@@ -1222,12 +1222,12 @@ const TrabajadoresStep = ({
               Copia celdas desde Excel con las columnas en este orden:
               <span className="font-medium">
                 {" "}
-                Rut Completo, Correo Personal, Nombres, Apellidos, Grupo, Teléfono 1, Teléfono 2, Teléfono 3
+                Rut Completo, Correo Personal, Nombres, Apellidos, Grupo, TelÃ©fono 1, TelÃ©fono 2, TelÃ©fono 3
               </span>
-              . Se procesa automáticamente.
+              . Se procesa automÃ¡ticamente.
             </p>
             <p className="text-[11px] text-amber-600 font-medium mt-1">
-              Límite: {MAX_ROWS} filas por lote. Puedes pegar múltiples lotes.
+              LÃ­mite: {MAX_ROWS} filas por lote. Puedes pegar mÃºltiples lotes.
             </p>
           </div>
           <button
@@ -1278,7 +1278,7 @@ const TrabajadoresStep = ({
                 />
               </svg>
               <p className="text-xs text-green-700 font-medium">
-                ✓ {bulkStatus.added} trabajador{bulkStatus.added !== 1 ? "es" : ""} agregado
+                âœ“ {bulkStatus.added} trabajador{bulkStatus.added !== 1 ? "es" : ""} agregado
                 {bulkStatus.added !== 1 ? "s" : ""} correctamente
               </p>
             </div>
@@ -1309,7 +1309,7 @@ const TrabajadoresStep = ({
           <DialogContent className="max-w-[1700px] w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
             <DialogHeader className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
-                <DialogTitle className="text-lg font-semibold text-slate-900">Cómo pegar datos desde Excel</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-900">CÃ³mo pegar datos desde Excel</DialogTitle>
                 <DialogDescription className="text-xs text-slate-500 mt-1">
                   Tutorial paso a paso para importar trabajadores
                 </DialogDescription>
@@ -1336,23 +1336,23 @@ const TrabajadoresStep = ({
                 <ol className="list-decimal pl-5 space-y-1 text-sky-800">
                   <li>Selecciona las celdas en Excel con los datos de tus trabajadores</li>
                   <li>
-                    Asegúrate de que las columnas estén en el orden correcto:{" "}
+                    AsegÃºrate de que las columnas estÃ©n en el orden correcto:{" "}
                     <span className="font-medium">
-                      Rut Completo, Correo Personal, Nombres, Apellidos, Grupo, Teléfono 1, Teléfono 2, Teléfono 3
+                      Rut Completo, Correo Personal, Nombres, Apellidos, Grupo, TelÃ©fono 1, TelÃ©fono 2, TelÃ©fono 3
                     </span>
                   </li>
                   <li>Copia las celdas seleccionadas (Ctrl+C o Cmd+C)</li>
-                  <li>Pega en el área de texto de arriba (Ctrl+V o Cmd+V)</li>
-                  <li>Los trabajadores se agregarán automáticamente a la tabla</li>
+                  <li>Pega en el Ã¡rea de texto de arriba (Ctrl+V o Cmd+V)</li>
+                  <li>Los trabajadores se agregarÃ¡n automÃ¡ticamente a la tabla</li>
                 </ol>
                 <p className="text-sky-700 italic mt-2">
-                  Nota: Las columnas de teléfono son opcionales. Puedes dejarlas vacías si no tienes esa información.
+                  Nota: Las columnas de telÃ©fono son opcionales. Puedes dejarlas vacÃ­as si no tienes esa informaciÃ³n.
                 </p>
               </div>
 
               <div className="rounded-lg overflow-hidden bg-slate-900">
                 <video controls className="w-full" src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/screen-capture%20%2845%29%20%28online-video-cutter.com%29%20%281%29-hWp1VhI7B4vhR7uue5IXg43PVpD92D.mp4">
-                  Tu navegador no soporta la reproducción de videos.
+                  Tu navegador no soporta la reproducciÃ³n de videos.
                 </video>
               </div>
             </div>
@@ -1385,9 +1385,9 @@ const TrabajadoresStep = ({
                   </span>
                 </span>
               </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 1</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 2</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 3</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-700">TelÃ©fono 1</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-700">TelÃ©fono 2</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-700">TelÃ©fono 3</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -1545,7 +1545,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
   })
 
   const handleAddTurno = () => {
-    // Validación básica
+    // ValidaciÃ³n bÃ¡sica
     if (!formTurno.nombre.trim()) {
       alert("Por favor ingresa el nombre del turno")
       return
@@ -1554,14 +1554,14 @@ const TurnosStep = ({ turnos, setTurnos }) => {
     if (formTurno.tipoColacion === "libre") {
       const minutos = Number(formTurno.colacionMinutos)
       if (!formTurno.colacionMinutos || Number.isNaN(minutos) || minutos <= 0) {
-        alert("Debes ingresar los minutos de colación libre.")
+        alert("Debes ingresar los minutos de colaciÃ³n libre.")
         return
       }
     }
 
     if (formTurno.tipoColacion === "fija") {
       if (!formTurno.colacionInicio || !formTurno.colacionFin) {
-        alert("Debes ingresar hora de inicio y fin para colación fija.")
+        alert("Debes ingresar hora de inicio y fin para colaciÃ³n fija.")
         return
       }
     }
@@ -1598,15 +1598,15 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Turnos</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm font-medium text-blue-900">¿Qué es un turno?</p>
+          <p className="text-sm font-medium text-blue-900">Â¿QuÃ© es un turno?</p>
           <p className="text-xs text-blue-800 leading-relaxed">
-            Un <strong>turno</strong> es un bloque de horario laboral con hora de inicio, hora de término y tiempo de
-            colación. Por ejemplo: "Turno Oficina" de 09:00 a 18:00 con 60 minutos de colación, o "Turno Noche" de 22:00
-            a 06:00 con 30 minutos de colación.
+            Un <strong>turno</strong> es un bloque de horario laboral con hora de inicio, hora de tÃ©rmino y tiempo de
+            colaciÃ³n. Por ejemplo: "Turno Oficina" de 09:00 a 18:00 con 60 minutos de colaciÃ³n, o "Turno Noche" de 22:00
+            a 06:00 con 30 minutos de colaciÃ³n.
           </p>
           <p className="text-xs text-blue-800 leading-relaxed">
-            Los turnos son las <strong>piezas básicas</strong> que luego usarás para crear planificaciones semanales.
-            También puedes crear un turno llamado "Libre" para indicar días de descanso.
+            Los turnos son las <strong>piezas bÃ¡sicas</strong> que luego usarÃ¡s para crear planificaciones semanales.
+            TambiÃ©n puedes crear un turno llamado "Libre" para indicar dÃ­as de descanso.
           </p>
         </div>
       </header>
@@ -1648,7 +1648,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
         </div>
 
         <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <label className="text-sm font-medium">Tipo de colación</label>
+          <label className="text-sm font-medium">Tipo de colaciÃ³n</label>
           <div className="grid gap-2 md:grid-cols-3">
             <button
               type="button"
@@ -1659,7 +1659,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Sin Colación
+              Sin ColaciÃ³n
             </button>
             <button
               type="button"
@@ -1670,7 +1670,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Colación Libre
+              ColaciÃ³n Libre
             </button>
             <button
               type="button"
@@ -1681,13 +1681,13 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Colación Fija
+              ColaciÃ³n Fija
             </button>
           </div>
 
           {formTurno.tipoColacion === "libre" && (
             <div className="space-y-1 text-sm">
-              <label className="font-medium">Tiempo de colación (minutos)</label>
+              <label className="font-medium">Tiempo de colaciÃ³n (minutos)</label>
               <input
                 className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 type="number"
@@ -1702,7 +1702,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
           {formTurno.tipoColacion === "fija" && (
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1 text-sm">
-                <label className="font-medium">Inicio colación</label>
+                <label className="font-medium">Inicio colaciÃ³n</label>
                 <input
                   className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                   type="time"
@@ -1711,7 +1711,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                 />
               </div>
               <div className="space-y-1 text-sm">
-                <label className="font-medium">Término colación</label>
+                <label className="font-medium">TÃ©rmino colaciÃ³n</label>
                 <input
                   className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                   type="time"
@@ -1724,7 +1724,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
         </div>
 
         <div className="space-y-1 text-sm">
-          <label className="font-medium">Descripción (opcional)</label>
+          <label className="font-medium">DescripciÃ³n (opcional)</label>
           <input
             className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             type="text"
@@ -1765,17 +1765,17 @@ const TurnosStep = ({ turnos, setTurnos }) => {
                     )}
                     {turno.tipoColacion === "sin" && (
                       <span>
-                        <strong>Colación:</strong> Sin colación
+                        <strong>ColaciÃ³n:</strong> Sin colaciÃ³n
                       </span>
                     )}
                     {turno.tipoColacion === "libre" && turno.colacionMinutos > 0 && (
                       <span>
-                        <strong>Colación libre:</strong> {turno.colacionMinutos} min
+                        <strong>ColaciÃ³n libre:</strong> {turno.colacionMinutos} min
                       </span>
                     )}
                     {turno.tipoColacion === "fija" && turno.colacionInicio && turno.colacionFin && (
                       <span>
-                        <strong>Colación fija:</strong> {turno.colacionInicio} - {turno.colacionFin}
+                        <strong>ColaciÃ³n fija:</strong> {turno.colacionInicio} - {turno.colacionFin}
                       </span>
                     )}
                   </div>
@@ -1846,7 +1846,7 @@ const GruposStep = ({ grupos, setGrupos }) => {
         </p>
       </header>
 
-      {/* Formulario único */}
+      {/* Formulario Ãºnico */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Grupo</h3>
         <div className="space-y-3">
@@ -1861,12 +1861,12 @@ const GruposStep = ({ grupos, setGrupos }) => {
             />
           </div>
           <div className="space-y-1 text-sm">
-            <label className="font-medium">Descripción (opcional)</label>
+            <label className="font-medium">DescripciÃ³n (opcional)</label>
             <textarea
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={formData.descripcion}
               onChange={(e) => handleFormChange("descripcion", e.target.value)}
-              placeholder="Ej: Equipo de ventas de la región metropolitana"
+              placeholder="Ej: Equipo de ventas de la regiÃ³n metropolitana"
               rows={2}
             />
           </div>
@@ -1917,7 +1917,7 @@ const GruposStep = ({ grupos, setGrupos }) => {
 
       {grupos.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-          <p className="text-sm text-slate-500">No hay grupos creados aún</p>
+          <p className="text-sm text-slate-500">No hay grupos creados aÃºn</p>
           <p className="text-xs text-slate-400 mt-1">Completa el formulario arriba para agregar el primer grupo</p>
         </div>
       )}
@@ -1951,13 +1951,13 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
 
   const addPlanificacion = useCallback(() => {
     if (!formData.nombre.trim()) {
-      alert("Por favor ingresa el nombre de la planificación")
+      alert("Por favor ingresa el nombre de la planificaciÃ³n")
       return
     }
 
     const esCompleta = formData.diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
     if (!esCompleta) {
-      alert("Por favor asigna un turno a todos los días de la semana")
+      alert("Por favor asigna un turno a todos los dÃ­as de la semana")
       return
     }
 
@@ -1997,19 +1997,19 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Planificaciones</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-purple-200 bg-purple-50 p-3">
-          <p className="text-sm font-medium text-purple-900">¿Qué es una planificación?</p>
+          <p className="text-sm font-medium text-purple-900">Â¿QuÃ© es una planificaciÃ³n?</p>
           <p className="text-xs text-purple-800 leading-relaxed">
-            Una <strong>planificación</strong> es un patrón semanal que combina los turnos que creaste en el paso
-            anterior. Define qué turno se trabaja cada día de la semana (Lunes a Domingo).
+            Una <strong>planificaciÃ³n</strong> es un patrÃ³n semanal que combina los turnos que creaste en el paso
+            anterior. Define quÃ© turno se trabaja cada dÃ­a de la semana (Lunes a Domingo).
           </p>
           <p className="text-xs text-purple-800 leading-relaxed">
-            <strong>Ejemplo:</strong> Puedes crear una planificación llamada "Oficina 5x2" donde de Lunes a Viernes
-            asignas "Turno Oficina" y Sábado y Domingo asignas "Libre". O una planificación "Rotativo" con diferentes
-            turnos cada día.
+            <strong>Ejemplo:</strong> Puedes crear una planificaciÃ³n llamada "Oficina 5x2" donde de Lunes a Viernes
+            asignas "Turno Oficina" y SÃ¡bado y Domingo asignas "Libre". O una planificaciÃ³n "Rotativo" con diferentes
+            turnos cada dÃ­a.
           </p>
           <p className="text-xs text-purple-800 leading-relaxed">
-            <strong>Relación con turnos:</strong> Cada día de la planificación usa uno de los turnos que definiste
-            anteriormente. Las planificaciones te permiten crear patrones semanales reutilizables que luego asignarás a
+            <strong>RelaciÃ³n con turnos:</strong> Cada dÃ­a de la planificaciÃ³n usa uno de los turnos que definiste
+            anteriormente. Las planificaciones te permiten crear patrones semanales reutilizables que luego asignarÃ¡s a
             tus trabajadores.
           </p>
         </div>
@@ -2021,13 +2021,13 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
         </div>
       )}
 
-      {/* Formulario único */}
+      {/* Formulario Ãºnico */}
       {turnos.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar Planificación</h3>
+          <h3 className="text-sm font-medium text-slate-700 mb-3">Agregar PlanificaciÃ³n</h3>
           <div className="space-y-3">
             <div className="space-y-1 text-sm">
-              <label className="font-medium">Nombre de la planificación</label>
+              <label className="font-medium">Nombre de la planificaciÃ³n</label>
               <input
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 type="text"
@@ -2038,7 +2038,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-700">Asignación semanal (L, M, X, J, V, S, D)</p>
+              <p className="text-sm font-medium text-slate-700">AsignaciÃ³n semanal (L, M, X, J, V, S, D)</p>
               <div className="grid gap-2 sm:grid-cols-7">
                 {DIAS.map((dia, dayIndex) => {
                   const turnoAsignado = formData.diasTurnos[dayIndex]
@@ -2065,9 +2065,9 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
 
             <div className="text-xs">
               {verificarPlanificacionCompleta(formData.diasTurnos) ? (
-                <span className="text-emerald-700 font-medium">✓ Planificación completa</span>
+                <span className="text-emerald-700 font-medium">âœ“ PlanificaciÃ³n completa</span>
               ) : (
-                <span className="text-amber-700 font-medium">⚠ Todos los días deben tener un turno asignado</span>
+                <span className="text-amber-700 font-medium">âš  Todos los dÃ­as deben tener un turno asignado</span>
               )}
             </div>
           </div>
@@ -2076,7 +2076,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
             onClick={addPlanificacion}
             className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
           >
-            + Agregar planificación
+            + Agregar planificaciÃ³n
           </button>
         </div>
       )}
@@ -2095,9 +2095,9 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                       <div className="text-sm font-medium text-slate-900">{plan.nombre}</div>
                       <div className="text-xs text-slate-500 mt-0.5">
                         {esCompleta ? (
-                          <span className="text-emerald-700 font-medium">✓ Completa</span>
+                          <span className="text-emerald-700 font-medium">âœ“ Completa</span>
                         ) : (
-                          <span className="text-amber-700 font-medium">⚠ Incompleta</span>
+                          <span className="text-amber-700 font-medium">âš  Incompleta</span>
                         )}
                       </div>
                     </div>
@@ -2105,7 +2105,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
                       type="button"
                       onClick={() => removePlanificacion(plan.id)}
                       className="text-xs text-red-500 hover:text-red-700 focus:outline-none"
-                      title="Eliminar planificación"
+                      title="Eliminar planificaciÃ³n"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
@@ -2138,9 +2138,9 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
 
       {planificaciones.length === 0 && turnos.length > 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-          <p className="text-sm text-slate-500">No hay planificaciones creadas aún</p>
+          <p className="text-sm text-slate-500">No hay planificaciones creadas aÃºn</p>
           <p className="text-xs text-slate-400 mt-1">
-            Completa el formulario arriba para agregar la primera planificación
+            Completa el formulario arriba para agregar la primera planificaciÃ³n
           </p>
         </div>
       )}
@@ -2218,7 +2218,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     setBulkError("")
 
     if (!bulkPlanificacionId) {
-      setBulkError("Selecciona una planificación para asignar.")
+      setBulkError("Selecciona una planificaciÃ³n para asignar.")
       return
     }
     if (!bulkDesde || !bulkHasta || (bulkHasta !== "permanente" && bulkHasta === "fecha")) {
@@ -2269,22 +2269,22 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
   return (
     <section className="space-y-4">
       <header>
-        <h2 className="text-lg font-semibold text-slate-900">Asignación de planificaciones</h2>
+        <h2 className="text-lg font-semibold text-slate-900">AsignaciÃ³n de planificaciones</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm font-medium text-emerald-900">¿Qué es una asignación?</p>
+          <p className="text-sm font-medium text-emerald-900">Â¿QuÃ© es una asignaciÃ³n?</p>
           <p className="text-xs text-emerald-800 leading-relaxed">
-            Una <strong>asignación</strong> es vincular a un trabajador específico con una planificación semanal durante
-            un período determinado. Define <strong>quién</strong> trabaja <strong>qué patrón semanal</strong> y{" "}
-            <strong>desde cuándo hasta cuándo</strong>.
+            Una <strong>asignaciÃ³n</strong> es vincular a un trabajador especÃ­fico con una planificaciÃ³n semanal durante
+            un perÃ­odo determinado. Define <strong>quiÃ©n</strong> trabaja <strong>quÃ© patrÃ³n semanal</strong> y{" "}
+            <strong>desde cuÃ¡ndo hasta cuÃ¡ndo</strong>.
           </p>
           <p className="text-xs text-emerald-800 leading-relaxed">
-            <strong>Ejemplo:</strong> Puedes asignar a "Juan Pérez" la planificación "Oficina 5x2" desde el 01/01/2025
-            hasta el 31/12/2025. Así Juan trabajará ese patrón semanal durante todo el año.
+            <strong>Ejemplo:</strong> Puedes asignar a "Juan PÃ©rez" la planificaciÃ³n "Oficina 5x2" desde el 01/01/2025
+            hasta el 31/12/2025. AsÃ­ Juan trabajarÃ¡ ese patrÃ³n semanal durante todo el aÃ±o.
           </p>
           <p className="text-xs text-emerald-800 leading-relaxed">
-            <strong>Relación con planificaciones:</strong> Las asignaciones toman las planificaciones que creaste (que a
-            su vez usan los turnos) y las aplican a trabajadores reales. Puedes asignar la misma planificación a
-            múltiples trabajadores o crear asignaciones individuales.
+            <strong>RelaciÃ³n con planificaciones:</strong> Las asignaciones toman las planificaciones que creaste (que a
+            su vez usan los turnos) y las aplican a trabajadores reales. Puedes asignar la misma planificaciÃ³n a
+            mÃºltiples trabajadores o crear asignaciones individuales.
           </p>
         </div>
       </header>
@@ -2324,13 +2324,13 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] font-medium text-slate-700">Planificación a asignar</label>
+            <label className="text-[11px] font-medium text-slate-700">PlanificaciÃ³n a asignar</label>
             <select
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={bulkPlanificacionId}
               onChange={(e) => setBulkPlanificacionId(e.target.value ? Number(e.target.value) : "")}
             >
-              <option value="">Seleccionar…</option>
+              <option value="">Seleccionarâ€¦</option>
               {planificaciones.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre || "Sin nombre"}
@@ -2379,7 +2379,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   }
                 }}
               >
-                <option value="fecha">Fecha específica</option>
+                <option value="fecha">Fecha especÃ­fica</option>
                 <option value="permanente">Permanente</option>
               </select>
               {bulkHasta !== "permanente" && (
@@ -2398,7 +2398,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           <div className="space-y-1">
             <p className="text-[11px] font-medium text-slate-700">Trabajadores filtrados</p>
             <p className="text-[11px] text-slate-500">
-              Selecciona los trabajadores a los que aplicarás la planificación.
+              Selecciona los trabajadores a los que aplicarÃ¡s la planificaciÃ³n.
             </p>
           </div>
           <div className="flex gap-2 text-[11px]">
@@ -2414,7 +2414,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               onClick={limpiarSeleccion}
               className="rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
             >
-              Limpiar selección
+              Limpiar selecciÃ³n
             </button>
           </div>
         </div>
@@ -2443,7 +2443,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     </td>
                     <td className="px-3 py-1">
                       {t.nombre || "Sin nombre"}
-                      {t.rut ? <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
+                      {t.rut ? <span className="text-[10px] text-slate-500"> â€“ {t.rut}</span> : null}
                     </td>
                     <td className="px-3 py-1">{grupo ? grupo.nombre : "Sin grupo"}</td>
                   </tr>
@@ -2460,7 +2460,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           onClick={crearAsignacionesMasivas}
           className="inline-flex items-center rounded-full bg-sky-500 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-600"
         >
-          Asignar planificación a seleccionados
+          Asignar planificaciÃ³n a seleccionados
         </button>
       </div>
 
@@ -2469,7 +2469,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           <thead className="bg-slate-50">
             <tr>
               <th className="px-3 py-2 text-left font-medium text-slate-700">Trabajador</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-700">Planificación</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-700">PlanificaciÃ³n</th>
               <th className="px-3 py-2 text-left font-medium text-slate-700">
                 <span className="flex items-center gap-1">
                   Desde
@@ -2506,7 +2506,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                       updateAsignacion(a.id, "trabajadorId", e.target.value ? Number(e.target.value) : "")
                     }
                   >
-                    <option value="">Seleccionar…</option>
+                    <option value="">Seleccionarâ€¦</option>
                     {trabajadores.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.nombre || "Sin nombre"}
@@ -2522,7 +2522,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                       updateAsignacion(a.id, "planificacionId", e.target.value ? Number(e.target.value) : "")
                     }
                   >
-                    <option value="">Seleccionar…</option>
+                    <option value="">Seleccionarâ€¦</option>
                     {planificaciones.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.nombre || "Sin nombre"}
@@ -2584,16 +2584,16 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
         onClick={addAsignacion}
         className="mt-2 inline-flex items-center rounded-full border border-sky-500 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
       >
-        + Agregar asignación manual
+        + Agregar asignaciÃ³n manual
       </button>
 
       <div className="mt-6 space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-900">Estado de planificación por trabajador</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Estado de planificaciÃ³n por trabajador</h3>
         </div>
         <p className="text-[11px] text-slate-600">
-          Aquí se muestran todos los trabajadores. Si un trabajador no tiene una planificación válida asignada (con
-          periodo Desde/Hasta), aparecerá como
+          AquÃ­ se muestran todos los trabajadores. Si un trabajador no tiene una planificaciÃ³n vÃ¡lida asignada (con
+          periodo Desde/Hasta), aparecerÃ¡ como
           <span className="font-semibold text-red-600"> "Sin planificar"</span>.
         </p>
         <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -2601,7 +2601,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium text-slate-700">Trabajador</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-700">Planificación asignada</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-700">PlanificaciÃ³n asignada</th>
               </tr>
             </thead>
             <tbody>
@@ -2611,7 +2611,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="px-3 py-1.5">
                       {t.nombre || "Sin nombre"}
-                      {t.rut ? <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
+                      {t.rut ? <span className="text-[10px] text-slate-500"> â€“ {t.rut}</span> : null}
                     </td>
                     <td className="px-3 py-1.5">
                       {label ? (
@@ -2640,10 +2640,10 @@ const DecisionStep = ({ onDecision }) => {
     <section className="space-y-6">
       <header className="text-center">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-          ¿Deseas configurar turnos y planificaciones ahora?
+          Â¿Deseas configurar turnos y planificaciones ahora?
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Puedes configurar los turnos, planificaciones y asignaciones ahora, o verlo más tarde durante la capacitación
+          Puedes configurar los turnos, planificaciones y asignaciones ahora, o verlo mÃ¡s tarde durante la capacitaciÃ³n
           de la plataforma.
         </p>
       </header>
@@ -2668,7 +2668,7 @@ const DecisionStep = ({ onDecision }) => {
           </div>
           <h3 className="mb-2 text-lg font-semibold text-slate-900">Configurar ahora</h3>
           <p className="text-sm text-slate-600">
-            Continúa configurando turnos, planificaciones y asignaciones en los siguientes pasos.
+            ContinÃºa configurando turnos, planificaciones y asignaciones en los siguientes pasos.
           </p>
         </button>
 
@@ -2693,9 +2693,9 @@ const DecisionStep = ({ onDecision }) => {
               />
             </svg>
           </div>
-          <h3 className="mb-2 text-lg font-semibold text-slate-900">Ver en capacitación</h3>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Ver en capacitaciÃ³n</h3>
           <p className="text-sm text-slate-600">
-            Omite esta configuración y completa el onboarding. Lo verás durante la capacitación de la plataforma.
+            Omite esta configuraciÃ³n y completa el onboarding. Lo verÃ¡s durante la capacitaciÃ³n de la plataforma.
           </p>
         </button>
       </div>
@@ -2707,9 +2707,9 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
   return (
     <section className="space-y-6">
       <header className="text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">¿Deseas cargar trabajadores ahora?</h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Â¿Deseas cargar trabajadores ahora?</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Puedes cargar los trabajadores ahora o hacerlo más tarde durante la capacitación de la plataforma.
+          Puedes cargar los trabajadores ahora o hacerlo mÃ¡s tarde durante la capacitaciÃ³n de la plataforma.
         </p>
       </header>
 
@@ -2733,7 +2733,7 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
             </svg>
           </div>
           <h3 className="mb-2 text-lg font-semibold text-slate-900">Cargar ahora</h3>
-          <p className="text-sm text-slate-600">Continúa cargando los trabajadores en el siguiente paso.</p>
+          <p className="text-sm text-slate-600">ContinÃºa cargando los trabajadores en el siguiente paso.</p>
         </button>
 
         <button
@@ -2757,9 +2757,9 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
               />
             </svg>
           </div>
-          <h3 className="mb-2 text-lg font-semibold text-slate-900">Cargar en capacitación</h3>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">Cargar en capacitaciÃ³n</h3>
           <p className="text-sm text-slate-600">
-            Salta a la revisión final. Cargarás trabajadores durante la capacitación de la plataforma.
+            Salta a la revisiÃ³n final. CargarÃ¡s trabajadores durante la capacitaciÃ³n de la plataforma.
           </p>
         </button>
       </div>
@@ -2770,9 +2770,9 @@ const WorkersDecisionStep = ({ onDecision }: { onDecision: (decision: "now" | "l
 const casosDeExitoVideos = [
   {
     empresa: "Starbucks",
-    industria: "Alimentación",
+    industria: "AlimentaciÃ³n",
     videoId: "Je6-Ka-1Fjo",
-    quote: "Logramos reducir en un 90% el tiempo dedicado a gestión de asistencia",
+    quote: "Logramos reducir en un 90% el tiempo dedicado a gestiÃ³n de asistencia",
   },
   {
     empresa: "Huawei Chile",
@@ -2782,9 +2782,9 @@ const casosDeExitoVideos = [
   },
   {
     empresa: "Bureau Veritas",
-    industria: "Certificación",
+    industria: "CertificaciÃ³n",
     videoId: "Ofzj8SsgdDs",
-    quote: "Procesos de nómina más eficientes y sin errores",
+    quote: "Procesos de nÃ³mina mÃ¡s eficientes y sin errores",
   },
   {
     empresa: "Virgin Mobile",
@@ -2794,23 +2794,23 @@ const casosDeExitoVideos = [
   },
   {
     empresa: "Toshiba",
-    industria: "Tecnología",
+    industria: "TecnologÃ­a",
     videoId: "P-SDGVuoquM",
-    quote: "Automatización que nos ahorra horas de trabajo administrativo",
+    quote: "AutomatizaciÃ³n que nos ahorra horas de trabajo administrativo",
   },
   {
     empresa: "Energy Fitness",
     industria: "Fitness",
     videoId: "9Ix6xiSH9SY",
-    quote: "Gestión simplificada de turnos rotativos",
+    quote: "GestiÃ³n simplificada de turnos rotativos",
   },
 ]
 
 const beneficiosGeoVictoria = [
   {
     icon: TrendingUp,
-    titulo: "Reduce errores de nómina",
-    descripcion: "Hasta 90% menos errores en cálculos de asistencia",
+    titulo: "Reduce errores de nÃ³mina",
+    descripcion: "Hasta 90% menos errores en cÃ¡lculos de asistencia",
   },
   {
     icon: Clock,
@@ -2825,7 +2825,7 @@ const beneficiosGeoVictoria = [
   {
     icon: Shield,
     titulo: "Datos seguros",
-    descripcion: "Información protegida y respaldada en la nube",
+    descripcion: "InformaciÃ³n protegida y respaldada en la nube",
   },
 ]
 
@@ -2856,19 +2856,19 @@ const BienvenidaMarketingStep = ({
         {nombreEmpresa ? (
           <>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
-              ¡Bienvenido, <span className="text-sky-600">{nombreEmpresa}</span>!
+              Â¡Bienvenido, <span className="text-sky-600">{nombreEmpresa}</span>!
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Estás a punto de unirte a miles de empresas que ya transformaron su gestión de asistencia con GeoVictoria.
+              EstÃ¡s a punto de unirte a miles de empresas que ya transformaron su gestiÃ³n de asistencia con GeoVictoria.
             </p>
           </>
         ) : (
           <>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
-              ¡Bienvenido a <span className="text-sky-600">GeoVictoria</span>!
+              Â¡Bienvenido a <span className="text-sky-600">GeoVictoria</span>!
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Estás a punto de transformar la gestión de asistencia de tu empresa. Miles de organizaciones ya lo
+              EstÃ¡s a punto de transformar la gestiÃ³n de asistencia de tu empresa. Miles de organizaciones ya lo
               hicieron.
             </p>
           </>
@@ -2877,7 +2877,7 @@ const BienvenidaMarketingStep = ({
         <div className="flex flex-col items-center gap-3 mt-6">
           <p className="text-sm text-slate-500 flex items-center gap-2">
             <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-            Estamos emocionados de acompañarte en este proceso
+            Estamos emocionados de acompaÃ±arte en este proceso
           </p>
           <Button
             onClick={onContinue}
@@ -2885,7 +2885,7 @@ const BienvenidaMarketingStep = ({
             className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 transition-all duration-300 text-base px-8 py-6 rounded-full"
           >
             <Zap className="w-5 h-5 mr-2" />
-            Comenzar mi implementación
+            Comenzar mi implementaciÃ³n
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
@@ -2907,7 +2907,7 @@ const BienvenidaMarketingStep = ({
         ))}
       </div>
 
-      {/* Estadísticas de confianza */}
+      {/* EstadÃ­sticas de confianza */}
       <div className="bg-gradient-to-r from-sky-600 to-sky-700 rounded-xl p-6 text-white">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
@@ -2920,16 +2920,16 @@ const BienvenidaMarketingStep = ({
           </div>
           <div>
             <p className="text-2xl sm:text-3xl md:text-4xl font-bold">15+</p>
-            <p className="text-sky-200 text-sm">Países en Latam</p>
+            <p className="text-sky-200 text-sm">PaÃ­ses en Latam</p>
           </div>
         </div>
       </div>
 
-      {/* Casos de éxito con videos */}
+      {/* Casos de Ã©xito con videos */}
       <div className="space-y-4">
         <div className="flex items-center justify-center gap-2">
           <Award className="w-5 h-5 text-amber-500" />
-          <h2 className="font-semibold text-slate-800">Empresas que confían en nosotros</h2>
+          <h2 className="font-semibold text-slate-800">Empresas que confÃ­an en nosotros</h2>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
@@ -2961,7 +2961,7 @@ const BienvenidaMarketingStep = ({
                       <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-900">
                         <iframe
                           src={`https://www.youtube.com/embed/${caso.videoId}?rel=0`}
-                          title={`Caso de éxito: ${caso.empresa}`}
+                          title={`Caso de Ã©xito: ${caso.empresa}`}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                           className="absolute inset-0 w-full h-full"
@@ -2973,7 +2973,7 @@ const BienvenidaMarketingStep = ({
               </div>
             </div>
 
-            {/* Botones de navegación */}
+            {/* Botones de navegaciÃ³n */}
             <button
               onClick={prevSlide}
               className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 bg-white rounded-full p-2 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-10 hidden sm:inline-flex"
@@ -3005,7 +3005,7 @@ const BienvenidaMarketingStep = ({
               ))}
             </div>
             <span className="text-xs text-slate-500">
-              {currentSlide + 1} de {casosDeExitoVideos.length} casos de éxito
+              {currentSlide + 1} de {casosDeExitoVideos.length} casos de Ã©xito
             </span>
           </div>
         </div>
@@ -3024,13 +3024,13 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Antes de comenzar</h1>
         <p className="text-slate-600 max-w-2xl mx-auto">
-          Te explicamos brevemente qué información te pediremos para configurar tu plataforma.
+          Te explicamos brevemente quÃ© informaciÃ³n te pediremos para configurar tu plataforma.
         </p>
       </div>
 
-      {/* Qué pediremos - Reorganizado en grid 2x2 */}
+      {/* QuÃ© pediremos - Reorganizado en grid 2x2 */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos?</h3>
+        <h3 className="font-medium text-slate-900 mb-4">Â¿QuÃ© informaciÃ³n te pediremos?</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Fila 1 */}
           <div className="flex items-start gap-3">
@@ -3039,7 +3039,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
             </div>
             <div>
               <p className="font-medium text-slate-700 text-sm">Datos de tu empresa</p>
-              <p className="text-xs text-slate-500">Razón social, RUT, dirección y contacto</p>
+              <p className="text-xs text-slate-500">RazÃ³n social, RUT, direcciÃ³n y contacto</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -3048,7 +3048,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
             </div>
             <div>
               <p className="font-medium text-slate-700 text-sm">Administrador de la plataforma</p>
-              <p className="text-xs text-slate-500">Quien gestionará GeoVictoria en tu empresa</p>
+              <p className="text-xs text-slate-500">Quien gestionarÃ¡ GeoVictoria en tu empresa</p>
             </div>
           </div>
           {/* Fila 2 */}
@@ -3081,23 +3081,23 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
             <div>
               <h3 className="font-semibold text-emerald-800">No te preocupes si no tienes todo perfecto</h3>
               <p className="text-sm text-emerald-700 mt-1">
-                Puedes avanzar con la información que tengas. Al final podrás revisar todo, y siempre podrás hacer
-                ajustes más adelante. Tus datos están protegidos y seguros.
+                Puedes avanzar con la informaciÃ³n que tengas. Al final podrÃ¡s revisar todo, y siempre podrÃ¡s hacer
+                ajustes mÃ¡s adelante. Tus datos estÃ¡n protegidos y seguros.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Qué tener a mano */}
+        {/* QuÃ© tener a mano */}
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
           <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-amber-600" />
-            ¿Qué es útil tener a mano?
+            Â¿QuÃ© es Ãºtil tener a mano?
           </h2>
           <ul className="space-y-2 text-sm text-amber-700">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Datos básicos de la empresa (RUT, Razón Social, Dirección)
+              Datos bÃ¡sicos de la empresa (RUT, RazÃ³n Social, DirecciÃ³n)
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
@@ -3105,7 +3105,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Información general de turnos y horarios
+              InformaciÃ³n general de turnos y horarios
             </li>
           </ul>
         </div>
@@ -3117,7 +3117,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         <span>Tiempo estimado: 10-15 minutos</span>
       </div>
 
-      {/* Botón continuar */}
+      {/* BotÃ³n continuar */}
       <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4 py-4">
         <button
           type="button"
@@ -3125,7 +3125,7 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
           className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 w-full sm:w-auto"
         >
           <ArrowLeft className="w-5 h-5" />
-          Atrás
+          AtrÃ¡s
         </button>
         <button
           type="button"
@@ -3536,7 +3536,7 @@ function OnboardingTurnosCliente() {
     console.log("[v0] useEffect: Initializing for the first time")
     hasInitialized.current = true
     initializeOnboarding()
-  }, []) // Array de dependencias vacío para ejecutar solo una vez al montar
+  }, []) // Array de dependencias vacÃ­o para ejecutar solo una vez al montar
 
   // CHANGE: Updated initialization logic to use token from URL
   const initializeOnboarding = async () => {
@@ -3596,12 +3596,12 @@ function OnboardingTurnosCliente() {
             console.log("[v0] lastStep < 11?", lastStep < 11)
 
             if (lastStep >= 3 && lastStep < 11) {
-              console.log("[v0] Preparando mensaje de sesión retomada")
+              console.log("[v0] Preparando mensaje de sesiÃ³n retomada")
               const stepName = steps[lastStep]?.label || `Paso ${lastStep}` // Use label from steps array
               console.log("[v0] Step name:", stepName)
 
               setTimeout(() => {
-                console.log("[v0] Mostrando mensaje de sesión retomada")
+                console.log("[v0] Mostrando mensaje de sesiÃ³n retomada")
                 setResumeStepName(stepName)
                 setShowResumeModal(true)
               }, 500)
@@ -3627,7 +3627,7 @@ function OnboardingTurnosCliente() {
       } catch (error) {
         console.error("[v0] Error en fetch:", error)
         toast({
-          title: "Error de conexión",
+          title: "Error de conexiÃ³n",
           description: "No se pudo conectar con el servidor para cargar el onboarding.",
           variant: "destructive",
         })
@@ -3714,7 +3714,7 @@ function OnboardingTurnosCliente() {
     setValidationErrors([])
 
     try {
-      console.log("[v0] ===== INICIANDO FINALIZACIÓN DEL ONBOARDING =====")
+      console.log("[v0] ===== INICIANDO FINALIZACIÃ“N DEL ONBOARDING =====")
       console.log("[v0] onboardingId:", onboardingId)
       console.log("[v0] idZoho:", idZoho)
       console.log("[v0] formData:", formData)
@@ -3760,10 +3760,10 @@ function OnboardingTurnosCliente() {
         })
 
         await dbPromise
-        console.log("[v0] handleFinalizar: ✅ Onboarding marcado como completado en BD")
+        console.log("[v0] handleFinalizar: âœ… Onboarding marcado como completado en BD")
       }
 
-      // Preparar payload para Zoho (mismo JSON que se guardó en BD + metadata adicional)
+      // Preparar payload para Zoho (mismo JSON que se guardÃ³ en BD + metadata adicional)
       const zohoPayload = {
         accion: "completado",
         eventType: "complete",
@@ -3803,29 +3803,29 @@ function OnboardingTurnosCliente() {
         body: stringifyPayload(zohoPayload),
       })
 
-      console.log("[v0] handleFinalizar: Status del envío:", zohoResponse.status, zohoResponse.statusText)
+      console.log("[v0] handleFinalizar: Status del envÃ­o:", zohoResponse.status, zohoResponse.statusText)
 
       const zohoResult = await zohoResponse.json()
       console.log("[v0] handleFinalizar: Respuesta de Zoho:", zohoResult)
 
       if (zohoResult.success) {
-        console.log("[v0] handleFinalizar: ✅ Datos enviados exitosamente a Zoho")
+        console.log("[v0] handleFinalizar: âœ… Datos enviados exitosamente a Zoho")
       } else {
-        console.error("[v0] handleFinalizar: ❌ Error al enviar a Zoho:", zohoResult.error)
+        console.error("[v0] handleFinalizar: âŒ Error al enviar a Zoho:", zohoResult.error)
         toast({
           title: "Error al enviar a Zoho",
-          description: "Hubo un problema al registrar la finalización en Zoho.",
+          description: "Hubo un problema al registrar la finalizaciÃ³n en Zoho.",
           variant: "destructive",
         })
       }
       // </CHANGE>
 
-      // Navegar a página de agradecimiento
+      // Navegar a pÃ¡gina de agradecimiento
       setCurrentStep(11)
       setNavigationHistory(newHistory)
       setCompletedSteps((prev) => [...prev, currentStep])
     } catch (error) {
-      console.error("[v0] handleFinalizar: ❌ ERROR CRÍTICO:", error)
+      console.error("[v0] handleFinalizar: âŒ ERROR CRÃTICO:", error)
       toast({
         title: "Error",
         description: "Hubo un error al finalizar el onboarding",
@@ -3866,27 +3866,27 @@ function OnboardingTurnosCliente() {
         const empresaValidation = validateEmpresaFields(formData.empresa)
         if (!empresaValidation.isValid) {
           isValid = false
-          // Crear mensajes de error específicos para cada campo
+          // Crear mensajes de error especÃ­ficos para cada campo
           empresaValidation.errors.forEach((err) => {
             errors.push(err)
-            // Mapear el error al campo específico
-            if (err.includes("Razón Social")) stepErrors["empresa.razonSocial"] = "Este campo es obligatorio"
-            if (err.includes("Nombre de fantasía")) stepErrors["empresa.nombreFantasia"] = "Este campo es obligatorio"
+            // Mapear el error al campo especÃ­fico
+            if (err.includes("RazÃ³n Social")) stepErrors["empresa.razonSocial"] = "Este campo es obligatorio"
+            if (err.includes("Nombre de fantasÃ­a")) stepErrors["empresa.nombreFantasia"] = "Este campo es obligatorio"
             if (err.includes("RUT (formato invalido)")) {
               stepErrors["empresa.rut"] = "Formato invalido (ej: 12345678-9)"
             } else if (err.includes("RUT")) {
               stepErrors["empresa.rut"] = "Este campo es obligatorio"
             }
             if (err.includes("Giro")) stepErrors["empresa.giro"] = "Este campo es obligatorio"
-            if (err.includes("Dirección")) stepErrors["empresa.direccion"] = "Este campo es obligatorio"
+            if (err.includes("DirecciÃ³n")) stepErrors["empresa.direccion"] = "Este campo es obligatorio"
             if (err.includes("Comuna")) stepErrors["empresa.comuna"] = "Este campo es obligatorio"
-            if (err.includes("Teléfono")) stepErrors["empresa.telefonoContacto"] = "Este campo es obligatorio"
+            if (err.includes("TelÃ©fono")) stepErrors["empresa.telefonoContacto"] = "Este campo es obligatorio"
             if (err.includes("Rubro")) stepErrors["empresa.rubro"] = "Este campo es obligatorio"
             if (err.includes("Sistema"))
               stepErrors["empresa.sistema"] = "Debes seleccionar al menos un sistema de marcaje"
-            if (err.includes("Email de facturación (formato inválido)")) {
-              stepErrors["empresa.emailFacturacion"] = "Formato de email inválido (ej: correo@empresa.cl)"
-            } else if (err.includes("Email de facturación")) {
+            if (err.includes("Email de facturaciÃ³n (formato invÃ¡lido)")) {
+              stepErrors["empresa.emailFacturacion"] = "Formato de email invÃ¡lido (ej: correo@empresa.cl)"
+            } else if (err.includes("Email de facturaciÃ³n")) {
               stepErrors["empresa.emailFacturacion"] = "Este campo es obligatorio"
             }
           })
@@ -3930,7 +3930,7 @@ function OnboardingTurnosCliente() {
       case 8: // Planificaciones
         if (formData.configureNow && formData.turnos.length > 0 && formData.planificaciones.length === 0) {
           isValid = false
-          errors.push("Debes crear al menos una planificación para continuar.")
+          errors.push("Debes crear al menos una planificaciÃ³n para continuar.")
         }
         break
       case 9: // Asignaciones
@@ -3941,7 +3941,7 @@ function OnboardingTurnosCliente() {
           )
           if (workersWithoutAssignment.length > 0) {
             isValid = false
-            errors.push("Todos los trabajadores deben tener una asignación de planificación válida.")
+            errors.push("Todos los trabajadores deben tener una asignaciÃ³n de planificaciÃ³n vÃ¡lida.")
           }
         }
         break
@@ -3955,7 +3955,7 @@ function OnboardingTurnosCliente() {
       setValidationErrors(errors)
       setFieldErrors(stepErrors)
       toast({
-        title: "Campos inválidos",
+        title: "Campos invÃ¡lidos",
         description: "Por favor, corrige los errores en los campos marcados.",
         variant: "destructive",
       })
@@ -4050,19 +4050,19 @@ function OnboardingTurnosCliente() {
             variant: "destructive",
           })
         } else {
-          console.log("[v0] goNext: ✅ Guardado exitoso en BD")
+          console.log("[v0] goNext: âœ… Guardado exitoso en BD")
         }
 
         if (zohoResponse.ok) {
-          console.log("[v0] goNext: ✅ Progreso enviado a Zoho")
+          console.log("[v0] goNext: âœ… Progreso enviado a Zoho")
         } else {
-          console.warn("[v0] goNext: ⚠️ No se pudo enviar progreso a Zoho (no bloqueante)")
+          console.warn("[v0] goNext: âš ï¸ No se pudo enviar progreso a Zoho (no bloqueante)")
         }
         // </CHANGE>
       } catch (error) {
         console.error("[v0] goNext: Error en fetch:", error)
         toast({
-          title: "Error de conexión",
+          title: "Error de conexiÃ³n",
           description: "No se pudo conectar con el servidor.",
           variant: "destructive",
         })
@@ -4120,7 +4120,7 @@ function OnboardingTurnosCliente() {
         className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
       >
         <ArrowLeft className="w-5 h-5" />
-        Atrás
+        AtrÃ¡s
       </button>
       {showNext &&
         currentStep < steps.length - 1 && // Don't show "Next" on the last step before completion
@@ -4354,7 +4354,7 @@ function OnboardingTurnosCliente() {
             <header>
               <h2 className="text-lg font-semibold text-slate-900">Resumen</h2>
               <p className="mt-1 text-sm text-slate-600">
-                ¡Casi terminamos! Revisa los datos ingresados antes de finalizar.
+                Â¡Casi terminamos! Revisa los datos ingresados antes de finalizar.
               </p>
             </header>
             {/* Display summary of entered data */}
@@ -4363,10 +4363,10 @@ function OnboardingTurnosCliente() {
               <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h3 className="text-sm font-semibold text-slate-800">Empresa</h3>
                 <p>
-                  <strong>Razón Social:</strong> {formData.empresa.razonSocial}
+                  <strong>RazÃ³n Social:</strong> {formData.empresa.razonSocial}
                 </p>
                 <p>
-                  <strong>Nombre Fantasía:</strong> {formData.empresa.nombreFantasia}
+                  <strong>Nombre FantasÃ­a:</strong> {formData.empresa.nombreFantasia}
                 </p>
                 <p>
                   <strong>RUT:</strong> {formData.empresa.rut}
@@ -4375,13 +4375,13 @@ function OnboardingTurnosCliente() {
                   <strong>Giro:</strong> {formData.empresa.giro}
                 </p>
                 <p>
-                  <strong>Dirección:</strong> {formData.empresa.direccion}, {formData.empresa.comuna}
+                  <strong>DirecciÃ³n:</strong> {formData.empresa.direccion}, {formData.empresa.comuna}
                 </p>
                 <p>
-                  <strong>Email Facturación:</strong> {formData.empresa.emailFacturacion}
+                  <strong>Email FacturaciÃ³n:</strong> {formData.empresa.emailFacturacion}
                 </p>
                 <p>
-                  <strong>Teléfono Contacto:</strong> {formData.empresa.telefonoContacto}
+                  <strong>TelÃ©fono Contacto:</strong> {formData.empresa.telefonoContacto}
                 </p>
                 <p>
                   <strong>Sistema(s):</strong> {formData.empresa.sistema.join(", ") || "No seleccionado"}
@@ -4492,7 +4492,7 @@ function OnboardingTurnosCliente() {
                 className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Atrás
+                AtrÃ¡s
               </button>
               <button
                 type="button"
@@ -4512,11 +4512,11 @@ function OnboardingTurnosCliente() {
               <Check className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
-              ¡Felicidades, {formData.empresa.nombreFantasia || "empresa"}!
+              Â¡Felicidades, {formData.empresa.nombreFantasia || "empresa"}!
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Tu configuración inicial de GeoVictoria está completa. Te contactaremos pronto para agendar tu
-              capacitación y resolver cualquier duda.
+              Tu configuraciÃ³n inicial de GeoVictoria estÃ¡ completa. Te contactaremos pronto para agendar tu
+              capacitaciÃ³n y resolver cualquier duda.
             </p>
             <p className="text-sm text-slate-500 mt-4">
               Mientras tanto, puedes explorar la plataforma o visitar nuestro{" "}
@@ -4542,10 +4542,10 @@ function OnboardingTurnosCliente() {
     const nextStep = loadNow ? currentStep + 1 : 6 // Si carga ahora va al paso 5, si no va al paso 6
     const newHistory = [...navigationHistory, nextStep]
 
-    // Guardar decisión en BD y enviar a Zoho
+    // Guardar decisiÃ³n en BD y enviar a Zoho
     if (onboardingId) {
       try {
-        console.log("[v0] handleWorkersDecision: Guardando decisión en BD...")
+        console.log("[v0] handleWorkersDecision: Guardando decisiÃ³n en BD...")
 
         const dataToSave = {
           formData: updatedFormData,
@@ -4577,7 +4577,7 @@ function OnboardingTurnosCliente() {
             pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
-            decision: loadNow ? "Cargar trabajadores ahora" : "Cargar trabajadores en capacitación",
+            decision: loadNow ? "Cargar trabajadores ahora" : "Cargar trabajadores en capacitaciÃ³n",
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
@@ -4593,15 +4593,15 @@ function OnboardingTurnosCliente() {
         const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
 
         if (dbResponse.ok) {
-          console.log("[v0] handleWorkersDecision: ✅ Decisión guardada en BD")
+          console.log("[v0] handleWorkersDecision: âœ… DecisiÃ³n guardada en BD")
         } else {
           console.error("[v0] handleWorkersDecision: Error guardando en BD", await dbResponse.text())
         }
 
         if (zohoResponse.ok) {
-          console.log("[v0] handleWorkersDecision: ✅ Decisión enviada a Zoho")
+          console.log("[v0] handleWorkersDecision: âœ… DecisiÃ³n enviada a Zoho")
         } else {
-          console.warn("[v0] handleWorkersDecision: ⚠️ No se pudo enviar a Zoho")
+          console.warn("[v0] handleWorkersDecision: âš ï¸ No se pudo enviar a Zoho")
         }
       } catch (error) {
         console.error("[v0] handleWorkersDecision: Error:", error)
@@ -4629,10 +4629,10 @@ function OnboardingTurnosCliente() {
     const nextStep = configureNow ? currentStep + 1 : 10 // Si configura ahora va al paso 7, si no va al paso 10
     const newHistory = configureNow ? [...navigationHistory, nextStep] : [...navigationHistory.slice(0, -1), 10]
 
-    // Guardar decisión en BD y enviar a Zoho
+    // Guardar decisiÃ³n en BD y enviar a Zoho
     if (onboardingId) {
       try {
-        console.log("[v0] handleConfigurationDecision: Guardando decisión en BD...")
+        console.log("[v0] handleConfigurationDecision: Guardando decisiÃ³n en BD...")
 
         const dataToSave = {
           formData: updatedFormData,
@@ -4664,7 +4664,7 @@ function OnboardingTurnosCliente() {
             pasoNombre: steps[nextStep]?.label || "Paso " + nextStep,
             totalPasos: steps.length,
             porcentajeProgreso: Math.round((nextStep / steps.length) * 100),
-            decision: configureNow ? "Configurar turnos ahora" : "Configurar turnos en capacitación",
+            decision: configureNow ? "Configurar turnos ahora" : "Configurar turnos en capacitaciÃ³n",
           },
           currentStep: nextStep,
           navigationHistory: newHistory,
@@ -4680,15 +4680,15 @@ function OnboardingTurnosCliente() {
         const [dbResponse, zohoResponse] = await Promise.all([dbPromise, zohoPromise])
 
         if (dbResponse.ok) {
-          console.log("[v0] handleConfigurationDecision: ✅ Decisión guardada en BD")
+          console.log("[v0] handleConfigurationDecision: âœ… DecisiÃ³n guardada en BD")
         } else {
           console.error("[v0] handleConfigurationDecision: Error guardando en BD", await dbResponse.text())
         }
 
         if (zohoResponse.ok) {
-          console.log("[v0] handleConfigurationDecision: ✅ Decisión enviada a Zoho")
+          console.log("[v0] handleConfigurationDecision: âœ… DecisiÃ³n enviada a Zoho")
         } else {
-          console.warn("[v0] handleConfigurationDecision: ⚠️ No se pudo enviar a Zoho")
+          console.warn("[v0] handleConfigurationDecision: âš ï¸ No se pudo enviar a Zoho")
         }
       } catch (error) {
         console.error("[v0] handleConfigurationDecision: Error:", error)
@@ -4724,11 +4724,11 @@ function OnboardingTurnosCliente() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">¡Bienvenido de vuelta!</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Â¡Bienvenido de vuelta!</h3>
             </div>
             <p className="mb-6 text-sm text-slate-600">
-              Retomaremos tu configuración en <strong>"{resumeStepName}"</strong> para que continúes justo donde la
-              dejaste. Tus datos previos siguen guardados y los podrás revisar antes de avanzar.
+              Retomaremos tu configuraciÃ³n en <strong>"{resumeStepName}"</strong> para que continÃºes justo donde la
+              dejaste. Tus datos previos siguen guardados y los podrÃ¡s revisar antes de avanzar.
             </p>
             <button
               onClick={() => setShowResumeModal(false)}
@@ -4745,7 +4745,7 @@ function OnboardingTurnosCliente() {
           <div className="flex items-center gap-2">
             {/* CHANGE: Actualizado de .svg a .png */}
             <img src="/logo-geovictoria.png" alt="GeoVictoria Logo" className="h-8 w-auto" />
-            <h1 className="text-lg font-bold text-slate-800">Configuración Inicial</h1>
+            <h1 className="text-lg font-bold text-slate-800">ConfiguraciÃ³n Inicial</h1>
           </div>
         </div>
         <div className="mt-4">
@@ -4766,3 +4766,4 @@ function OnboardingTurnosCliente() {
 
 // CHANGE: Adding export default for deployment
 export default OnboardingTurnosCliente
+
