@@ -704,6 +704,7 @@ const EmpresaStep = React.memo<{
           <Building2 className="h-5 w-5 text-sky-500" />
           Datos de la empresa
         </h2>
+        <p className="mt-2 text-sm text-slate-500">Todos los campos son obligatorios.</p>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -725,7 +726,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="rut"
-          label="RUT"
+          label="RUT *"
           placeholder="Ej: 12345678-9"
           value={empresa.rut || ""}
           onChange={handleEmpresaChange}
@@ -733,7 +734,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="giro"
-          label="Giro"
+          label="Giro *"
           placeholder="Ej: Servicios de Tecnología"
           value={empresa.giro || ""}
           onChange={handleEmpresaChange}
@@ -749,7 +750,7 @@ const EmpresaStep = React.memo<{
         />
         <ProtectedInput
           name="comuna"
-          label="Comuna"
+          label="Comuna *"
           placeholder="Ej: Santiago"
           value={empresa.comuna || ""}
           onChange={handleEmpresaChange}
