@@ -235,7 +235,7 @@ const Stepper = ({ currentStep }) => {
       </div>
       <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-background to-transparent md:hidden">
         <div className="mr-1 flex h-7 w-7 items-center justify-center rounded-full border border-muted bg-white text-xs text-muted-foreground">
-          >
+          {"\u203A"}
         </div>
       </div>
     </div>
