@@ -346,15 +346,16 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Administrador de la plataforma</h2>
         <p className="mt-1 text-sm text-slate-600">
-          El administrador ser? la persona principal encargada de GeoVictoria y tendr? acceso completo para gestionar la asistencia,
+          El administrador ser&aacute; la persona principal encargada de GeoVictoria y tendr&aacute; acceso completo para gestionar la asistencia,
           configurar turnos, administrar trabajadores y revisar reportes de la empresa.
         </p>
         <p className="text-sm text-slate-500">
-          Puede ser alguien de Recursos Humanos, Operaciones o quien liderar? el control de asistencia en el d?a a d?a.
+          Puede ser alguien de Recursos Humanos, Operaciones o quien liderar&aacute; el control de asistencia en el d&iacute;a a d&iacute;a.
         </p>
         <p className="mt-2 text-sm text-slate-600">
-          Para acompa?arlo en este proceso, el administrador contar? con un e-learning de incorporaci?n, donde aprender? paso a paso c?mo configurar la plataforma y comenzar a usarla de forma correcta y sencilla.
-        </p></header>
+          Para acompa&ntilde;arlo en este proceso, el administrador contar&aacute; con un e-learning de incorporaci&oacute;n, donde aprender&aacute; paso a paso c&oacute;mo configurar la plataforma y comenzar a usarla de forma correcta y sencilla.
+        </p>
+      </header>
 
       {/* Formulario de nuevo administrador */}
       <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
