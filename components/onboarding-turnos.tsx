@@ -2889,7 +2889,7 @@ const BienvenidaMarketingStep = ({
         {beneficiosGeoVictoria.map((beneficio, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl border border-slate-200 p-4 text-center hover:shadow-md hover:border-sky-200 transition-all"
+            className="bg-white rounded-xl border border-slate-200 p-4 text-center"
           >
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sky-100 mb-3">
               <beneficio.icon className="w-6 h-6 text-sky-600" />
