@@ -282,9 +282,9 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
       errors.rut = "El RUT es obligatorio"
     } else {
       // Validar formato de RUT chileno
-      const rutRegex = /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9Kk]$/
+      const rutRegex = /^[0-9]{7,8}-[0-9Kk]$/
       if (!rutRegex.test(formData.rut)) {
-        errors.rut = "Formato inválido (ej: 12.345.678-9)"
+        errors.rut = "Formato inv?lido (ej: 12345678-9)"
       }
     }
 
@@ -425,7 +425,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               type="text"
               value={formData.rut}
               onChange={(e) => handleFormChange("rut", e.target.value)}
-              placeholder="12.345.678-9"
+              placeholder="Ej: 12345678-9"
             />
             {fieldErrors.rut && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
@@ -452,7 +452,7 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
               type="email"
               value={formData.email}
               onChange={(e) => handleFormChange("email", e.target.value)}
-              placeholder=" correo@empresa.cl"
+              placeholder="Ej: correo@empresa.cl"
             />
             {fieldErrors.email && (
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
@@ -1427,7 +1427,7 @@ const TrabajadoresStep = ({
                       type="text"
                       value={t.rut}
                       onChange={(e) => updateTrabajador(t.id, "rut", e.target.value)}
-                      placeholder="ID interno / RUT"
+                      placeholder="Ej: ID interno / RUT"
                       disabled={isAdmin}
                     />
                     {rowErrors.rut && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.rut}</p>}
@@ -1440,7 +1440,7 @@ const TrabajadoresStep = ({
                       type="email"
                       value={t.correo}
                       onChange={(e) => updateTrabajador(t.id, "correo", e.target.value)}
-                      placeholder=" correo@empresa.cl"
+                      placeholder="Ej: correo@empresa.cl"
                       disabled={isAdmin}
                     />
                     {rowErrors.correo && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.correo}</p>}
@@ -1471,7 +1471,7 @@ const TrabajadoresStep = ({
                       type="tel"
                       value={t.telefono1 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono1", e.target.value)}
-                      placeholder="+5691234567"
+                      placeholder="Ej: +5691234567"
                       disabled={isAdmin}
                     />
                     {rowErrors.telefono1 && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.telefono1}</p>}
@@ -1484,7 +1484,7 @@ const TrabajadoresStep = ({
                       type="tel"
                       value={t.telefono2 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono2", e.target.value)}
-                      placeholder="+5691234567"
+                      placeholder="Ej: +5691234567"
                       disabled={isAdmin}
                     />
                     {rowErrors.telefono2 && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.telefono2}</p>}
@@ -1497,7 +1497,7 @@ const TrabajadoresStep = ({
                       type="tel"
                       value={t.telefono3 || ""}
                       onChange={(e) => updateTrabajador(t.id, "telefono3", e.target.value)}
-                      placeholder="+5691234567"
+                      placeholder="Ej: +5691234567"
                       disabled={isAdmin}
                     />
                     {rowErrors.telefono3 && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.telefono3}</p>}
