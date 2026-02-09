@@ -98,6 +98,10 @@ const normalizeRut = (rut) => {
   return rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
 }
 
+const isRutFormatValid = (rut) => /^\d{7,8}-[0-9Kk]$/.test(rut.trim())
+
+
+
 const isValidRut = (rut) => {
   const clean = normalizeRut(rut)
   if (!clean) return false
@@ -112,6 +116,7 @@ const isValidRut = (rut) => {
     sum += Number.parseInt(body[i], 10) * multiplier
     multiplier = multiplier === 7 ? 2 : multiplier + 1
   }
+
 
   const mod = 11 - (sum % 11)
   let expected
@@ -1095,8 +1100,10 @@ const TrabajadoresStep = ({
 
       if (!rutCompleto.trim()) {
         rowErrors.rut = "El RUT es obligatorio."
+      } else if (!isRutFormatValid(rutCompleto)) {
+        rowErrors.rut = "RUT sin puntos y con guión (ej: 12345678-9)."
       } else if (!isValidRut(rutCompleto)) {
-        rowErrors.rut = "Formato de RUT inválido."
+        rowErrors.rut = "RUT inválido."
       }
 
       if (correoPersonal.trim() && !isValidEmail(correoPersonal)) {
@@ -3969,6 +3976,24 @@ function OnboardingTurnosCliente() {
           isValid = false
           errors.push("Debes agregar al menos un trabajador.")
         }
+
+        const trabajadoresInvalidos = trabajadores.filter((t) => {
+          const rut = t.rut?.trim() || ""
+          if (!rut) return true
+          if (!isRutFormatValid(rut) || !isValidRut(rut)) return true
+          if (t.correo?.trim() && !isValidEmail(t.correo)) return true
+          if (t.telefono1?.trim() && !isValidPhone(t.telefono1)) return true
+          if (t.telefono2?.trim() && !isValidPhone(t.telefono2)) return true
+          if (t.telefono3?.trim() && !isValidPhone(t.telefono3)) return true
+          return false
+        })
+
+        if (trabajadoresInvalidos.length > 0) {
+          isValid = false
+          errors.push("Hay trabajadores con datos inválidos. Revisa el formato de RUT, correo y teléfonos.")
+          break
+        }
+
         const isCallSelected = formData?.empresa?.sistema?.includes("GeoVictoria CALL")
         if (isCallSelected) {
           const trabajadoresSinTelefono = trabajadores.filter(
