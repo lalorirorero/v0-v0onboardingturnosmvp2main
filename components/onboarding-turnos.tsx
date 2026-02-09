@@ -923,6 +923,8 @@ const TrabajadoresStep = ({
   const [bulkStatus, setBulkStatus] = useState({ total: 0, added: 0, error: "" })
   const MAX_ROWS = 500
   const [localFieldErrors, setLocalFieldErrors] = useState({ byId: {}, global: [] }) // Declare errors here
+  const isCallSelected = (formData?.empresa?.sistema || []).includes("GeoVictoria CALL")
+  const requiredTelefono1Message = "Teléfono 1 es obligatorio para GeoVictoria Call."
   const handleDownloadTemplate = () => {
     const headers = [
       "Rut Completo",
@@ -958,8 +960,9 @@ const TrabajadoresStep = ({
       ["2) Completa cada fila con un trabajador (los encabezados ya están incluidos)."],
       ["3) RUT sin puntos y con guíon (ej: 12345678-9)."],
       ["4) Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche)."],
-      ["5) Teléfonos opcionales; si no tienes, deja la celda vacía."],
-      ["6) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
+      ["5) Teléfono 1 es obligatorio solo si seleccionaste GeoVictoria Call (marcaje telefónico)."],
+      ["6) Teléfonos 2 y 3 son opcionales; si no tienes, deja la celda vacía."],
+      ["7) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
     ]
 
     const instructionsSheet = XLSX.utils.aoa_to_sheet(instructions)
@@ -1083,6 +1086,8 @@ const TrabajadoresStep = ({
       const telefono2 = cols[6] || ""
       const telefono3 = cols[7] || ""
 
+      const telefono1Missing = isCallSelected && !telefono1.trim()
+
       const nombreCompleto = `${nombres} ${apellidos}`.trim()
       const id = Date.now() + index
       const rowErrors: Record<string, string> = {}
@@ -1101,7 +1106,9 @@ const TrabajadoresStep = ({
         rowErrors.correo = "Formato de correo inválido."
       }
 
-      if (telefono1.trim() && !isValidPhone(telefono1)) {
+      if (telefono1Missing) {
+        rowErrors.telefono1 = requiredTelefono1Message
+      } else if (telefono1.trim() && !isValidPhone(telefono1)) {
         rowErrors.telefono1 = "Formato de teléfono inválido."
       }
 
@@ -1182,7 +1189,7 @@ const TrabajadoresStep = ({
       })
       setLocalFieldErrors({ byId: {}, global: ["Ocurrió un error al procesar la carga masiva. Reintenta."] })
     }
-  }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos]) // Added ensureGrupoByName to dependency array
+  }, [bulkText, setBulkText, trabajadores, setTrabajadores, ensureGrupoByName, grupos, setGrupos, isCallSelected]) // Added ensureGrupoByName to dependency array
 
   const updateTrabajador = (id, field, value) => {
     const updated = trabajadores.map((t) => {
@@ -1276,9 +1283,17 @@ const TrabajadoresStep = ({
               </span>
               . Se procesa automáticamente.
             </p>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche).
-            </p>
+            
+            {isCallSelected ? (
+              <p className="text-[11px] text-amber-700 mt-1">
+                GeoVictoria Call seleccionado: Teléfono 1 es obligatorio porque se usa para marcar asistencia.
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-500 mt-1">
+                Teléfono 1 solo es obligatorio si seleccionas GeoVictoria Call (marcaje telefónico).
+              </p>
+            )}
+
             <p className="text-[11px] text-amber-600 font-medium mt-1">
               Límite: {MAX_ROWS} filas por lote. Puedes pegar múltiples lotes.
             </p>
@@ -1395,7 +1410,7 @@ const TrabajadoresStep = ({
                   <li>Los trabajadores se agregarán automáticamente a la tabla</li>
                 </ol>
                 <p className="text-sky-700 italic mt-2">
-                  Nota: Las columnas de teléfono son opcionales. Puedes dejarlas vacías si no tienes esa información.
+                  Nota: Teléfono 1 es obligatorio solo si seleccionaste GeoVictoria Call. Teléfonos 2 y 3 son opcionales.
                 </p>
               </div>
 
@@ -1434,7 +1449,12 @@ const TrabajadoresStep = ({
                   </span>
                 </span>
               </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 1</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-700">
+                <span className="inline-flex items-center gap-1">
+                  Teléfono 1
+                  {isCallSelected && <span className="text-destructive">*</span>}
+                </span>
+              </th>
               <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 2</th>
               <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 3</th>
               <th className="px-3 py-2" />
@@ -1444,6 +1464,16 @@ const TrabajadoresStep = ({
             {trabajadores.map((t) => {
               const rowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
               const isAdmin = t.tipo === "administrador"
+              const telefono1Missing = isCallSelected && !isAdmin && !t.telefono1?.trim()
+              const telefono1FormatError =
+                t.telefono1?.trim() && !isValidPhone(t.telefono1) ? "Formato de teléfono inválido." : ""
+              const storedTelefono1Error = rowErrors.telefono1 || ""
+              const hideStoredRequired = storedTelefono1Error === requiredTelefono1Message && !isCallSelected
+              const telefono1Error =
+                (!hideStoredRequired && storedTelefono1Error) ||
+                (telefono1Missing ? requiredTelefono1Message : "") ||
+                telefono1FormatError
+
               return (
                 <tr key={t.id} className={`border-t border-slate-100 ${isAdmin ? "bg-blue-50" : ""}`}>
                   <td className="px-3 py-1.5">
@@ -1515,7 +1545,7 @@ const TrabajadoresStep = ({
                   <td className="px-3 py-1.5">
                     <input
                       className={`w-full rounded-lg border px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
-                        rowErrors.telefono1 ? "border-red-400" : "border-slate-200"
+                        telefono1Error ? "border-red-400" : "border-slate-200"
                       } ${isAdmin ? "bg-blue-50" : ""}`}
                       type="tel"
                       value={t.telefono1 || ""}
@@ -1523,7 +1553,7 @@ const TrabajadoresStep = ({
                       placeholder="Ej: +5691234567"
                       disabled={isAdmin}
                     />
-                    {rowErrors.telefono1 && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.telefono1}</p>}
+                    {telefono1Error && <p className="mt-0.5 text-[10px] text-red-600">{telefono1Error}</p>}
                   </td>
                   <td className="px-3 py-1.5">
                     <input
@@ -3936,6 +3966,16 @@ function OnboardingTurnosCliente() {
         if (trabajadores.length === 0) {
           isValid = false
           errors.push("Debes agregar al menos un trabajador.")
+        }
+        const isCallSelected = formData?.empresa?.sistema?.includes("GeoVictoria CALL")
+        if (isCallSelected) {
+          const trabajadoresSinTelefono = trabajadores.filter(
+            (t) => t.tipo !== "administrador" && !t.telefono1?.trim(),
+          )
+          if (trabajadoresSinTelefono.length > 0) {
+            isValid = false
+            errors.push("Teléfono 1 es obligatorio para GeoVictoria Call (marcaje telefónico).")
+          }
         }
         break
       case 6:
