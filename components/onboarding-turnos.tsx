@@ -959,7 +959,7 @@ const TrabajadoresStep = ({
       ["2) Completa cada fila con un trabajador (los encabezados ya están incluidos)."],
       ["3) RUT sin puntos y con guión (ej: 12345678-9)."],
       ["4) Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche)."],
-      ["5) Teléfono 1 es necesario para GeoVictoria Call (marcaje telefónico). Si no lo tienes ahora, puedes completarlo después."],
+      ["5) Teléfono 1 es necesario para Marcaje por Llamada (marcaje telefónico). Si no lo tienes ahora, puedes completarlo después."],
       ["6) Teléfonos 2 y 3 son opcionales; si no tienes, deja la celda vacía."],
       ["7) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
     ]
@@ -1281,12 +1281,12 @@ const TrabajadoresStep = ({
             
             {isCallSelected ? (
               <p className="text-[11px] text-amber-700 mt-1">
-                GeoVictoria Call seleccionado: Teléfono 1 es necesario para el marcaje. Si no lo tienes ahora, podrás
+                Marcaje por Llamada seleccionado: Teléfono 1 es necesario para el marcaje. Si no lo tienes ahora, podrás
                 declararlo al continuar.
               </p>
             ) : (
               <p className="text-[11px] text-slate-500 mt-1">
-                Teléfono 1 es opcional si no usas GeoVictoria Call.
+                Teléfono 1 es opcional si no usas Marcaje por Llamada.
               </p>
             )}
 
@@ -1406,7 +1406,7 @@ const TrabajadoresStep = ({
                   <li>Los trabajadores se agregarán automáticamente a la tabla</li>
                 </ol>
                 <p className="text-sky-700 italic mt-2">
-                  Nota: Teléfono 1 es necesario para GeoVictoria Call. Teléfonos 2 y 3 son opcionales.
+                  Nota: Teléfono 1 es necesario para Marcaje por Llamada. Teléfonos 2 y 3 son opcionales.
                 </p>
               </div>
 
@@ -4836,14 +4836,18 @@ function OnboardingTurnosCliente() {
       <Dialog open={showTelefonoCallModal} onOpenChange={setShowTelefonoCallModal}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Completar teléfonos después</DialogTitle>
+            <DialogTitle>Teléfono recomendado para Marcaje por Llamada</DialogTitle>
             <DialogDescription>
-              GeoVictoria Call necesita el teléfono para el marcaje. Puedes continuar ahora y completar el dato luego.
+              Seleccionaste Marcaje por Llamada como sistema de marcaje. Por eso recomendamos ingresar el Teléfono 1 de cada trabajador.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm text-slate-700">
             <p>
               Trabajadores sin Teléfono 1: <span className="font-semibold">{telefonoCallMissingCount}</span>
+            </p>
+            <p>
+              Si aún no tienes esos números, puedes continuar y completarlos más adelante. Sin teléfono, los
+              trabajadores no podrán marcar asistencia por llamada.
             </p>
             <label className="flex items-start gap-2">
               <input
@@ -4853,7 +4857,7 @@ function OnboardingTurnosCliente() {
                 onChange={(e) => setTelefonoCallConfirmChecked(e.target.checked)}
               />
               <span>
-                Confirmo que completaré los teléfonos más adelante para habilitar el marcaje por GeoVictoria Call.
+                Confirmo que completaré los teléfonos más adelante para habilitar el Marcaje por Llamada.
               </span>
             </label>
           </div>
