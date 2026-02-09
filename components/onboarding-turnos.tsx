@@ -924,7 +924,6 @@ const TrabajadoresStep = ({
   const MAX_ROWS = 500
   const [localFieldErrors, setLocalFieldErrors] = useState({ byId: {}, global: [] }) // Declare errors here
   const isCallSelected = (formData?.empresa?.sistema || []).includes("GeoVictoria CALL")
-  const requiredTelefono1Message = "Teléfono 1 es obligatorio para GeoVictoria Call."
   const handleDownloadTemplate = () => {
     const headers = [
       "Rut Completo",
@@ -958,9 +957,9 @@ const TrabajadoresStep = ({
       ["Instrucciones para usar la plantilla"],
       ["1) No cambies el orden de las columnas en la hoja Datos."],
       ["2) Completa cada fila con un trabajador (los encabezados ya están incluidos)."],
-      ["3) RUT sin puntos y con guíon (ej: 12345678-9)."],
+      ["3) RUT sin puntos y con guión (ej: 12345678-9)."],
       ["4) Grupo: etiqueta para clasificar trabajadores (ej: Operaciones, Tienda Centro, Turno Noche)."],
-      ["5) Teléfono 1 es obligatorio solo si seleccionaste GeoVictoria Call (marcaje telefónico)."],
+      ["5) Teléfono 1 es necesario para GeoVictoria Call (marcaje telefónico). Si no lo tienes ahora, puedes completarlo después."],
       ["6) Teléfonos 2 y 3 son opcionales; si no tienes, deja la celda vacía."],
       ["7) Para cargar, copia y pega las filas (sin el encabezado) en el formulario."],
     ]
@@ -1086,8 +1085,6 @@ const TrabajadoresStep = ({
       const telefono2 = cols[6] || ""
       const telefono3 = cols[7] || ""
 
-      const telefono1Missing = isCallSelected && !telefono1.trim()
-
       const nombreCompleto = `${nombres} ${apellidos}`.trim()
       const id = Date.now() + index
       const rowErrors: Record<string, string> = {}
@@ -1106,9 +1103,7 @@ const TrabajadoresStep = ({
         rowErrors.correo = "Formato de correo inválido."
       }
 
-      if (telefono1Missing) {
-        rowErrors.telefono1 = requiredTelefono1Message
-      } else if (telefono1.trim() && !isValidPhone(telefono1)) {
+      if (telefono1.trim() && !isValidPhone(telefono1)) {
         rowErrors.telefono1 = "Formato de teléfono inválido."
       }
 
@@ -1286,11 +1281,12 @@ const TrabajadoresStep = ({
             
             {isCallSelected ? (
               <p className="text-[11px] text-amber-700 mt-1">
-                GeoVictoria Call seleccionado: Teléfono 1 es obligatorio porque se usa para marcar asistencia.
+                GeoVictoria Call seleccionado: Teléfono 1 es necesario para el marcaje. Si no lo tienes ahora, podrás
+                declararlo al continuar.
               </p>
             ) : (
               <p className="text-[11px] text-slate-500 mt-1">
-                Teléfono 1 solo es obligatorio si seleccionas GeoVictoria Call (marcaje telefónico).
+                Teléfono 1 es opcional si no usas GeoVictoria Call.
               </p>
             )}
 
@@ -1410,7 +1406,7 @@ const TrabajadoresStep = ({
                   <li>Los trabajadores se agregarán automáticamente a la tabla</li>
                 </ol>
                 <p className="text-sky-700 italic mt-2">
-                  Nota: Teléfono 1 es obligatorio solo si seleccionaste GeoVictoria Call. Teléfonos 2 y 3 son opcionales.
+                  Nota: Teléfono 1 es necesario para GeoVictoria Call. Teléfonos 2 y 3 son opcionales.
                 </p>
               </div>
 
@@ -1452,7 +1448,7 @@ const TrabajadoresStep = ({
               <th className="px-3 py-2 text-left font-medium text-slate-700">
                 <span className="inline-flex items-center gap-1">
                   Teléfono 1
-                  {isCallSelected && <span className="text-destructive">*</span>}
+                  {isCallSelected && <span className="text-[10px] text-amber-700">(recomendado)</span>}
                 </span>
               </th>
               <th className="px-3 py-2 text-left font-medium text-slate-700">Teléfono 2</th>
@@ -1464,15 +1460,9 @@ const TrabajadoresStep = ({
             {trabajadores.map((t) => {
               const rowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
               const isAdmin = t.tipo === "administrador"
-              const telefono1Missing = isCallSelected && !isAdmin && !t.telefono1?.trim()
               const telefono1FormatError =
                 t.telefono1?.trim() && !isValidPhone(t.telefono1) ? "Formato de teléfono inválido." : ""
-              const storedTelefono1Error = rowErrors.telefono1 || ""
-              const hideStoredRequired = storedTelefono1Error === requiredTelefono1Message && !isCallSelected
-              const telefono1Error =
-                (!hideStoredRequired && storedTelefono1Error) ||
-                (telefono1Missing ? requiredTelefono1Message : "") ||
-                telefono1FormatError
+              const telefono1Error = rowErrors.telefono1 || telefono1FormatError
 
               return (
                 <tr key={t.id} className={`border-t border-slate-100 ${isAdmin ? "bg-blue-50" : ""}`}>
@@ -3262,6 +3252,7 @@ type OnboardingFormData = {
   }[]
   configureNow: boolean | undefined // Added undefined to allow initial state
   loadWorkersNow?: boolean // Added loadWorkersNow to OnboardingFormData
+  telefonoCallDeferred?: boolean // Declaración de carga posterior de teléfono
 }
 
 // Define Grupo and Trabajador types for clarity (assuming they might be used elsewhere)
@@ -3475,6 +3466,7 @@ function OnboardingTurnosCliente() {
     asignaciones: [],
     configureNow: undefined,
     loadWorkersNow: undefined,
+    telefonoCallDeferred: false,
   })
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [navigationHistory, setNavigationHistory] = useState([PRIMER_PASO])
@@ -3484,6 +3476,12 @@ function OnboardingTurnosCliente() {
   const [grupos, setGrupos] = useState<Grupo[]>([])
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([])
   const [trabajadoresStepKey, setTrabajadoresStepKey] = useState(0)
+
+  const [showTelefonoCallModal, setShowTelefonoCallModal] = useState(false)
+  const [telefonoCallMissingCount, setTelefonoCallMissingCount] = useState(0)
+  const [telefonoCallConfirmChecked, setTelefonoCallConfirmChecked] = useState(false)
+  const skipCallPhoneCheckRef = useRef(false)
+  const telefonoCallDeferredRef = useRef(false)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -3497,6 +3495,10 @@ function OnboardingTurnosCliente() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [editedFields, setEditedFields] = useState<EditedFields>({})
+
+  useEffect(() => {
+    telefonoCallDeferredRef.current = Boolean(formData.telefonoCallDeferred)
+  }, [formData.telefonoCallDeferred])
 
   // --- Helper functions for state management and UI ---
 
@@ -3972,11 +3974,23 @@ function OnboardingTurnosCliente() {
           const trabajadoresSinTelefono = trabajadores.filter(
             (t) => t.tipo !== "administrador" && !t.telefono1?.trim(),
           )
-          if (trabajadoresSinTelefono.length > 0) {
-            isValid = false
-            errors.push("Teléfono 1 es obligatorio para GeoVictoria Call (marcaje telefónico).")
+          const missingCount = trabajadoresSinTelefono.length
+          const telefonoDeferred = telefonoCallDeferredRef.current || formData.telefonoCallDeferred
+          if (missingCount > 0 && !telefonoDeferred && !skipCallPhoneCheckRef.current) {
+            setTelefonoCallMissingCount(missingCount)
+            setTelefonoCallConfirmChecked(false)
+            setShowTelefonoCallModal(true)
+            return
           }
+          if (missingCount === 0 && telefonoDeferred) {
+            telefonoCallDeferredRef.current = false
+            setFormData((prev) => ({ ...prev, telefonoCallDeferred: false }))
+          }
+        } else if (formData.telefonoCallDeferred) {
+          telefonoCallDeferredRef.current = false
+          setFormData((prev) => ({ ...prev, telefonoCallDeferred: false }))
         }
+        skipCallPhoneCheckRef.current = false
         break
       case 6:
         // This step handles its own navigation via onDecision.
@@ -4040,8 +4054,11 @@ function OnboardingTurnosCliente() {
           onboardingId,
         })
 
+        const telefonoCallDeferred = telefonoCallDeferredRef.current || formData.telefonoCallDeferred
+
         const updatedFormData = {
           ...formData,
+          telefonoCallDeferred,
           trabajadores: trabajadores, // Sync trabajadores from state
           empresa: {
             ...formData.empresa,
@@ -4163,6 +4180,10 @@ function OnboardingTurnosCliente() {
     trackFieldChange, // Added to dependencies
     isFieldEdited, // Added to dependencies
     setEmpresa, // Added to dependencies
+    setFormData,
+    setShowTelefonoCallModal,
+    setTelefonoCallMissingCount,
+    setTelefonoCallConfirmChecked,
     DEFAULT_TURNOS, // Added to dependencies
   ])
 
@@ -4811,6 +4832,52 @@ function OnboardingTurnosCliente() {
           </div>
         </div>
       )}
+
+      <Dialog open={showTelefonoCallModal} onOpenChange={setShowTelefonoCallModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Completar teléfonos después</DialogTitle>
+            <DialogDescription>
+              GeoVictoria Call necesita el teléfono para el marcaje. Puedes continuar ahora y completar el dato luego.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-slate-700">
+            <p>
+              Trabajadores sin Teléfono 1: <span className="font-semibold">{telefonoCallMissingCount}</span>
+            </p>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={telefonoCallConfirmChecked}
+                onChange={(e) => setTelefonoCallConfirmChecked(e.target.checked)}
+              />
+              <span>
+                Confirmo que completaré los teléfonos más adelante para habilitar el marcaje por GeoVictoria Call.
+              </span>
+            </label>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowTelefonoCallModal(false)}>
+              Completar ahora
+            </Button>
+            <Button
+              type="button"
+              disabled={!telefonoCallConfirmChecked}
+              onClick={() => {
+                telefonoCallDeferredRef.current = true
+                setFormData((prev) => ({ ...prev, telefonoCallDeferred: true }))
+                skipCallPhoneCheckRef.current = true
+                setShowTelefonoCallModal(false)
+                setTelefonoCallConfirmChecked(false)
+                goNext()
+              }}
+            >
+              Continuar sin teléfonos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <nav className="sticky top-0 z-20 bg-white border-b border-slate-200 py-4 px-6 md:px-12">
         <div className="flex items-center justify-between">
