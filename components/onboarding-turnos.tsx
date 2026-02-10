@@ -4073,6 +4073,7 @@ function OnboardingTurnosCliente() {
     // </CHANGE>
 
     if (onboardingId) {
+      setIsSubmitting(true)
       try {
         console.log("[v0] goNext: Guardando avance en BD", {
           step: nextStep,
@@ -4175,6 +4176,8 @@ function OnboardingTurnosCliente() {
           description: "No se pudo conectar con el servidor.",
           variant: "destructive",
         })
+      } finally {
+        setIsSubmitting(false)
       }
     }
 
@@ -4229,7 +4232,7 @@ function OnboardingTurnosCliente() {
       <button
         type="button"
         onClick={goBack}
-        disabled={currentStep === PRIMER_PASO || navigationHistory.length <= 1}
+        disabled={isSubmitting || currentStep === PRIMER_PASO || navigationHistory.length <= 1}
         className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-base font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -4241,7 +4244,8 @@ function OnboardingTurnosCliente() {
           <button
             type="button"
             onClick={goNext}
-            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continuar
             <ArrowRight className="w-5 h-5" />
@@ -4251,7 +4255,8 @@ function OnboardingTurnosCliente() {
         <button
           type="button"
           onClick={handleFinalizar} // This should trigger the final submission
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25"
+          disabled={isSubmitting}
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Confirmar y Enviar
           <Check className="w-5 h-5" />
@@ -4662,6 +4667,7 @@ function OnboardingTurnosCliente() {
 
     // Guardar decisión en BD y enviar a Zoho
     if (onboardingId) {
+      setIsSubmitting(true)
       try {
         console.log("[v0] handleWorkersDecision: Guardando decisión en BD...")
 
@@ -4723,6 +4729,8 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleWorkersDecision: Error:", error)
+      } finally {
+        setIsSubmitting(false)
       }
     }
 
@@ -4749,6 +4757,7 @@ function OnboardingTurnosCliente() {
 
     // Guardar decisión en BD y enviar a Zoho
     if (onboardingId) {
+      setIsSubmitting(true)
       try {
         console.log("[v0] handleConfigurationDecision: Guardando decisión en BD...")
 
@@ -4810,6 +4819,8 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleConfigurationDecision: Error:", error)
+      } finally {
+        setIsSubmitting(false)
       }
     }
 
@@ -4828,6 +4839,16 @@ function OnboardingTurnosCliente() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
+      {isSubmitting && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-xl">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+            <div className="text-sm font-medium text-slate-800">Guardando cambios?</div>
+            <div className="text-xs text-slate-500">Esto puede tardar unos segundos.</div>
+          </div>
+        </div>
+      )}
+
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="relative max-w-md rounded-xl bg-white p-6 shadow-xl">
