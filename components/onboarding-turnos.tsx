@@ -1513,7 +1513,7 @@ const TrabajadoresStep = ({
                       type="text"
                       value={t.rut}
                       onChange={(e) => updateTrabajador(t.id, "rut", e.target.value)}
-                      placeholder="Ej: ID interno / RUT"
+                      placeholder="Ej: 18435922-7"
                       disabled={isAdmin}
                     />
                     {rowErrors.rut && <p className="mt-0.5 text-[10px] text-red-600">{rowErrors.rut}</p>}
