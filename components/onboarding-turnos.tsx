@@ -4412,7 +4412,12 @@ function OnboardingTurnosCliente() {
           </div>
         )
       case 6:
-        return <DecisionStep onDecision={handleConfigurationDecision} />
+        return (
+          <div className="space-y-6">
+            <DecisionStep onDecision={handleConfigurationDecision} />
+            <NavigationButtons />
+          </div>
+        )
 
       case 7:
         return (
