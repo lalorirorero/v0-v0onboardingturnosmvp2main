@@ -1480,7 +1480,7 @@ const TrabajadoresStep = ({
                 <React.Fragment key={t.id}>
                   <tr
                     className={`border-t border-slate-100 ${
-                      rowHasErrors ? "bg-red-50/70" : isAdmin ? "bg-blue-50" : ""
+                      rowHasErrors ? "bg-red-50/70 ring-1 ring-inset ring-red-200" : isAdmin ? "bg-blue-50" : ""
                     }`}
                   >
                   <td className="px-3 py-1.5">
