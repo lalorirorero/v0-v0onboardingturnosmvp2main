@@ -1470,9 +1470,19 @@ const TrabajadoresStep = ({
               const telefono1FormatError =
                 t.telefono1?.trim() && !isValidPhone(t.telefono1) ? "Formato de teléfono inválido." : ""
               const telefono1Error = rowErrors.telefono1 || telefono1FormatError
+              const rowErrorMessages = [
+                ...Object.values(rowErrors),
+                ...(telefono1FormatError && !rowErrors.telefono1 ? [telefono1FormatError] : []),
+              ]
+              const rowHasErrors = rowErrorMessages.length > 0
 
               return (
-                <tr key={t.id} className={`border-t border-slate-100 ${isAdmin ? "bg-blue-50" : ""}`}>
+                <React.Fragment key={t.id}>
+                  <tr
+                    className={`border-t border-slate-100 ${
+                      rowHasErrors ? "bg-red-50/70" : isAdmin ? "bg-blue-50" : ""
+                    }`}
+                  >
                   <td className="px-3 py-1.5">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
@@ -1591,6 +1601,17 @@ const TrabajadoresStep = ({
                     </button>
                   </td>
                 </tr>
+                {rowHasErrors && (
+                  <tr className={rowHasErrors ? "bg-red-50/70" : ""}>
+                    <td colSpan={9} className="px-3 pb-2 pt-0">
+                      <div className="flex items-start gap-2 rounded-md bg-red-50 px-2 py-1 text-[10px] text-red-700">
+                        <AlertCircle className="mt-0.5 h-3 w-3" />
+                        <span>{rowErrorMessages.join(" | ")}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               )
             })}
           </tbody>
