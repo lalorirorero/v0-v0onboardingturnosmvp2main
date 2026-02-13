@@ -927,6 +927,9 @@ const TrabajadoresStep = ({
   const MAX_ROWS = 500
   const [localFieldErrors, setLocalFieldErrors] = useState({ byId: {}, global: [] }) // Declare errors here
   const isCallSelected = (formData?.empresa?.sistema || []).includes("GeoVictoria CALL")
+  const [showClearBulkModal, setShowClearBulkModal] = useState(false)
+  const bulkWorkers = trabajadores.filter((t) => t.origen === "masivo" && t.tipo !== "administrador")
+  const bulkWorkerCount = bulkWorkers.length
   const handleDownloadTemplate = () => {
     const headers = [
       "Rut Completo",
@@ -1155,6 +1158,7 @@ const TrabajadoresStep = ({
         telefono1,
         telefono2,
         telefono3,
+        origen: "masivo",
         tipo: "usuario",
       }
     })
@@ -1235,6 +1239,7 @@ const TrabajadoresStep = ({
         telefono1: "",
         telefono2: "",
         telefono3: "",
+        origen: "manual",
         tipo: "usuario",
       },
     ])
@@ -1255,6 +1260,24 @@ const TrabajadoresStep = ({
     }
   }
 
+
+  const handleClearBulkWorkers = () => {
+    if (bulkWorkerCount === 0) {
+      setShowClearBulkModal(false)
+      return
+    }
+    const bulkIds = new Set(bulkWorkers.map((t) => t.id))
+    setTrabajadores(trabajadores.filter((t) => !bulkIds.has(t.id)))
+    if (localFieldErrors?.byId) {
+      const newById = { ...(localFieldErrors.byId || {}) }
+      bulkIds.forEach((id) => {
+        delete newById[id]
+      })
+      setLocalFieldErrors({ ...(localFieldErrors || { byId: {}, global: [] }), byId: newById })
+    }
+    setBulkStatus({ total: 0, added: 0, error: "" })
+    setShowClearBulkModal(false)
+  }
   const globalErrors = localFieldErrors?.global || []
 
   return (
@@ -1389,6 +1412,26 @@ const TrabajadoresStep = ({
         </div>
       </div>
 
+      <Dialog open={showClearBulkModal} onOpenChange={setShowClearBulkModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar trabajadores cargados masivamente</DialogTitle>
+            <DialogDescription>
+              Esta acci&oacute;n eliminar&aacute; {bulkWorkerCount} trabajador{bulkWorkerCount === 1 ? "" : "es"} importado{bulkWorkerCount === 1 ? "" : "s"}.
+              Los trabajadores creados manualmente no se eliminar&aacute;n.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowClearBulkModal(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleClearBulkWorkers}>
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {showVideoModal && (
         <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
           <DialogContent className="max-w-[1700px] w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -1436,6 +1479,26 @@ const TrabajadoresStep = ({
           </DialogContent>
         </Dialog>
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Listado de trabajadores</p>
+          <p className="text-[11px] text-slate-500">Elimina solo los trabajadores cargados masivamente.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-slate-500">
+            Importados: <span className="font-semibold text-slate-700">{bulkWorkerCount}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowClearBulkModal(true)}
+            disabled={bulkWorkerCount === 0}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Eliminar todos
+          </button>
+        </div>
+      </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="min-w-full border-collapse text-xs">
@@ -4108,9 +4171,10 @@ function OnboardingTurnosCliente() {
     setNoAdminsError(false)
     // </CHANGE>
 
-    if (onboardingId) {
-      setIsSubmitting(true)
-      try {
+    setIsSubmitting(true)
+    try {
+      if (onboardingId) {
+        try {
         console.log("[v0] goNext: Guardando avance en BD", {
           step: nextStep,
           onboardingId,
@@ -4212,9 +4276,11 @@ function OnboardingTurnosCliente() {
           description: "No se pudo conectar con el servidor.",
           variant: "destructive",
         })
-      } finally {
-        setIsSubmitting(false)
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } finally {
+      setIsSubmitting(false)
     }
 
     // If valid, proceed
@@ -4707,9 +4773,10 @@ function OnboardingTurnosCliente() {
     const newHistory = [...navigationHistory, nextStep]
 
     // Guardar decisión en BD y enviar a Zoho
-    if (onboardingId) {
-      setIsSubmitting(true)
-      try {
+    setIsSubmitting(true)
+    try {
+      if (onboardingId) {
+        try {
         console.log("[v0] handleWorkersDecision: Guardando decisión en BD...")
 
         const dataToSave = {
@@ -4770,9 +4837,11 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleWorkersDecision: Error:", error)
-      } finally {
-        setIsSubmitting(false)
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } finally {
+      setIsSubmitting(false)
     }
 
     // Navegar al siguiente paso
@@ -4797,9 +4866,10 @@ function OnboardingTurnosCliente() {
     const newHistory = configureNow ? [...navigationHistory, nextStep] : [...navigationHistory.slice(0, -1), 10]
 
     // Guardar decisión en BD y enviar a Zoho
-    if (onboardingId) {
-      setIsSubmitting(true)
-      try {
+    setIsSubmitting(true)
+    try {
+      if (onboardingId) {
+        try {
         console.log("[v0] handleConfigurationDecision: Guardando decisión en BD...")
 
         const dataToSave = {
@@ -4860,9 +4930,11 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleConfigurationDecision: Error:", error)
-      } finally {
-        setIsSubmitting(false)
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } finally {
+      setIsSubmitting(false)
     }
 
     // Navegar al siguiente paso
