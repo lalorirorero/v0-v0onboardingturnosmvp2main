@@ -555,7 +555,6 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
           </p>
         </div>
       )}
-      </div>
     </section>
   )
 })
