@@ -557,6 +557,263 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
       )}
     </section>
   )
+}
+
+const EmpresaStep = React.memo<{
+  empresa: Empresa
+  setEmpresa: (updater: Empresa | ((prev: Empresa) => Empresa)) => void
+  prefilledFields: Set<string>
+  isFieldPrefilled: (fieldKey: string) => boolean
+  isFieldEdited: (fieldKey: string) => boolean
+  trackFieldChange: (fieldKey: string, newValue: any) => void
+  fieldErrors?: Record<string, string> // Nueva prop
+}>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange, fieldErrors = {} }) => {
+  const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
+
+  const SISTEMAS_INFO = {
+    "GeoVictoria BOX": {
+      imagen: "/images/box.png",
+      titulo: "Relojes Biométricos",
+      descripcion:
+        "Dispositivos físicos con huella digital o reconocimiento facial. Ideal para oficinas, plantas y lugares con acceso fijo.",
+    },
+    "GeoVictoria CALL": {
+      imagen: "/images/call.png",
+      titulo: "Marcaje por Llamada",
+      descripcion:
+        "El trabajador marca llamando a un número gratuito. Ideal para personal en terreno sin smartphone o con baja conectividad.",
+    },
+    "GeoVictoria APP": {
+      imagen: "/images/app.png",
+      titulo: "Aplicación Móvil",
+      descripcion:
+        "App para smartphone con geolocalización y foto. Ideal para equipos en terreno, vendedores y personal móvil.",
+    },
+    "GeoVictoria USB": {
+      imagen: "/images/usb.png",
+      titulo: "Lector USB Biométrico",
+      descripcion:
+        "Lector de huella conectado a computador. Ideal para recepciones, escritorios compartidos o puestos de trabajo fijos.",
+    },
+    "GeoVictoria WEB": {
+      imagen: "/images/web.png",
+      titulo: "Portal Web",
+      descripcion:
+        "Marcaje desde el navegador con credenciales. Ideal para personal administrativo, teletrabajo y oficinas.",
+    },
+  }
+
+  const RUBROS = [
+    "1. Agrícola",
+    "2. Condominio",
+    "3. Construcción",
+    "4. Inmobiliaria",
+    "5. Consultoria",
+    "6. Banca y Finanzas",
+    "7. Educación",
+    "8. Municipio",
+    "9. Gobierno",
+    "10. Mineria",
+    "11. Naviera",
+    "12. Outsourcing Seguridad",
+    "13. Outsourcing General",
+    "14. Outsourcing Retail",
+    "15. Planta Productiva",
+    "16. Logistica",
+    "17. Retail Enterprise",
+    "18. Retail SMB",
+    "19. Salud",
+    "20. Servicios",
+    "21. Transporte",
+    "22. Turismo, Hotelería y Gastronomía",
+  ]
+
+  const handleEmpresaChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target
+      const nextValue = name === "rut" ? value.replace(/\./g, "").toUpperCase() : value
+      setEmpresa((prev) => ({ ...prev, [name]: nextValue }))
+      if (isFieldPrefilled(`empresa.${name}`)) {
+        trackFieldChange(`empresa.${name}`, nextValue)
+      }
+    },
+    [setEmpresa, isFieldPrefilled, trackFieldChange],
+  )
+
+  const handleSistemaChange = useCallback(
+    (sistemaValue: string) => {
+      setEmpresa((prev) => {
+        const currentSistemas = prev.sistema || []
+        const isSelected = currentSistemas.includes(sistemaValue)
+
+        const newSistemas = isSelected
+          ? currentSistemas.filter((s) => s !== sistemaValue)
+          : [...currentSistemas, sistemaValue]
+
+        if (isFieldPrefilled("empresa.sistema")) {
+          trackFieldChange("empresa.sistema", newSistemas)
+        }
+
+        return { ...prev, sistema: newSistemas }
+      })
+    },
+    [setEmpresa, isFieldPrefilled, trackFieldChange],
+  )
+
+  return (
+    <section className="space-y-6">
+      <header>
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <Building2 className="h-5 w-5 text-sky-500" />
+          Datos de la empresa
+        </h2>
+        <p className="mt-2 text-sm text-slate-500">Todos los campos son obligatorios.</p>
+      </header>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <ProtectedInput
+          name="razonSocial"
+          label="Razón Social"
+          placeholder="Ej: Tech Solutions S.A."
+          value={empresa.razonSocial || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.razonSocial"]}
+        />
+        <ProtectedInput
+          name="nombreFantasia"
+          label="Nombre de fantasía"
+          placeholder="Ej: TechSol"
+          value={empresa.nombreFantasia || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.nombreFantasia"]}
+        />
+        <ProtectedInput
+          name="rut"
+          label="RUT *"
+          placeholder="Ej: 12345678-9"
+          value={empresa.rut || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.rut"]}
+        />
+        <ProtectedInput
+          name="giro"
+          label="Giro *"
+          placeholder="Ej: Servicios de Tecnología"
+          value={empresa.giro || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.giro"]}
+        />
+        <ProtectedInput
+          name="direccion"
+          label="Dirección"
+          placeholder="Ej: Av. Principal 123"
+          value={empresa.direccion || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.direccion"]}
+        />
+        <ProtectedInput
+          name="comuna"
+          label="Comuna *"
+          placeholder="Ej: Santiago"
+          value={empresa.comuna || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.comuna"]}
+        />
+        <ProtectedInput
+          name="emailFacturacion"
+          label="Email de facturación"
+          type="email"
+          placeholder="Ej: facturacion@empresa.com"
+          value={empresa.emailFacturacion || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.emailFacturacion"]}
+        />
+        <ProtectedInput
+          name="telefonoContacto"
+          label="Teléfono de contacto"
+          type="tel"
+          placeholder="Ej: +56912345678"
+          value={empresa.telefonoContacto || ""}
+          onChange={handleEmpresaChange}
+          error={fieldErrors["empresa.telefonoContacto"]}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
+          Rubro <span className="text-slate-900">*</span>
+        </label>
+        <select
+          id="rubro"
+          name="rubro"
+          value={empresa.rubro || ""}
+          onChange={handleEmpresaChange}
+          className={`w-full rounded-lg border ${
+            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
+          } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
+        >
+          <option value="">Selecciona un rubro</option>
+          {RUBROS.map((rubro) => (
+            <option key={rubro} value={rubro}>
+              {rubro}
+            </option>
+          ))}
+        </select>
+        {fieldErrors["empresa.rubro"] && <p className="mt-1 text-sm text-red-600">{fieldErrors["empresa.rubro"]}</p>}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-3">
+          Sistema de marcaje <span className="text-slate-900">*</span>
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SISTEMAS.map((sistema) => {
+            const info = SISTEMAS_INFO[sistema]
+            const isSelected = empresa.sistema?.includes(sistema)
+
+            return (
+              <button
+                key={sistema}
+                type="button"
+                onClick={() => handleSistemaChange(sistema)}
+                className={`relative rounded-xl border-2 p-4 text-left transition-all ${
+                  isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900 text-sm">{info.titulo}</h3>
+                    <p className="mt-1 text-xs text-slate-600">{info.descripcion}</p>
+                  </div>
+                  <div
+                    className={`ml-3 flex h-5 w-5 items-center justify-center rounded border-2 ${
+                      isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
+                    }`}
+                  >
+                    {isSelected && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        {fieldErrors["empresa.sistema"] && (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-600 flex items-center gap-2">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {fieldErrors["empresa.sistema"]}
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  )
 })
 
 EmpresaStep.displayName = "EmpresaStep"
