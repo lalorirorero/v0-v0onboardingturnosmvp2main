@@ -1056,10 +1056,16 @@ const TrabajadoresStep = ({
         rowErrors.rut = "RUT inválido."
       }
 
-      if (correoPersonal.trim() && !isValidEmail(correoPersonal)) {
-        rowErrors.correo = "Formato de correo inválido."
+      if (!correoPersonal.trim()) {
+        rowErrors.correo = "El correo es obligatorio."
+      } else if (!isValidEmail(correoPersonal)) {
+        rowErrors.correo = "Formato de correo inv?lido."
       }
-
+      
+      if (!grupoNombre.trim()) {
+        rowErrors.grupoId = "El grupo es obligatorio."
+      }
+      
       if (telefono1.trim() && !isValidPhone(telefono1)) {
         rowErrors.telefono1 = "Formato de teléfono inválido."
       }
@@ -1415,10 +1421,29 @@ const TrabajadoresStep = ({
           </thead>
           <tbody>
             {trabajadores.map((t) => {
-              const rowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
+              const baseRowErrors = (localFieldErrors && localFieldErrors.byId && localFieldErrors.byId[t.id]) || {}
               const isAdmin = t.tipo === "administrador"
+              const requiredErrors: Record<string, string> = {}
+              
+              if (!isAdmin) {
+                const nombre = t.nombre?.trim() || ""
+                const rut = t.rut?.trim() || ""
+                const correo = t.correo?.trim() || ""
+              
+                if (!nombre) requiredErrors.nombre = "El nombre es obligatorio."
+                if (!rut) requiredErrors.rut = "El RUT es obligatorio."
+                else if (!isRutFormatValid(rut)) requiredErrors.rut = "RUT sin puntos y con gui?n (ej: 12345678-9)."
+                else if (!isValidRut(rut)) requiredErrors.rut = "RUT inv?lido."
+              
+                if (!correo) requiredErrors.correo = "El correo es obligatorio."
+                else if (!isValidEmail(correo)) requiredErrors.correo = "Formato de correo inv?lido."
+              
+                if (!t.grupoId) requiredErrors.grupoId = "El grupo es obligatorio."
+              }
+              
+              const rowErrors = { ...requiredErrors, ...baseRowErrors }
               const telefono1FormatError =
-                t.telefono1?.trim() && !isValidPhone(t.telefono1) ? "Formato de teléfono inválido." : ""
+                t.telefono1?.trim() && !isValidPhone(t.telefono1) ? "Formato de tel?fono inv?lido." : ""
               const telefono1Error = rowErrors.telefono1 || telefono1FormatError
               const rowErrorMessages = [
                 ...Object.values(rowErrors),
@@ -3937,10 +3962,19 @@ function OnboardingTurnosCliente() {
         }
 
         const trabajadoresInvalidos = trabajadores.filter((t) => {
-          const rut = t.rut?.trim() || ""
-          if (!rut) return true
-          if (!isRutFormatValid(rut) || !isValidRut(rut)) return true
-          if (t.correo?.trim() && !isValidEmail(t.correo)) return true
+          if (t.tipo !== "administrador") {
+            const nombre = t.nombre?.trim() || ""
+            const rut = t.rut?.trim() || ""
+            const correo = t.correo?.trim() || ""
+        
+            if (!nombre) return true
+            if (!rut) return true
+            if (!isRutFormatValid(rut) || !isValidRut(rut)) return true
+            if (!correo) return true
+            if (!isValidEmail(correo)) return true
+            if (!t.grupoId) return true
+          }
+        
           if (t.telefono1?.trim() && !isValidPhone(t.telefono1)) return true
           if (t.telefono2?.trim() && !isValidPhone(t.telefono2)) return true
           if (t.telefono3?.trim() && !isValidPhone(t.telefono3)) return true
@@ -3949,7 +3983,7 @@ function OnboardingTurnosCliente() {
 
         if (trabajadoresInvalidos.length > 0) {
           isValid = false
-          errors.push("Hay trabajadores con datos inválidos. Revisa el formato de RUT, correo y teléfonos.")
+          errors.push("Hay trabajadores con datos inv?lidos. Revisa nombre, RUT, correo, grupo y tel?fonos.")
           break
         }
 
