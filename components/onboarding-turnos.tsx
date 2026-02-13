@@ -3743,17 +3743,12 @@ function OnboardingTurnosCliente() {
       console.log("[v0] Inicializacion: Cargando grupos desde BD:", hydratedFormData.empresa.grupos.length)
       setGrupos(hydratedFormData.empresa.grupos)
     } else {
-      // Otherwise, set default groups for a new onboarding
-      const defaultGroups = [
-        { id: 1, nombre: "Administrativo", descripcion: "Equipo de oficina" },
-        { id: 2, nombre: "Terreno", descripcion: "Personal en ruta" },
-      ]
-      setGrupos(defaultGroups)
-      // Update formData only if it's a new onboarding (no token loaded)
+      // New onboarding: start with no groups until the user adds them
+      setGrupos([])
       if (!token) {
         setFormData((prev) => ({
           ...prev,
-          empresa: { ...prev.empresa, grupos: defaultGroups },
+          empresa: { ...prev.empresa, grupos: [] },
         }))
       }
     }
