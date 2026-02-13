@@ -555,312 +555,6 @@ const AdminStep = ({ admins, setAdmins, onRemoveAdmin, isEditMode }) => {
           </p>
         </div>
       )}
-    </section>
-  )
-}
-
-// START CHANGE: Modificando ProtectedInput para mostrar errores
-const ProtectedInput = React.memo<{
-  name: string
-  label: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  type?: string
-  placeholder?: string
-  error?: string // Nueva prop para mostrar error
-}>(({ name, label, value, onChange, type = "text", placeholder, error }) => {
-  const labelText = label.replace(/\s*\*$/, "")
-
-  return (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
-        {labelText}
-        <span className="text-slate-900"> *</span>
-      </label>
-      <input
-        type={type}
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full rounded-lg border ${
-          error
-            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-            : "border-slate-300 focus:border-sky-500 focus:ring-sky-500"
-        } px-4 py-2.5 focus:outline-none focus:ring-1`}
-      />
-      {error && (
-        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          {error}
-        </p>
-      )}
-    </div>
-  )
-})
-
-ProtectedInput.displayName = "ProtectedInput"
-
-// START CHANGE: Definiendo EmpresaStep FUERA del componente principal para evitar re-creación
-const EmpresaStep = React.memo<{
-  empresa: Empresa
-  setEmpresa: (updater: Empresa | ((prev: Empresa) => Empresa)) => void
-  prefilledFields: Set<string>
-  isFieldPrefilled: (fieldKey: string) => boolean
-  isFieldEdited: (fieldKey: string) => boolean
-  trackFieldChange: (fieldKey: string, newValue: any) => void
-  fieldErrors?: Record<string, string> // Nueva prop
-}>(({ empresa, setEmpresa, prefilledFields, isFieldPrefilled, isFieldEdited, trackFieldChange, fieldErrors = {} }) => {
-  const SISTEMAS = ["GeoVictoria BOX", "GeoVictoria CALL", "GeoVictoria APP", "GeoVictoria USB", "GeoVictoria WEB"]
-
-  const SISTEMAS_INFO = {
-    "GeoVictoria BOX": {
-      imagen: "/images/box.png",
-      titulo: "Relojes Biométricos",
-      descripcion:
-        "Dispositivos físicos con huella digital o reconocimiento facial. Ideal para oficinas, plantas y lugares con acceso fijo.",
-    },
-    "GeoVictoria CALL": {
-      imagen: "/images/call.png",
-      titulo: "Marcaje por Llamada",
-      descripcion:
-        "El trabajador marca llamando a un número gratuito. Ideal para personal en terreno sin smartphone o con baja conectividad.",
-    },
-    "GeoVictoria APP": {
-      imagen: "/images/app.png",
-      titulo: "Aplicación Móvil",
-      descripcion:
-        "App para smartphone con geolocalización y foto. Ideal para equipos en terreno, vendedores y personal móvil.",
-    },
-    "GeoVictoria USB": {
-      imagen: "/images/usb.png",
-      titulo: "Lector USB Biométrico",
-      descripcion:
-        "Lector de huella conectado a computador. Ideal para recepciones, escritorios compartidos o puestos de trabajo fijos.",
-    },
-    "GeoVictoria WEB": {
-      imagen: "/images/web.png",
-      titulo: "Portal Web",
-      descripcion:
-        "Marcaje desde el navegador con credenciales. Ideal para personal administrativo, teletrabajo y oficinas.",
-    },
-  }
-
-  const RUBROS = [
-    "1. Agrícola",
-    "2. Condominio",
-    "3. Construcción",
-    "4. Inmobiliaria",
-    "5. Consultoria",
-    "6. Banca y Finanzas",
-    "7. Educación",
-    "8. Municipio",
-    "9. Gobierno",
-    "10. Mineria",
-    "11. Naviera",
-    "12. Outsourcing Seguridad",
-    "13. Outsourcing General",
-    "14. Outsourcing Retail",
-    "15. Planta Productiva",
-    "16. Logistica",
-    "17. Retail Enterprise",
-    "18. Retail SMB",
-    "19. Salud",
-    "20. Servicios",
-    "21. Transporte",
-    "22. Turismo, Hotelería y Gastronomía",
-  ]
-
-  const handleEmpresaChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target
-      const nextValue = name === "rut" ? value.replace(/\./g, "").toUpperCase() : value
-      setEmpresa((prev) => ({ ...prev, [name]: nextValue }))
-      if (isFieldPrefilled(`empresa.${name}`)) {
-        trackFieldChange(`empresa.${name}`, nextValue)
-      }
-    },
-    [setEmpresa, isFieldPrefilled, trackFieldChange],
-  )
-
-  const handleSistemaChange = useCallback(
-    (sistemaValue: string) => {
-      setEmpresa((prev) => {
-        const currentSistemas = prev.sistema || []
-        const isSelected = currentSistemas.includes(sistemaValue)
-
-        const newSistemas = isSelected
-          ? currentSistemas.filter((s) => s !== sistemaValue)
-          : [...currentSistemas, sistemaValue]
-
-        if (isFieldPrefilled("empresa.sistema")) {
-          trackFieldChange("empresa.sistema", newSistemas)
-        }
-
-        return { ...prev, sistema: newSistemas }
-      })
-    },
-    [setEmpresa, isFieldPrefilled, trackFieldChange],
-  )
-
-  return (
-    <section className="space-y-6">
-      <header>
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-          <Building2 className="h-5 w-5 text-sky-500" />
-          Datos de la empresa
-        </h2>
-        <p className="mt-2 text-sm text-slate-500">Todos los campos son obligatorios.</p>
-      </header>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <ProtectedInput
-          name="razonSocial"
-          label="Razón Social"
-          placeholder="Ej: Tech Solutions S.A."
-          value={empresa.razonSocial || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.razonSocial"]}
-        />
-        <ProtectedInput
-          name="nombreFantasia"
-          label="Nombre de fantasía"
-          placeholder="Ej: TechSol"
-          value={empresa.nombreFantasia || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.nombreFantasia"]}
-        />
-        <ProtectedInput
-          name="rut"
-          label="RUT *"
-          placeholder="Ej: 12345678-9"
-          value={empresa.rut || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.rut"]}
-        />
-        <ProtectedInput
-          name="giro"
-          label="Giro *"
-          placeholder="Ej: Servicios de Tecnología"
-          value={empresa.giro || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.giro"]}
-        />
-        <ProtectedInput
-          name="direccion"
-          label="Dirección"
-          placeholder="Ej: Av. Principal 123"
-          value={empresa.direccion || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.direccion"]}
-        />
-        <ProtectedInput
-          name="comuna"
-          label="Comuna *"
-          placeholder="Ej: Santiago"
-          value={empresa.comuna || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.comuna"]}
-        />
-        <ProtectedInput
-          name="emailFacturacion"
-          label="Email de facturación"
-          type="email"
-          placeholder="Ej: facturacion@empresa.com"
-          value={empresa.emailFacturacion || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.emailFacturacion"]}
-        />
-        <ProtectedInput
-          name="telefonoContacto"
-          label="Teléfono de contacto"
-          type="tel"
-          placeholder="Ej: +56912345678"
-          value={empresa.telefonoContacto || ""}
-          onChange={handleEmpresaChange}
-          error={fieldErrors["empresa.telefonoContacto"]}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="rubro" className="block text-sm font-medium text-slate-700 mb-2">
-          Rubro <span className="text-slate-900">*</span>
-        </label>
-        <select
-          id="rubro"
-          name="rubro"
-          value={empresa.rubro || ""}
-          onChange={handleEmpresaChange}
-          className={`w-full rounded-lg border ${
-            fieldErrors["empresa.rubro"] ? "border-red-500" : "border-slate-300"
-          } px-4 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500`}
-        >
-          <option value="">Selecciona un rubro</option>
-          {RUBROS.map((rubro) => (
-            <option key={rubro} value={rubro}>
-              {rubro}
-            </option>
-          ))}
-        </select>
-        {fieldErrors["empresa.rubro"] && <p className="mt-1 text-sm text-red-600">{fieldErrors["empresa.rubro"]}</p>}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-3">
-          Sistema de marcaje <span className="text-slate-900">*</span>
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SISTEMAS.map((sistema) => {
-            const info = SISTEMAS_INFO[sistema]
-            const isSelected = empresa.sistema?.includes(sistema)
-
-            return (
-              <button
-                key={sistema}
-                type="button"
-                onClick={() => handleSistemaChange(sistema)}
-                className={`relative rounded-xl border-2 p-4 text-left transition-all ${
-                  isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 text-sm">{info.titulo}</h3>
-                    <p className="mt-1 text-xs text-slate-600">{info.descripcion}</p>
-                  </div>
-                  <div
-                    className={`ml-3 flex h-5 w-5 items-center justify-center rounded border-2 ${
-                      isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
-                    }`}
-                  >
-                    {isSelected && <Check className="h-3 w-3 text-white" />}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-        {fieldErrors["empresa.sistema"] && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-            <p className="text-sm text-red-600 flex items-center gap-2">
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {fieldErrors["empresa.sistema"]}
-            </p>
-          </div>
-        )}
       </div>
     </section>
   )
@@ -3099,51 +2793,40 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Antes de comenzar</h1>
         <p className="text-slate-600 max-w-2xl mx-auto">
-          Te explicamos brevemente qué información te pediremos para configurar tu plataforma.
+          En 2 minutos sabrás qué es obligatorio y qué puedes dejar para después.
         </p>
       </div>
 
-      {/* Qué pediremos - Reorganizado en grid 2x2 */}
+      {/* Lo obligatorio y opcional */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 className="font-medium text-slate-900 mb-4">¿Qué información te pediremos?</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Fila 1 */}
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
-              1
-            </div>
-            <div>
-              <p className="font-medium text-slate-700 text-sm">Datos de tu empresa</p>
-              <p className="text-xs text-slate-500">Razón social, RUT, dirección y contacto</p>
-            </div>
+        <h3 className="font-medium text-slate-900 mb-4">Lo que te pediremos</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-slate-800">Obligatorio para continuar</p>
+            <ul className="space-y-2 text-xs text-slate-600">
+              <li>
+                <span className="font-medium text-slate-700">Empresa:</span> Razón social, RUT, dirección, comuna,
+                giro, rubro, teléfono de contacto, email de facturación y sistema de marcaje.
+              </li>
+              <li>
+                <span className="font-medium text-slate-700">Administrador principal:</span> nombre, apellido, RUT,
+                correo y teléfono.
+              </li>
+            </ul>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
-              2
-            </div>
-            <div>
-              <p className="font-medium text-slate-700 text-sm">Administrador de la plataforma</p>
-              <p className="text-xs text-slate-500">Quien gestionará GeoVictoria en tu empresa</p>
-            </div>
-          </div>
-          {/* Fila 2 */}
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
-              3
-            </div>
-            <div>
-              <p className="font-medium text-slate-700 text-sm">Listado de tus trabajadores</p>
-              <p className="text-xs text-slate-500">Nombre, RUT, correo y grupo (puedes pegarlo desde Excel)</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
-              4
-            </div>
-            <div>
-              <p className="font-medium text-slate-700 text-sm">Turnos y planificaciones</p>
-              <p className="text-xs text-slate-500">Horarios de trabajo, periodos de descanso (opcional por ahora)</p>
-            </div>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-slate-800">Opcional por ahora</p>
+            <ul className="space-y-2 text-xs text-slate-600">
+              <li>
+                <span className="font-medium text-slate-700">Trabajadores:</span> nombre, RUT, correo y grupo (puedes
+                cargarlos ahora o durante la capacitación). Si eliges Marcaje por Llamada, necesitarás el Teléfono 1 para
+                que puedan marcar.
+              </li>
+              <li>
+                <span className="font-medium text-slate-700">Turnos y planificaciones:</span> solo si decides
+                configurarlos ahora.
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -3163,24 +2846,23 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
           </div>
         </div>
 
-        {/* Qué tener a mano */}
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
           <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-amber-600" />
-            ¿Qué es útil tener a mano?
+            Checklist según tu elección
           </h2>
           <ul className="space-y-2 text-sm text-amber-700">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Datos básicos de la empresa (RUT, Razón Social, Dirección)
+              Si vas a cargar trabajadores ahora: lista básica con nombre, RUT y correo.
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Listado de trabajadores (nombre, RUT, correo)
+              Si usarás Marcaje por Llamada: Teléfono 1 de cada trabajador.
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Información general de turnos y horarios
+              Si vas a configurar turnos ahora: horarios y períodos de descanso.
             </li>
           </ul>
         </div>
