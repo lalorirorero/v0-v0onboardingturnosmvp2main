@@ -4276,9 +4276,10 @@ function OnboardingTurnosCliente() {
           description: "No se pudo conectar con el servidor.",
           variant: "destructive",
         })
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
     } finally {
       setIsSubmitting(false)
     }
@@ -4837,9 +4838,10 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleWorkersDecision: Error:", error)
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
     } finally {
       setIsSubmitting(false)
     }
@@ -4930,9 +4932,10 @@ function OnboardingTurnosCliente() {
         }
       } catch (error) {
         console.error("[v0] handleConfigurationDecision: Error:", error)
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
     } finally {
       setIsSubmitting(false)
     }
