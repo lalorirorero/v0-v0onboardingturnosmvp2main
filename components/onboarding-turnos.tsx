@@ -1781,15 +1781,20 @@ const TurnosStep = ({ turnos, setTurnos }) => {
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Turnos</h2>
         <div className="mt-2 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm font-medium text-blue-900">¿Qué es un turno?</p>
+          <p className="text-sm font-medium text-blue-900">&iquest;Qu&eacute; es un turno?</p>
           <p className="text-xs text-blue-800 leading-relaxed">
-            Un <strong>turno</strong> es un bloque de horario laboral con hora de inicio, hora de término y tiempo de
-            colación. Por ejemplo: "Turno Oficina" de 09:00 a 18:00 con 60 minutos de colación, o "Turno Noche" de 22:00
-            a 06:00 con 30 minutos de colación.
+            Un <strong>turno</strong> es un bloque de horario laboral con hora de inicio, hora de t&eacute;rmino y tiempo de
+            colaci&oacute;n. Por ejemplo: "Turno Oficina" de 09:00 a 18:00 con 60 minutos de colaci&oacute;n, o "Turno Noche" de 22:00
+            a 06:00 con 30 minutos de colaci&oacute;n.
           </p>
           <p className="text-xs text-blue-800 leading-relaxed">
-            Los turnos son las <strong>piezas básicas</strong> que luego usarás para crear planificaciones semanales.
-            También puedes crear un turno llamado "Libre" para indicar días de descanso.
+            Ya tienes turnos base: <strong>Libre</strong> y <strong>Descanso</strong>.
+            <strong>Descanso</strong> es recomendado para fines de semana o d&iacute;as no laborables, y <strong>Libre</strong> para
+            personas sin horario fijo.
+          </p>
+          <p className="text-xs text-blue-800 leading-relaxed">
+            En el siguiente paso crear&aacute;s <strong>planificaciones</strong> combinando estos turnos por d&iacute;a de la semana.
+            Luego, en <strong>asignaciones</strong>, elegir&aacute;s qu&eacute; planificaci&oacute;n aplica a cada trabajador.
           </p>
         </div>
       </header>
