@@ -2383,6 +2383,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
 }
 
 const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planificaciones, grupos, errorGlobal }) => {
+  const todayISO = new Date().toISOString().slice(0, 10)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTrabajadoresIds, setSelectedTrabajadoresIds] = useState([])
   const [bulkPlanificacionId, setBulkPlanificacionId] = useState("")
@@ -2597,7 +2598,14 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               type="date"
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={bulkDesde}
-              onChange={(e) => setBulkDesde(e.target.value)}
+              min={todayISO}
+              onChange={(e) => {
+                const next = e.target.value
+                setBulkDesde(next)
+                if (bulkHasta && bulkHasta !== "permanente" && next && bulkHasta < next) {
+                  setBulkHasta(next)
+                }
+              }}
             />
           </div>
 
@@ -2611,28 +2619,35 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                 ?
               </span>
             </label>
-            <div className="flex gap-2">
-              <select
-                className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                value={bulkHasta === "permanente" ? "permanente" : "fecha"}
-                onChange={(e) => {
-                  if (e.target.value === "permanente") {
-                    setBulkHasta("permanente")
-                  } else {
-                    setBulkHasta("")
-                  }
-                }}
-              >
-                <option value="fecha">Fecha específica</option>
-                <option value="permanente">Permanente</option>
-              </select>
-              {bulkHasta !== "permanente" && (
-                <input
-                  type="date"
-                  className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  value={bulkHasta}
-                  onChange={(e) => setBulkHasta(e.target.value)}
-                />
+            <div className="space-y-1">
+              {bulkHasta === "permanente" ? (
+                <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-200 px-2 py-1.5 text-[11px]">
+                  <span className="text-slate-600">Permanente</span>
+                  <button
+                    type="button"
+                    onClick={() => setBulkHasta("")}
+                    className="text-sky-600 hover:text-sky-700 hover:underline"
+                  >
+                    Elegir fecha
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="date"
+                    className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    value={bulkHasta}
+                    min={bulkDesde || todayISO}
+                    onChange={(e) => setBulkHasta(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setBulkHasta("permanente")}
+                    className="text-[11px] text-sky-600 hover:text-sky-700 hover:underline"
+                  >
+                    Permanente
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -2779,32 +2794,46 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                     className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     type="date"
                     value={a.desde}
-                    onChange={(e) => updateAsignacion(a.id, "desde", e.target.value)}
+                    min={todayISO}
+                    onChange={(e) => {
+                      const next = e.target.value
+                      updateAsignacion(a.id, "desde", next)
+                      if (a.hasta && a.hasta !== "permanente" && next && a.hasta < next) {
+                        updateAsignacion(a.id, "hasta", next)
+                      }
+                    }}
                   />
                 </td>
                 <td className="px-3 py-1.5">
-                  <div className="flex gap-2 items-center">
-                    <select
-                      className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                      value={a.hasta === "permanente" ? "permanente" : "fecha"}
-                      onChange={(e) => {
-                        if (e.target.value === "permanente") {
-                          updateAsignacion(a.id, "hasta", "permanente")
-                        } else {
-                          updateAsignacion(a.id, "hasta", "")
-                        }
-                      }}
-                    >
-                      <option value="fecha">Fecha</option>
-                      <option value="permanente">Permanente</option>
-                    </select>
-                    {a.hasta !== "permanente" && (
-                      <input
-                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        type="date"
-                        value={a.hasta}
-                        onChange={(e) => updateAsignacion(a.id, "hasta", e.target.value)}
-                      />
+                  <div className="space-y-1">
+                    {a.hasta === "permanente" ? (
+                      <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-200 px-2 py-1.5 text-[11px]">
+                        <span className="text-slate-600">Permanente</span>
+                        <button
+                          type="button"
+                          onClick={() => updateAsignacion(a.id, "hasta", "")}
+                          className="text-sky-600 hover:text-sky-700 hover:underline"
+                        >
+                          Elegir fecha
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                          type="date"
+                          value={a.hasta}
+                          min={a.desde || todayISO}
+                          onChange={(e) => updateAsignacion(a.id, "hasta", e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateAsignacion(a.id, "hasta", "permanente")}
+                          className="text-[11px] text-sky-600 hover:text-sky-700 hover:underline"
+                        >
+                          Permanente
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>
