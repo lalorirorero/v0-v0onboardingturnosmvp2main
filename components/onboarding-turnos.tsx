@@ -2383,7 +2383,6 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
 }
 
 const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planificaciones, grupos, errorGlobal }) => {
-  const [selectedGrupoId, setSelectedGrupoId] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTrabajadoresIds, setSelectedTrabajadoresIds] = useState([])
   const [bulkPlanificacionId, setBulkPlanificacionId] = useState("")
@@ -2420,28 +2419,21 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     const nombre = (t.nombre || "").toLowerCase()
     const rut = (t.rut || "").toLowerCase()
     const correo = (t.correo || "").toLowerCase()
-    return nombre.includes(normalizedSearch) || rut.includes(normalizedSearch) || correo.includes(normalizedSearch)
+    const grupo = (t.grupoNombre || "").toLowerCase()
+    return (
+      nombre.includes(normalizedSearch) ||
+      rut.includes(normalizedSearch) ||
+      correo.includes(normalizedSearch) ||
+      grupo.includes(normalizedSearch)
+    )
   }
 
-  const trabajadoresFiltradosBase = selectedGrupoId
-    ? trabajadores.filter((t) => {
-        const tieneAsignacionValida = asignaciones.some(
-          (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
-        )
-        const grupoSeleccionado = grupos.find((g) => g.id === selectedGrupoId)
-        const matchesGrupoId = Number(t.grupoId) === selectedGrupoId
-        const matchesGrupoNombre =
-          grupoSeleccionado &&
-          t.grupoNombre &&
-          t.grupoNombre.trim().toLowerCase() === grupoSeleccionado.nombre.trim().toLowerCase()
-        return (matchesGrupoId || matchesGrupoNombre) && !tieneAsignacionValida
-      })
-    : trabajadores.filter((t) => {
-        const tieneAsignacionValida = asignaciones.some(
-          (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
-        )
-        return !tieneAsignacionValida
-      })
+  const trabajadoresFiltradosBase = trabajadores.filter((t) => {
+    const tieneAsignacionValida = asignaciones.some(
+      (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
+    )
+    return !tieneAsignacionValida
+  })
 
   const trabajadoresFiltrados = trabajadoresFiltradosBase.filter(matchesSearch)
 
@@ -2553,29 +2545,15 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       )}
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
-        <div className="grid gap-3 md:grid-cols-5 md:items-end">
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-slate-700">Filtrar por grupo</label>
-            <select
-              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              value={selectedGrupoId}
-              onChange={(e) => setSelectedGrupoId(e.target.value ? Number(e.target.value) : "")}
-            >
-              <option value="">Todos los grupos</option>
-              {grupos.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.nombre || "Sin nombre"}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="grid gap-3 md:grid-cols-4 md:items-end">
+
 
           <div className="space-y-1">
             <label className="text-[11px] font-medium text-slate-700 flex items-center gap-1">
-              Buscar trabajador
+              Buscar trabajador o grupo
               <span
                 className="cursor-help rounded-full border border-slate-300 px-1 text-[9px] text-slate-600"
-                title="Busca por nombre, RUT o correo (ej: Mar&iacute;a, 18435922-7, correo@empresa.cl)."
+                title="Busca por nombre, RUT, correo o grupo (ej: Mar&iacute;a, 18435922-7, correo@empresa.cl, Operaciones)."
               >
                 ?
               </span>
@@ -2585,7 +2563,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre, RUT o correo"
+              placeholder="Buscar por nombre, RUT, correo o grupo"
             />
           </div>
 
