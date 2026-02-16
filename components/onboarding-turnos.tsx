@@ -1933,7 +1933,7 @@ const TurnosStep = ({ turnos, setTurnos }) => {
 
       {turnos.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-900">Turnos creados ({turnos.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Turnos disponibles ({turnos.length})</h3>
           <div className="space-y-2">
             {turnos.map((turno) => (
               <div
@@ -2340,7 +2340,7 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
         <aside className="lg:sticky lg:top-24 h-fit">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-800">Turnos creados</h3>
-            <p className="text-[11px] text-slate-500 mt-1">Referencia del paso anterior.</p>
+            <p className="text-[11px] text-slate-500 mt-1">Creados en el paso anterior</p>
             {turnos.length === 0 ? (
               <p className="mt-3 text-xs text-slate-500">A&uacute;n no hay turnos creados.</p>
             ) : (
