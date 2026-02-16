@@ -2505,11 +2505,14 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
   const totalTrabajadores = trabajadores.length
   const trabajadoresSinPlan = trabajadores.filter((t) => !getPlanificacionLabelForTrabajador(t.id)).length
+  const trabajadoresPlanificados = trabajadores
+    .map((t) => ({ ...t, planLabel: getPlanificacionLabelForTrabajador(t.id) }))
+    .filter((t) => t.planLabel)
 
   return (
     <section className="space-y-4">
       <header>
-        <h2 className="text-lg font-semibold text-slate-900">Asignación de planificaciones</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Asignaci&oacute;n de planificaciones</h2>
         <details className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <summary className="text-sm font-medium text-emerald-900">
             C&oacute;mo asignar planificaciones
@@ -2517,7 +2520,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
           </summary>
           <div className="mt-2 space-y-2 text-xs text-emerald-800 leading-relaxed">
             <ol className="list-decimal space-y-1 pl-4">
-              <li>Selecciona la planificaci&oacute;n a asignar.</li>
+              <li>Selecciona una planificaci&oacute;n creada en el paso anterior (Planificaciones).</li>
               <li>
                 Define el per&iacute;odo: elige <strong>Desde</strong> y <strong>Hasta</strong>. Si no hay fecha de
                 t&eacute;rmino, marca <strong>Permanente</strong>.
@@ -2528,7 +2531,11 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
               <li>
                 Selecciona a los trabajadores (puedes usar &quot;Seleccionar todos&quot; o &quot;Limpiar selecci&oacute;n&quot;).
               </li>
-              <li>Haz clic en &quot;Asignar planificaci&oacute;n a seleccionados&quot; para crear la asignaci&oacute;n masiva.</li>
+              <li>
+                Haz clic en &quot;Asignar planificaci&oacute;n a seleccionados&quot;. Al asignar, los trabajadores salen de
+                &quot;Trabajadores sin planificar&quot; y aparecen en &quot;Trabajadores planificados&quot;.
+              </li>
+              <li>Repite el proceso hasta no dejar trabajadores en &quot;Trabajadores sin planificar&quot;.</li>
               <li>
                 Si necesitas excepciones, usa &quot;Agregar asignaci&oacute;n manual&quot; para casos puntuales.
               </li>
@@ -2554,6 +2561,9 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       )}
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">Trabajadores sin planificar</h3>
+        </div>
         <div className="grid gap-3 md:grid-cols-4 md:items-end">
 
 
@@ -2870,24 +2880,23 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
       <div className="mt-6 space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-900">Estado de planificación por trabajador</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Trabajadores planificados</h3>
         </div>
         <p className="text-[11px] text-slate-600">
-          Aquí se muestran todos los trabajadores. Si un trabajador no tiene una planificación válida asignada (con
-          periodo Desde/Hasta), aparecerá como
-          <span className="font-semibold text-red-600"> "Sin planificar"</span>.
+          Aqu&iacute; ver&aacute;s a los trabajadores que ya tienen una planificaci&oacute;n asignada.
         </p>
+
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full border-collapse text-xs">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium text-slate-700">Trabajador</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-700">Planificación asignada</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-700">Planificaci&oacute;n asignada</th>
               </tr>
             </thead>
             <tbody>
-              {trabajadores.map((t) => {
-                const label = getPlanificacionLabelForTrabajador(t.id)
+              {trabajadoresPlanificados.map((t) => {
+                const label = t.planLabel
                 return (
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="px-3 py-1.5">
@@ -2895,15 +2904,9 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
                       {t.rut ? <span className="text-[10px] text-slate-500"> – {t.rut}</span> : null}
                     </td>
                     <td className="px-3 py-1.5">
-                      {label ? (
-                        <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                          {label}
-                        </span>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                          Sin planificar
-                        </span>
-                      )}
+                      <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                        {label}
+                      </span>
                     </td>
                   </tr>
                 )
