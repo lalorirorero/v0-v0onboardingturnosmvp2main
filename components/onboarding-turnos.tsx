@@ -2510,23 +2510,31 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     <section className="space-y-4">
       <header>
         <h2 className="text-lg font-semibold text-slate-900">Asignación de planificaciones</h2>
-        <div className="mt-2 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm font-medium text-emerald-900">¿Qué es una asignación?</p>
-          <p className="text-xs text-emerald-800 leading-relaxed">
-            Una <strong>asignación</strong> es vincular a un trabajador específico con una planificación semanal durante
-            un período determinado. Define <strong>quién</strong> trabaja <strong>qué patrón semanal</strong> y{" "}
-            <strong>desde cuándo hasta cuándo</strong>.
-          </p>
-          <p className="text-xs text-emerald-800 leading-relaxed">
-            <strong>Ejemplo:</strong> Puedes asignar a "Juan Pérez" la planificación "Oficina 5x2" desde el 01/01/2025
-            hasta el 31/12/2025. Así Juan trabajará ese patrón semanal durante todo el año.
-          </p>
-          <p className="text-xs text-emerald-800 leading-relaxed">
-            <strong>Relación con planificaciones:</strong> Las asignaciones toman las planificaciones que creaste (que a
-            su vez usan los turnos) y las aplican a trabajadores reales. Puedes asignar la misma planificación a
-            múltiples trabajadores o crear asignaciones individuales.
-          </p>
-        </div>
+        <details className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <summary className="text-sm font-medium text-emerald-900">
+            C&oacute;mo asignar planificaciones
+            <span className="ml-2 text-[11px] font-normal text-emerald-700">(ver pasos)</span>
+          </summary>
+          <div className="mt-2 space-y-2 text-xs text-emerald-800 leading-relaxed">
+            <ol className="list-decimal space-y-1 pl-4">
+              <li>Selecciona la planificaci&oacute;n a asignar.</li>
+              <li>
+                Define el per&iacute;odo: elige <strong>Desde</strong> y <strong>Hasta</strong>. Si no hay fecha de
+                t&eacute;rmino, marca <strong>Permanente</strong>.
+              </li>
+              <li>
+                Usa el buscador &quot;Buscar trabajador o grupo&quot; para filtrar por nombre, RUT, correo o grupo.
+              </li>
+              <li>
+                Selecciona a los trabajadores (puedes usar &quot;Seleccionar todos&quot; o &quot;Limpiar selecci&oacute;n&quot;).
+              </li>
+              <li>Haz clic en &quot;Asignar planificaci&oacute;n a seleccionados&quot; para crear la asignaci&oacute;n masiva.</li>
+              <li>
+                Si necesitas excepciones, usa &quot;Agregar asignaci&oacute;n manual&quot; para casos puntuales.
+              </li>
+            </ol>
+          </div>
+        </details>
       </header>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs flex items-center justify-between gap-2">
