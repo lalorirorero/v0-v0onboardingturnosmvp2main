@@ -2202,6 +2202,9 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
           </p>
         </div>
       </header>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="space-y-6">
+
 
       {turnos.length === 0 && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
@@ -2332,6 +2335,49 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
           </p>
         </div>
       )}
+
+        </div>
+        <aside className="lg:sticky lg:top-24 h-fit">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-800">Turnos creados</h3>
+            <p className="text-[11px] text-slate-500 mt-1">Referencia del paso anterior.</p>
+            {turnos.length === 0 ? (
+              <p className="mt-3 text-xs text-slate-500">A&uacute;n no hay turnos creados.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {turnos.map((turno) => {
+                  const nombre = turno.nombre || "Sin nombre"
+                  const nombreLower = nombre.toLowerCase()
+                  const isBase = nombreLower === "libre" || nombreLower === "descanso"
+                  const horario = turno.horaInicio && turno.horaFin ? `${turno.horaInicio} - ${turno.horaFin}` : "Sin horario"
+                  return (
+                    <li key={turno.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-800">{nombre}</span>
+                        {isBase && (
+                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                            Base
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500">{horario}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {turno.tipoColacion === "libre" ? (
+                          <span>{turno.colacionMinutos || 0} min de colaci&oacute;n libre</span>
+                        ) : turno.tipoColacion === "fija" ? (
+                          <span>Colaci&oacute;n fija {turno.colacionInicio || "--:--"} - {turno.colacionFin || "--:--"}</span>
+                        ) : (
+                          <span>Sin colaci&oacute;n</span>
+                        )}
+                      </p>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        </aside>
+      </div>
     </section>
   )
 }
