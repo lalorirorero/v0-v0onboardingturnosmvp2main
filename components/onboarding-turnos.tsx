@@ -3638,6 +3638,8 @@ function OnboardingTurnosCliente() {
 
   const [isInitialized, setIsInitialized] = useState(false)
 
+  const [showDesktopNotice, setShowDesktopNotice] = useState(false)
+
   const [showResumeMessage, setShowResumeMessage] = useState(false)
   const [resumeStepName, setResumeStepName] = useState("")
   const [showResumeModal, setShowResumeModal] = useState(false)
@@ -3652,6 +3654,29 @@ function OnboardingTurnosCliente() {
   useEffect(() => {
     telefonoCallDeferredRef.current = Boolean(formData.telefonoCallDeferred)
   }, [formData.telefonoCallDeferred])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const dismissed = window.localStorage.getItem("gv_desktop_notice_dismissed") === "1"
+    if (dismissed) return
+
+    const check = () => {
+      const isSmall =
+        window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(pointer: coarse)").matches
+      setShowDesktopNotice(isSmall)
+    }
+
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
+  const dismissDesktopNotice = () => {
+    setShowDesktopNotice(false)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("gv_desktop_notice_dismissed", "1")
+    }
+  }
 
   // --- Helper functions for state management and UI ---
 
@@ -5108,6 +5133,29 @@ function OnboardingTurnosCliente() {
           <Stepper currentStep={currentStep} />
         </div>
       </nav>
+
+      {showDesktopNotice && (
+        <div className="mx-auto w-full max-w-6xl px-6 md:px-12 mt-4">
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Recomendado usar computador</p>
+                <p className="text-[11px] text-amber-800">
+                  Para cargar trabajadores m&aacute;s r&aacute;pido y evitar errores, te sugerimos abrir este enlace desde un PC.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={dismissDesktopNotice}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[11px] font-medium text-amber-900 hover:bg-amber-100"
+            >
+              Continuar en m&oacute;vil
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 container mx-auto py-8 px-6 md:px-12">{renderStepContent()}</main>
       <WhatsAppFloatingButton
