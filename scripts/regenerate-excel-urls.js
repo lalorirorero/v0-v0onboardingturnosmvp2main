@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
-import * as XLSX from "xlsx";
-import ExcelJS from "exceljs";
-import path from "path";
+const { createClient } = require("@supabase/supabase-js");
+const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
+const path = require("path");
+const fs = require("fs");
 
 const STORAGE_BUCKET = "onboarding-excels";
 const SIGNED_URL_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -113,12 +114,20 @@ async function buildPlanificacionWorkbook(datos) {
   const planificaciones = Array.isArray(datos.planificaciones) ? datos.planificaciones : [];
   const asignaciones = Array.isArray(datos.asignaciones) ? datos.asignaciones : [];
 
+  // Check template exists
+  if (!fs.existsSync(TEMPLATE_PATH)) {
+    console.error("Plantilla no encontrada en:", TEMPLATE_PATH);
+    throw new Error("Plantilla no encontrada");
+  }
+  console.log("Plantilla encontrada en:", TEMPLATE_PATH);
+
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(TEMPLATE_PATH);
   const sheet = wb.getWorksheet("Trabajadores");
   if (!sheet) {
     throw new Error("No se encontro la hoja 'Trabajadores' en la plantilla.");
   }
+  console.log("Hoja 'Trabajadores' encontrada en plantilla");
 
   // Fill empresa data
   setExcelCell(sheet, "C7", empresa.razonSocial || "");
@@ -139,45 +148,47 @@ async function buildPlanificacionWorkbook(datos) {
   const cloneStyle = (style) => style ? JSON.parse(JSON.stringify(style)) : undefined;
   const adminCount = admins.length > 0 ? admins.length : 1;
 
-  // Clone admin blocks
-  const merges = (sheet._merges && Object.keys(sheet._merges)) || [];
-  const baseMergeRanges = merges
-    .map((range) => {
-      const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
-      if (!match) return null;
-      const startRow = Number(match[2]);
-      const endRow = Number(match[4]);
-      if (startRow >= adminBlockStartRow && endRow <= adminBlockStartRow + adminBlockHeight - 1) {
-        return { range, startRow, endRow };
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-  for (let i = 1; i < adminCount; i++) {
-    const insertRow = adminBlockStartRow + i * (adminBlockHeight + adminSpacerRows);
-    sheet.spliceRows(insertRow, 0, ...Array(adminBlockHeight + adminSpacerRows).fill([]));
-
-    for (let rowOffset = 0; rowOffset < adminBlockHeight; rowOffset++) {
-      const sourceRow = sheet.getRow(adminBlockStartRow + rowOffset);
-      const targetRow = sheet.getRow(insertRow + rowOffset);
-      targetRow.height = sourceRow.height;
-      sourceRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        const targetCell = targetRow.getCell(colNumber);
-        targetCell.style = cloneStyle(cell.style) || {};
-        if (colNumber === 2) {
-          targetCell.value = cell.value;
-        } else {
-          targetCell.value = null;
+  // Clone admin blocks for extra admins
+  if (adminCount > 1) {
+    const merges = (sheet._merges && Object.keys(sheet._merges)) || [];
+    const baseMergeRanges = merges
+      .map((range) => {
+        const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+        if (!match) return null;
+        const startRow = Number(match[2]);
+        const endRow = Number(match[4]);
+        if (startRow >= adminBlockStartRow && endRow <= adminBlockStartRow + adminBlockHeight - 1) {
+          return { range, startRow, endRow };
         }
+        return null;
+      })
+      .filter(Boolean);
+
+    for (let i = 1; i < adminCount; i++) {
+      const insertRow = adminBlockStartRow + i * (adminBlockHeight + adminSpacerRows);
+      sheet.spliceRows(insertRow, 0, ...Array(adminBlockHeight + adminSpacerRows).fill([]));
+
+      for (let rowOffset = 0; rowOffset < adminBlockHeight; rowOffset++) {
+        const sourceRow = sheet.getRow(adminBlockStartRow + rowOffset);
+        const targetRow = sheet.getRow(insertRow + rowOffset);
+        targetRow.height = sourceRow.height;
+        sourceRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          const targetCell = targetRow.getCell(colNumber);
+          targetCell.style = cloneStyle(cell.style) || {};
+          if (colNumber === 2) {
+            targetCell.value = cell.value;
+          } else {
+            targetCell.value = null;
+          }
+        });
+      }
+
+      baseMergeRanges.forEach((merge) => {
+        const rowOffset = insertRow - adminBlockStartRow;
+        const range = merge.range.replace(/(\d+)/g, (match) => String(Number(match) + rowOffset));
+        try { sheet.mergeCells(range); } catch (e) { /* ignore merge conflicts */ }
       });
     }
-
-    baseMergeRanges.forEach((merge) => {
-      const rowOffset = insertRow - adminBlockStartRow;
-      const range = merge.range.replace(/(\d+)/g, (match) => String(Number(match) + rowOffset));
-      sheet.mergeCells(range);
-    });
   }
 
   // Fill admin data
@@ -191,10 +202,10 @@ async function buildPlanificacionWorkbook(datos) {
     setExcelCell(sheet, `C${blockStartRow + 3}`, admin?.telefono || "");
     setExcelCell(sheet, `C${blockStartRow + 4}`, admin?.email || "");
   }
+  console.log("Admins llenados:", adminCount);
 
   const insertedRows = (adminCount - 1) * (adminBlockHeight + adminSpacerRows);
   const newWorkerHeaderRowIndex = workerHeaderRowIndex + insertedRows;
-  setExcelCell(sheet, `J${newWorkerHeaderRowIndex}`, "Col");
 
   const phoneColumns = [30, 31, 32];
   phoneColumns.forEach((col) => {
@@ -272,12 +283,13 @@ async function buildPlanificacionWorkbook(datos) {
       }
     });
   });
+  console.log("Trabajadores llenados:", trabajadores.length);
 
   return wb;
 }
 
 async function main() {
-  console.log("=== Regenerando Excel y Signed URLs (con plantilla) ===");
+  console.log("=== Regenerando Excel y Signed URLs (con plantilla formateada) ===");
   console.log("Onboarding ID:", ONBOARDING_ID);
 
   // 1. Obtener datos del registro
@@ -298,23 +310,24 @@ async function main() {
   const trabajadores = Array.isArray(datos.trabajadores) ? datos.trabajadores : [];
 
   console.log("Empresa:", empresa.razonSocial);
+  console.log("RUT:", empresa.rut);
   console.log("Admins:", admins.length);
   console.log("Trabajadores:", trabajadores.length);
 
   const rutKey = sanitizeRut(empresa.rut);
   const timestamp = formatTimestamp();
 
-  // 2. Generar Excel de Usuarios (XLSX - same as production)
+  // 2. Generar Excel de Usuarios (XLSX)
   console.log("\n--- Generando Excel de Usuarios ---");
   const usuariosWorkbook = buildUsuariosWorkbook(datos);
   const usuariosBuffer = XLSX.write(usuariosWorkbook, { type: "buffer", bookType: "xlsx" });
-  console.log("Excel de Usuarios generado");
+  console.log("Excel de Usuarios generado, tamano:", usuariosBuffer.length, "bytes");
 
-  // 3. Generar Excel de Planificaciones (ExcelJS con plantilla - same as production)
-  console.log("\n--- Generando Excel de Planificaciones (con plantilla formateada) ---");
+  // 3. Generar Excel de Planificaciones (ExcelJS con plantilla)
+  console.log("\n--- Generando Excel de Planificaciones (con plantilla) ---");
   const planificacionesWorkbook = await buildPlanificacionWorkbook(datos);
   const planificacionesBuffer = Buffer.from(await planificacionesWorkbook.xlsx.writeBuffer());
-  console.log("Excel de Planificaciones generado con formato de plantilla");
+  console.log("Excel de Planificaciones generado, tamano:", planificacionesBuffer.length, "bytes");
 
   // 4. Subir a Supabase Storage
   console.log("\n--- Subiendo a Supabase Storage ---");
