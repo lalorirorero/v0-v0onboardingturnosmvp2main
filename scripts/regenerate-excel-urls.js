@@ -8,7 +8,7 @@ const STORAGE_BUCKET = "onboarding-excels";
 const SIGNED_URL_TTL_SECONDS = 30 * 24 * 60 * 60;
 const TEMPLATE_PATH = path.join(process.cwd(), "assets", "templates", "PLANTILLA_INGRESO.xlsx");
 
-const ONBOARDING_ID = "40a93587-1ab3-4fd0-906e-8f2fcaeaf21c";
+const ONBOARDING_ID = "47cc61fe-98da-4b24-8307-0cc7f769fb72";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
