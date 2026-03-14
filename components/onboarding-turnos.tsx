@@ -5672,16 +5672,25 @@ function OnboardingTurnosCliente() {
       <Dialog open={showModulosUpsellModal} onOpenChange={setShowModulosUpsellModal}>
         <DialogContent className="sm:max-w-xl overflow-hidden">
           <DialogHeader className="-mx-6 -mt-6 border-b border-sky-100 bg-gradient-to-r from-sky-50 via-cyan-50 to-emerald-50 px-6 py-5">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-medium text-sky-700">
-              <Rocket className="h-3.5 w-3.5" />
-              Recomendado para potenciar resultados
+            <div className="grid gap-3 sm:grid-cols-[1fr_180px] sm:items-start">
+              <div>
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-medium text-sky-700">
+                  <Rocket className="h-3.5 w-3.5" />
+                  Recomendado para potenciar resultados
+                </div>
+                <DialogTitle className="mt-3 text-2xl leading-tight text-slate-900 sm:whitespace-nowrap">
+                  Dale mas valor a tu gestion
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-sm text-slate-700">
+                  Activa modulos adicionales y construye una solucion mas completa para tu operacion.
+                </DialogDescription>
+              </div>
+              <div
+                className="mx-auto h-32 w-32 rounded-full bg-contain bg-center bg-no-repeat sm:mx-0 sm:justify-self-end"
+                style={{ backgroundImage: "url('/images/upsell-agent.png')" }}
+                aria-hidden="true"
+              />
             </div>
-            <DialogTitle className="mt-3 text-2xl leading-tight text-slate-900">
-              Dale mas valor a tu implementacion desde el dia 1
-            </DialogTitle>
-            <DialogDescription className="mt-1 text-sm text-slate-700">
-              Activa modulos adicionales y construye una solucion mas completa para tu operacion.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-3 text-sm text-slate-700">
             <p className="font-semibold text-slate-900">Que ganas al seleccionarlos ahora:</p>
