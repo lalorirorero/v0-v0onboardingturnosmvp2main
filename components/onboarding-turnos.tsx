@@ -54,6 +54,14 @@ const steps = [
 ]
 
 const PRIMER_PASO = 0
+const PRIVACY_POLICY_VERSION = "v1.0-2026-03"
+const PRIVACY_POLICY_URL = "https://www.geovictoria.com/aviso-de-privacidad/"
+
+type BeforeStartComplianceState = {
+  privacyNoticeAccepted: boolean
+  representativeDeclarationAccepted: boolean
+  marketingOptIn: boolean
+}
 
 // Días de la semana
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
@@ -146,6 +154,16 @@ const normalizeGroupName = (value: string = "") => {
     .trim()
     .replace(/\s+/g, " ")
     .toLowerCase()
+}
+
+const normalizeAgentText = (value: string = "") => {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 const MODULO_DASHBOARD_BI = "Dashboard BI"
@@ -878,37 +896,6 @@ const EmpresaStep = React.memo<{
     [setEmpresa, isFieldPrefilled, trackFieldChange],
   )
 
-  const handleModuloAdicionalChange = useCallback(
-    (moduloValue: string) => {
-      setEmpresa((prev) => {
-        const currentModulos = normalizeModulosAdicionales(prev.modulosAdicionales)
-        const normalizedModulo = normalizeModuloAdicional(moduloValue)
-        const isSelected = currentModulos.includes(normalizedModulo)
-
-        const newModulos = isSelected
-          ? currentModulos.filter((m) => m !== normalizedModulo)
-          : [...currentModulos, normalizedModulo]
-
-        const shouldClearOtro = !newModulos.includes("Otro")
-
-        if (isFieldPrefilled("empresa.modulosAdicionales")) {
-          trackFieldChange("empresa.modulosAdicionales", newModulos)
-        }
-
-        if (shouldClearOtro && isFieldPrefilled("empresa.modulosAdicionalesOtro")) {
-          trackFieldChange("empresa.modulosAdicionalesOtro", "")
-        }
-
-        return {
-          ...prev,
-          modulosAdicionales: newModulos,
-          modulosAdicionalesOtro: shouldClearOtro ? "" : prev.modulosAdicionalesOtro || "",
-        }
-      })
-    },
-    [setEmpresa, isFieldPrefilled, trackFieldChange],
-  )
-
   const ejecutivoWhatsapp = normalizeWhatsappNumber(empresa.ejecutivoTelefono)
   const empresaConsulta = empresa.nombreFantasia?.trim() || empresa.razonSocial?.trim() || "mi empresa"
   const ejecutivoConsulta = empresa.ejecutivoNombre?.trim() || "tu ejecutivo comercial"
@@ -954,6 +941,11 @@ const EmpresaStep = React.memo<{
   )
 
   const selectedModulos = normalizeModulosAdicionales(empresa.modulosAdicionales)
+  const selectedModulosSet = new Set(selectedModulos)
+  const orderedSelectedModulos = [
+    ...MODULOS_ADICIONALES.filter((modulo) => selectedModulosSet.has(modulo)),
+    ...selectedModulos.filter((modulo) => !MODULOS_ADICIONALES.includes(modulo)),
+  ]
 
 
   return (
@@ -1125,7 +1117,9 @@ const EmpresaStep = React.memo<{
             <Rocket className="h-4 w-4 text-sky-500" />
             Modulos adicionales
           </h3>
-          <p className="mt-1 text-sm text-slate-500">Opcional: selecciona modulos para potenciar la implementacion.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Informacion preseleccionada por el ejecutivo comercial (solo lectura).
+          </p>
         </header>
         <div
           className={`mb-3 rounded-xl border p-3 ${
@@ -1140,8 +1134,8 @@ const EmpresaStep = React.memo<{
             />
             <div className="space-y-1 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Potencia tu implementacion con modulos adicionales</p>
-              <p>Selecciona los modulos que te interesan y te ayudamos a cotizar una solucion a tu medida.</p>
-              <p>Si no encuentras el que necesitas, marca "Otro" y cuentanos cual te gustaria incorporar.</p>
+              <p>Estos modulos vienen predefinidos segun lo conversado con el ejecutivo comercial.</p>
+              <p>En esta etapa se muestran como referencia y no se pueden editar desde la app.</p>
               <p className="font-medium text-slate-800">El precio se consulta directo por WhatsApp con tu ejecutivo.</p>
               {ejecutivoWhatsapp && (
                 <a
@@ -1157,54 +1151,39 @@ const EmpresaStep = React.memo<{
             </div>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULOS_ADICIONALES.map((modulo) => {
-            const isSelected = selectedModulos.includes(modulo)
-            const detalle = MODULOS_ADICIONALES_INFO[modulo]
-            const ModuloIcon = MODULOS_ADICIONALES_ICONOS[modulo] || Zap
+        {orderedSelectedModulos.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {orderedSelectedModulos.map((modulo) => {
+              const detalle = MODULOS_ADICIONALES_INFO[modulo]
+              const ModuloIcon = MODULOS_ADICIONALES_ICONOS[modulo] || Zap
 
-            return (
-              <button
-                key={modulo}
-                type="button"
-                onClick={() => handleModuloAdicionalChange(modulo)}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  isSelected ? "border-sky-500 bg-sky-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                      isSelected ? "border-sky-500 bg-white text-sky-600" : "border-slate-200 bg-slate-50 text-slate-500"
-                    }`}
-                  >
-                    <ModuloIcon className="h-4 w-4" />
+              return (
+                <div key={modulo} className="rounded-xl border-2 border-sky-500 bg-sky-50 p-4 text-left shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-500 bg-white text-sky-600">
+                      <ModuloIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex h-5 w-5 items-center justify-center rounded border-2 border-sky-500 bg-sky-500">
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
                   </div>
-                  <div
-                    className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
-                      isSelected ? "border-sky-500 bg-sky-500" : "border-slate-300"
-                    }`}
-                  >
-                    {isSelected && <Check className="h-3 w-3 text-white" />}
+
+                  <div className="mt-3">
+                    <p className="font-semibold text-slate-800">{modulo}</p>
+                    {detalle && (
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        <span className="block">{detalle.resumen[0]}</span>
+                        <span className="block">{detalle.resumen[1]}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div className="mt-3">
-                  <p className="font-semibold text-slate-800">{modulo}</p>
-                  {detalle && (
-                    <p className="mt-1 text-xs leading-5 text-slate-600">
-                      <span className="block">{detalle.resumen[0]}</span>
-                      <span className="block">{detalle.resumen[1]}</span>
-                    </p>
-                  )}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-        {selectedModulos.length === 0 && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Aun no seleccionas modulos adicionales. Elige uno para ver beneficios y funcionalidades.
+              )
+            })}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            No hay modulos adicionales preseleccionados para este onboarding.
           </div>
         )}
 
@@ -1262,15 +1241,11 @@ const EmpresaStep = React.memo<{
           })}
 
         {selectedModulos.includes("Otro") && (
-          <div className="mt-3">
-            <ProtectedInput
-              name="modulosAdicionalesOtro"
-              label="Que modulo te gustaria agregar?"
-              placeholder="Ej: Control de accesos avanzado"
-              value={empresa.modulosAdicionalesOtro || ""}
-              onChange={handleEmpresaChange}
-              error={fieldErrors["empresa.modulosAdicionalesOtro"]}
-            />
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Otro modulo solicitado</p>
+            <p className="mt-1 text-sm text-slate-800">
+              {empresa.modulosAdicionalesOtro?.trim() || "No especificado"}
+            </p>
           </div>
         )}
       </article>
@@ -2832,7 +2807,17 @@ const PlanificacionesStep = ({ planificaciones, setPlanificaciones, turnos }) =>
   )
 }
 
-const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planificaciones, grupos, errorGlobal }) => {
+const AsignacionStep = ({
+  asignaciones,
+  setAsignaciones,
+  turnos,
+  setTurnos,
+  planificaciones,
+  setPlanificaciones,
+  trabajadores,
+  grupos,
+  errorGlobal,
+}) => {
   const todayISO = new Date().toISOString().slice(0, 10)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTrabajadoresIds, setSelectedTrabajadoresIds] = useState([])
@@ -2840,6 +2825,10 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
   const [bulkDesde, setBulkDesde] = useState("")
   const [bulkHasta, setBulkHasta] = useState("")
   const [bulkError, setBulkError] = useState("")
+  const [agentInput, setAgentInput] = useState("")
+  const [agentMessages, setAgentMessages] = useState([])
+  const [agentIsThinking, setAgentIsThinking] = useState(false)
+  const agentScrollRef = useRef(null)
 
   const updateAsignacion = useCallback(
     (id, field, value) => {
@@ -2863,6 +2852,33 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     [asignaciones, setAsignaciones],
   )
 
+  const getGrupoNombreByTrabajador = useCallback(
+    (trabajador) => {
+      const grupoById = grupos.find((g) => Number(g.id) === Number(trabajador.grupoId))
+      if (grupoById?.nombre) return grupoById.nombre
+      if (trabajador.grupoNombre) return trabajador.grupoNombre
+      return "Sin grupo"
+    },
+    [grupos],
+  )
+
+  const getAsignacionValidaByTrabajadorId = useCallback(
+    (trabajadorId) => {
+      return asignaciones.find((a) => Number(a.trabajadorId) === Number(trabajadorId) && a.planificacionId && a.desde && a.hasta)
+    },
+    [asignaciones],
+  )
+
+  const trabajadoresConAsignacionValidaIds = React.useMemo(() => {
+    const ids = new Set()
+    asignaciones.forEach((a) => {
+      if (a.planificacionId && a.desde && a.hasta) {
+        ids.add(Number(a.trabajadorId))
+      }
+    })
+    return ids
+  }, [asignaciones])
+
   const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const matchesSearch = (t) => {
@@ -2870,7 +2886,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     const nombre = (t.nombre || "").toLowerCase()
     const rut = (t.rut || "").toLowerCase()
     const correo = (t.correo || "").toLowerCase()
-    const grupo = (t.grupoNombre || "").toLowerCase()
+    const grupo = (getGrupoNombreByTrabajador(t) || "").toLowerCase()
     return (
       nombre.includes(normalizedSearch) ||
       rut.includes(normalizedSearch) ||
@@ -2879,12 +2895,7 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
     )
   }
 
-  const trabajadoresFiltradosBase = trabajadores.filter((t) => {
-    const tieneAsignacionValida = asignaciones.some(
-      (a) => a.trabajadorId === t.id && a.planificacionId && a.desde && a.hasta,
-    )
-    return !tieneAsignacionValida
-  })
+  const trabajadoresFiltradosBase = trabajadores.filter((t) => !trabajadoresConAsignacionValidaIds.has(Number(t.id)))
 
   const trabajadoresFiltrados = trabajadoresFiltradosBase.filter(matchesSearch)
 
@@ -2943,21 +2954,858 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
 
   const getPlanificacionLabelForTrabajador = useCallback(
     (trabajadorId) => {
-      const asignacionValida = asignaciones.find(
-        (a) => a.trabajadorId === trabajadorId && a.planificacionId && a.desde && a.hasta,
-      )
+      const asignacionValida = getAsignacionValidaByTrabajadorId(trabajadorId)
       if (!asignacionValida) return null
-      const plan = planificaciones.find((p) => p.id === asignacionValida.planificacionId)
+      const plan = planificaciones.find((p) => Number(p.id) === Number(asignacionValida.planificacionId))
       return plan ? plan.nombre || "Sin nombre" : null
     },
-    [asignaciones, planificaciones],
+    [getAsignacionValidaByTrabajadorId, planificaciones],
   )
 
   const totalTrabajadores = trabajadores.length
-  const trabajadoresSinPlan = trabajadores.filter((t) => !getPlanificacionLabelForTrabajador(t.id)).length
+  const trabajadoresSinPlan = totalTrabajadores - trabajadoresConAsignacionValidaIds.size
   const trabajadoresPlanificados = trabajadores
     .map((t) => ({ ...t, planLabel: getPlanificacionLabelForTrabajador(t.id) }))
     .filter((t) => t.planLabel)
+  const trabajadoresPendientes = trabajadores.filter((t) => !trabajadoresConAsignacionValidaIds.has(Number(t.id)))
+
+  const gruposPendientes = React.useMemo(() => {
+    return Array.from(new Set(trabajadoresPendientes.map((t) => getGrupoNombreByTrabajador(t)).filter(Boolean)))
+  }, [trabajadoresPendientes, getGrupoNombreByTrabajador])
+
+  const cleanAgentValue = useCallback((value) => {
+    return String(value || "")
+      .replace(/^["'`]+|["'`]+$/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  }, [])
+
+  const normalizeTimeValue = useCallback((value) => {
+    const match = String(value || "")
+      .trim()
+      .match(/^(\d{1,2}):(\d{2})$/)
+    if (!match) return ""
+    const hour = Number(match[1])
+    const minute = Number(match[2])
+    if (Number.isNaN(hour) || Number.isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return ""
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+  }, [])
+
+  const findTurnoByName = useCallback(
+    (turnoName) => {
+      const normalized = normalizeAgentText(turnoName || "")
+      if (!normalized) return null
+      return turnos.find((turno) => normalizeAgentText(turno.nombre || "") === normalized) || null
+    },
+    [turnos],
+  )
+
+  const findPlanificacionByName = useCallback(
+    (planName) => {
+      const normalized = normalizeAgentText(planName || "")
+      if (!normalized) return null
+      return planificaciones.find((plan) => normalizeAgentText(plan.nombre || "") === normalized) || null
+    },
+    [planificaciones],
+  )
+
+  const validateTurnoDataForAgent = useCallback((turnoData) => {
+    const nombre = String(turnoData?.nombre || "").trim()
+    if (!nombre) {
+      return { isValid: false, message: "El turno debe tener nombre." }
+    }
+
+    const turnoNombreNormalized = normalizeAgentText(nombre)
+    const isLibreOrDescanso = turnoNombreNormalized === "libre" || turnoNombreNormalized === "descanso"
+    const horaInicio = String(turnoData?.horaInicio || "").trim()
+    const horaFin = String(turnoData?.horaFin || "").trim()
+
+    if (!isLibreOrDescanso) {
+      if (!horaInicio || !horaFin) {
+        return { isValid: false, message: `El turno "${nombre}" debe incluir hora de inicio y fin.` }
+      }
+      if (!normalizeTimeValue(horaInicio) || !normalizeTimeValue(horaFin)) {
+        return { isValid: false, message: `El turno "${nombre}" tiene un formato de hora invalido.` }
+      }
+    }
+
+    const tipoColacion = turnoData?.tipoColacion || "sin"
+    if (!["sin", "libre", "fija"].includes(tipoColacion)) {
+      return { isValid: false, message: `El turno "${nombre}" tiene un tipo de colacion invalido.` }
+    }
+
+    if (tipoColacion === "libre" && Number(turnoData?.colacionMinutos || 0) <= 0) {
+      return { isValid: false, message: `El turno "${nombre}" requiere minutos de colacion libre mayores a 0.` }
+    }
+
+    if (tipoColacion === "fija") {
+      const inicioColacion = normalizeTimeValue(turnoData?.colacionInicio)
+      const finColacion = normalizeTimeValue(turnoData?.colacionFin)
+      if (!inicioColacion || !finColacion) {
+        return { isValid: false, message: `El turno "${nombre}" requiere inicio y fin de colacion fija.` }
+      }
+    }
+
+    return { isValid: true }
+  }, [normalizeTimeValue])
+
+  const validatePlanificacionForAgent = useCallback(
+    (planificacionId, planificacionesFuente = planificaciones, turnosFuente = turnos) => {
+      const plan = planificacionesFuente.find((p) => Number(p.id) === Number(planificacionId))
+      if (!plan) {
+        return { isValid: false, message: "No encontre la planificacion indicada. Elige una de las creadas en el paso anterior." }
+      }
+
+      if (!Array.isArray(plan.diasTurnos) || plan.diasTurnos.length !== DIAS.length) {
+        return {
+          isValid: false,
+          message: `La planificacion "${plan.nombre || "Sin nombre"}" no tiene la distribucion semanal completa.`,
+        }
+      }
+
+      const hasMissingDays = plan.diasTurnos.some((turnoId) => turnoId === null || turnoId === "")
+      if (hasMissingDays) {
+        return {
+          isValid: false,
+          message: `La planificacion "${plan.nombre || "Sin nombre"}" tiene dias sin turno asignado. Completa la distribucion semanal.`,
+        }
+      }
+
+      for (const turnoId of plan.diasTurnos) {
+        const turno = turnosFuente.find((item) => Number(item.id) === Number(turnoId))
+        if (!turno) {
+          return {
+            isValid: false,
+            message: `La planificacion "${plan.nombre || "Sin nombre"}" referencia un turno que no existe.`,
+          }
+        }
+
+        const turnoValidation = validateTurnoDataForAgent(turno)
+        if (!turnoValidation.isValid) {
+          return { isValid: false, message: turnoValidation.message }
+        }
+      }
+
+      return { isValid: true, planificacion: plan }
+    },
+    [planificaciones, turnos, validateTurnoDataForAgent],
+  )
+
+  const exampleHastaISO = React.useMemo(() => {
+    const next = new Date(todayISO)
+    next.setDate(next.getDate() + 14)
+    return next.toISOString().slice(0, 10)
+  }, [todayISO])
+
+  const promptExamples = React.useMemo(() => {
+    const turnoBase =
+      turnos.find((t) => !["libre", "descanso"].includes(normalizeAgentText(t.nombre || "")))?.nombre || "Turno Manana"
+    const turnoDescanso = turnos.find((t) => normalizeAgentText(t.nombre || "") === "descanso")?.nombre || "Descanso"
+    const fallbackPlanName = planificaciones[0]?.nombre || "Oficina 5x2"
+    const grupoConNombre = grupos.find((g) => (g.nombre || "").trim())?.nombre
+    const grupoFallback =
+      grupoConNombre || trabajadores.map((t) => getGrupoNombreByTrabajador(t)).find((nombre) => nombre !== "Sin grupo") || "Operaciones"
+
+    const workerNames = trabajadores.map((t) => t.nombre).filter(Boolean)
+    const workerA = workerNames[0] || "Juan Perez"
+    const workerB = workerNames[1] || "Maria Soto"
+
+    return {
+      turno: `Crear turno nombre: ${turnoBase} inicio: 09:00 fin: 18:00 colacion libre 60 minutos`,
+      planificacion: `Crear planificacion nombre: ${fallbackPlanName}; lunes=${turnoBase}, martes=${turnoBase}, miercoles=${turnoBase}, jueves=${turnoBase}, viernes=${turnoBase}, sabado=${turnoDescanso}, domingo=${turnoDescanso}`,
+      asignacion: `Asigna la planificacion ${fallbackPlanName} al grupo ${grupoFallback} desde ${todayISO} hasta ${exampleHastaISO}.`,
+      asignacionPersonas: `Asigna la planificacion ${fallbackPlanName} a ${workerA} y ${workerB} desde ${todayISO} hasta permanente.`,
+    }
+  }, [turnos, planificaciones, grupos, trabajadores, getGrupoNombreByTrabajador, todayISO, exampleHastaISO])
+
+  const turnosResumidos = React.useMemo(() => {
+    return turnos.map((turno) => {
+      const horario = turno.horaInicio && turno.horaFin ? `${turno.horaInicio} - ${turno.horaFin}` : "Sin horario"
+      let colacion = "Sin colacion"
+      if (turno.tipoColacion === "libre") colacion = `Libre ${turno.colacionMinutos || 0} min`
+      if (turno.tipoColacion === "fija") {
+        colacion = `Fija ${turno.colacionInicio || "--:--"} - ${turno.colacionFin || "--:--"}`
+      }
+      return {
+        id: turno.id,
+        nombre: turno.nombre || "Sin nombre",
+        horario,
+        colacion,
+      }
+    })
+  }, [turnos])
+
+  const planificacionesResumidas = React.useMemo(() => {
+    return planificaciones.map((plan) => {
+      const uniqueTurnos = Array.from(
+        new Set(
+          (plan.diasTurnos || [])
+            .map((turnoId) => turnos.find((turno) => Number(turno.id) === Number(turnoId))?.nombre || "")
+            .filter(Boolean),
+        ),
+      )
+      const diasCompletos =
+        Array.isArray(plan.diasTurnos) &&
+        plan.diasTurnos.length === DIAS.length &&
+        plan.diasTurnos.every((turnoId) => turnoId !== null && turnoId !== "")
+      return {
+        id: plan.id,
+        nombre: plan.nombre || "Sin nombre",
+        uniqueTurnos,
+        diasCompletos,
+      }
+    })
+  }, [planificaciones, turnos])
+
+  const gruposConTrabajadores = React.useMemo(() => {
+    const groupMap = new Map()
+
+    grupos.forEach((group) => {
+      const nombre = group.nombre || "Sin grupo"
+      const key = normalizeGroupName(nombre)
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { nombre, trabajadores: [] })
+      }
+    })
+
+    trabajadores.forEach((worker) => {
+      const nombreGrupo = getGrupoNombreByTrabajador(worker) || "Sin grupo"
+      const key = normalizeGroupName(nombreGrupo)
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { nombre: nombreGrupo, trabajadores: [] })
+      }
+      groupMap.get(key).trabajadores.push(worker.nombre || "Sin nombre")
+    })
+
+    return Array.from(groupMap.values())
+      .map((group) => ({
+        ...group,
+        trabajadores: Array.from(new Set(group.trabajadores)),
+      }))
+      .sort((a, b) => b.trabajadores.length - a.trabajadores.length)
+  }, [grupos, trabajadores, getGrupoNombreByTrabajador])
+
+  const buildPromptFromTurno = useCallback(
+    (turnoNombre) => {
+      const turnoDescanso = turnos.find((t) => normalizeAgentText(t.nombre || "") === "descanso")?.nombre || "Descanso"
+      return `Crear planificacion nombre: Plan ${turnoNombre}; lunes=${turnoNombre}, martes=${turnoNombre}, miercoles=${turnoNombre}, jueves=${turnoNombre}, viernes=${turnoNombre}, sabado=${turnoDescanso}, domingo=${turnoDescanso}`
+    },
+    [turnos],
+  )
+
+  const buildPromptFromPlanificacion = useCallback(
+    (planNombre) => {
+      const grupoRef = gruposConTrabajadores[0]?.nombre || "Operaciones"
+      return `Asigna la planificacion ${planNombre} al grupo ${grupoRef} desde ${todayISO} hasta ${exampleHastaISO}.`
+    },
+    [gruposConTrabajadores, todayISO, exampleHastaISO],
+  )
+
+  const buildPromptFromGrupo = useCallback(
+    (grupoNombre) => {
+      const planRef = planificacionesResumidas[0]?.nombre || "Oficina 5x2"
+      return `Asigna la planificacion ${planRef} al grupo ${grupoNombre} desde ${todayISO} hasta ${exampleHastaISO}.`
+    },
+    [planificacionesResumidas, todayISO, exampleHastaISO],
+  )
+
+  const preloadAgentPrompt = useCallback((nextPrompt) => {
+    setAgentInput(nextPrompt)
+  }, [])
+
+  useEffect(() => {
+    if (agentMessages.length > 0) return
+    setAgentMessages([
+      {
+        id: Date.now(),
+        role: "assistant",
+        text:
+          "Te ayudo por chat a crear turnos, crear planificaciones semanales y asignarlas. Antes de ejecutar, valido los mismos datos obligatorios del flujo.\n\nEjemplos:\n- " +
+          promptExamples.turno +
+          "\n- " +
+          promptExamples.planificacion +
+          "\n- " +
+          promptExamples.asignacion +
+          "\n- " +
+          promptExamples.asignacionPersonas,
+      },
+    ])
+  }, [agentMessages.length, promptExamples])
+
+  useEffect(() => {
+    if (!agentScrollRef.current) return
+    agentScrollRef.current.scrollTop = agentScrollRef.current.scrollHeight
+  }, [agentMessages])
+
+  const addAgentMessage = useCallback((role, text) => {
+    setAgentMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, text }])
+  }, [])
+
+  const detectAgentIntent = useCallback((rawPrompt) => {
+    const normalized = normalizeAgentText(rawPrompt)
+    const hasTurno = normalized.includes("turno")
+    const hasPlanificacion = normalized.includes("planificacion")
+    const hasAsignacion =
+      normalized.includes("asign") || normalized.includes("aplica") || normalized.includes("planifica al grupo")
+
+    if (hasTurno && (normalized.includes("crear") || normalized.includes("agregar") || normalized.includes("nuevo"))) {
+      return "turno"
+    }
+    if (hasPlanificacion && (normalized.includes("crear") || normalized.includes("agregar") || normalized.includes("nueva"))) {
+      return "planificacion"
+    }
+    if (hasAsignacion || (hasPlanificacion && normalized.includes("desde") && normalized.includes("hasta"))) {
+      return "asignacion"
+    }
+    return "unknown"
+  }, [])
+
+  const parseTurnoPrompt = useCallback(
+    (rawPrompt) => {
+      const normalize = (value) => cleanAgentValue(value)
+      const getByLabel = (labels) => {
+        for (const label of labels) {
+          const match = rawPrompt.match(new RegExp(`${label}\\s*[:=]\\s*([^,;\\n]+)`, "i"))
+          if (match?.[1]) return normalize(match[1])
+        }
+        return ""
+      }
+
+      let nombre = getByLabel(["nombre", "turno"])
+      if (!nombre) {
+        const autoMatch = rawPrompt.match(
+          /(?:crear|agregar|nuevo|nueva)?\s*turno\s+(.+?)(?:\s+(?:inicio|desde|hora|colacion)|[,;\n]|$)/i,
+        )
+        if (autoMatch?.[1]) {
+          nombre = normalize(autoMatch[1])
+        }
+      }
+
+      const rangeMatch = rawPrompt.match(/(\d{1,2}:\d{2})\s*(?:-|a)\s*(\d{1,2}:\d{2})/i)
+      if (!nombre && rangeMatch?.[0]) {
+        const autoNameByRange = rawPrompt.match(
+          /(?:crear|agregar|nuevo|nueva)?\s*turno\s+(.+?)\s+\d{1,2}:\d{2}\s*(?:-|a)\s*\d{1,2}:\d{2}/i,
+        )
+        if (autoNameByRange?.[1]) {
+          nombre = normalize(autoNameByRange[1])
+        }
+      }
+
+      const inicioRaw = getByLabel(["inicio", "desde"])
+      const finRaw = getByLabel(["fin", "hasta", "termino", "t[eé]rmino"])
+      let horaInicio = normalizeTimeValue(inicioRaw)
+      let horaFin = normalizeTimeValue(finRaw)
+      if (!horaInicio && rangeMatch?.[1]) horaInicio = normalizeTimeValue(rangeMatch[1])
+      if (!horaFin && rangeMatch?.[2]) horaFin = normalizeTimeValue(rangeMatch[2])
+
+      const normalizedPrompt = normalizeAgentText(rawPrompt)
+      let tipoColacion = "sin"
+      if (normalizedPrompt.includes("colacion fija")) tipoColacion = "fija"
+      else if (normalizedPrompt.includes("colacion libre")) tipoColacion = "libre"
+      else if (normalizedPrompt.includes("sin colacion")) tipoColacion = "sin"
+
+      let colacionMinutos = 0
+      let colacionInicio = ""
+      let colacionFin = ""
+
+      const minutosMatch = rawPrompt.match(/(\d{1,3})\s*(?:min|minuto|minutos)/i)
+      if (tipoColacion === "libre" && minutosMatch?.[1]) {
+        colacionMinutos = Number(minutosMatch[1])
+      }
+
+      const colacionRangeMatch = rawPrompt.match(
+        /colaci[oó]n\s+fija.*?(\d{1,2}:\d{2})\s*(?:-|a)\s*(\d{1,2}:\d{2})/i,
+      )
+      if (tipoColacion === "fija") {
+        colacionInicio = normalizeTimeValue(colacionRangeMatch?.[1] || getByLabel(["colacion inicio", "inicio colacion"]))
+        colacionFin = normalizeTimeValue(colacionRangeMatch?.[2] || getByLabel(["colacion fin", "fin colacion"]))
+      }
+
+      const tooltipMatch = rawPrompt.match(/(?:descripcion|descripci[oó]n|detalle)\s*[:=]\s*([^;\n]+)/i)
+      const tooltip = normalize(tooltipMatch?.[1] || "")
+
+      return {
+        nombre,
+        horaInicio,
+        horaFin,
+        tipoColacion,
+        colacionMinutos,
+        colacionInicio,
+        colacionFin,
+        tooltip,
+      }
+    },
+    [cleanAgentValue, normalizeTimeValue],
+  )
+
+  const parsePlanificacionPrompt = useCallback(
+    (rawPrompt) => {
+      let nombre = cleanAgentValue(rawPrompt.match(/nombre\s*[:=]\s*([^,;\n]+)/i)?.[1] || "")
+      if (!nombre) {
+        nombre = cleanAgentValue(rawPrompt.match(/plan\s*[:=]\s*([^,;\n]+)/i)?.[1] || "")
+      }
+      if (!nombre) {
+        const autoNameMatch = rawPrompt.match(/(?:crear|agregar|nueva|nuevo)?\s*planificaci[oó]n\s+(.+)/i)
+        if (autoNameMatch?.[1]) {
+          nombre = cleanAgentValue(
+            autoNameMatch[1].split(/(?:\s+(?:de\s+)?lunes\s+a\s+viernes|\s+lunes\s*[:=]|\s+con\s+lunes\s*[:=])/i)[0],
+          )
+        }
+      }
+
+      const cleanTurnRef = (value) => {
+        return cleanAgentValue(value)
+          .replace(/^(?:el|la|los|las)\s+/i, "")
+          .replace(/^turno\s+/i, "")
+          .replace(/\s+(?:para|al|a)\s+(?:grupo|equipo|trabajador(?:es)?).*/i, "")
+          .replace(/\s+desde\s+\d{4}-\d{2}-\d{2}.*/i, "")
+          .replace(/\s+hasta\s+\d{4}-\d{2}-\d{2}.*/i, "")
+      }
+
+      const diasTurnoNombres = Array(DIAS.length).fill("")
+      const setDayValue = (index, value) => {
+        diasTurnoNombres[index] = cleanTurnRef(value)
+      }
+
+      const applyRange = (regex, indexes) => {
+        const match = rawPrompt.match(regex)
+        if (!match?.[1]) return
+        indexes.forEach((idx) => setDayValue(idx, match[1]))
+      }
+
+      applyRange(/(?:de\s+)?lunes\s+a\s+viernes\s*[:=]\s*([^,;\n]+)/i, [0, 1, 2, 3, 4])
+      applyRange(/(?:de\s+)?(?:sabado|s[áa]bado)\s+y\s+domingo\s*[:=]\s*([^,;\n]+)/i, [5, 6])
+      applyRange(/fin\s+de\s+semana\s*[:=]\s*([^,;\n]+)/i, [5, 6])
+      applyRange(/(?:todo|todos)\s+los?\s+d[ií]as\s*[:=]\s*([^,;\n]+)/i, [0, 1, 2, 3, 4, 5, 6])
+
+      const dayPatterns = [
+        { index: 0, regex: /lunes\s*[:=]\s*([^,;\n]+)/i },
+        { index: 1, regex: /martes\s*[:=]\s*([^,;\n]+)/i },
+        { index: 2, regex: /(?:miercoles|mi[ée]rcoles)\s*[:=]\s*([^,;\n]+)/i },
+        { index: 3, regex: /jueves\s*[:=]\s*([^,;\n]+)/i },
+        { index: 4, regex: /viernes\s*[:=]\s*([^,;\n]+)/i },
+        { index: 5, regex: /(?:sabado|s[áa]bado)\s*[:=]\s*([^,;\n]+)/i },
+        { index: 6, regex: /domingo\s*[:=]\s*([^,;\n]+)/i },
+      ]
+      dayPatterns.forEach(({ index, regex }) => {
+        const match = rawPrompt.match(regex)
+        if (match?.[1]) {
+          setDayValue(index, match[1])
+        }
+      })
+
+      return { nombre, diasTurnoNombres }
+    },
+    [cleanAgentValue],
+  )
+
+  const parseAsignacionPrompt = useCallback(
+    (rawPrompt) => {
+      const normalizedPrompt = normalizeAgentText(rawPrompt)
+      const matchedPlanificacion =
+        planificaciones.find((p) => {
+          const planName = normalizeAgentText(p.nombre || "")
+          return planName && normalizedPrompt.includes(planName)
+        }) || null
+
+      const nombresGrupoDisponibles = Array.from(
+        new Set([
+          ...grupos.map((g) => String(g.nombre || "").trim()),
+          ...trabajadores.map((t) => String(getGrupoNombreByTrabajador(t) || "").trim()),
+        ]),
+      ).filter((name) => !!name && name !== "Sin grupo")
+
+      const mentionedGroupNames = nombresGrupoDisponibles.filter((name) => {
+        const normalizedGroup = normalizeAgentText(name)
+        return normalizedGroup && normalizedPrompt.includes(normalizedGroup)
+      })
+
+      const matchedTrabajadores = trabajadores.filter((t) => {
+        const workerName = normalizeAgentText(t.nombre || "")
+        return workerName && normalizedPrompt.includes(workerName)
+      })
+
+      const desdeMatch = rawPrompt.match(/desde\s+(\d{4}-\d{2}-\d{2})/i)
+      const hastaMatch = rawPrompt.match(/hasta\s+(\d{4}-\d{2}-\d{2})/i)
+      const genericDates = rawPrompt.match(/\b\d{4}-\d{2}-\d{2}\b/g) || []
+
+      const hasPermanente =
+        normalizedPrompt.includes("permanente") ||
+        normalizedPrompt.includes("indefinido") ||
+        normalizedPrompt.includes("sin termino") ||
+        normalizedPrompt.includes("sin fecha de termino")
+
+      const desde = desdeMatch?.[1] || genericDates[0] || ""
+      const hasta = hasPermanente ? "permanente" : hastaMatch?.[1] || genericDates[1] || ""
+
+      const includeAllPendientes =
+        normalizedPrompt.includes("todos los trabajadores") ||
+        normalizedPrompt.includes("todos los pendientes") ||
+        normalizedPrompt.includes("todo el equipo")
+
+      const idsPorGrupo = mentionedGroupNames.flatMap((groupName) => {
+        const normalizedGroup = normalizeGroupName(groupName)
+        return trabajadores
+          .filter((t) => normalizeGroupName(getGrupoNombreByTrabajador(t) || "") === normalizedGroup)
+          .map((t) => Number(t.id))
+      })
+
+      const idsPorTrabajador = matchedTrabajadores.map((t) => Number(t.id))
+      const idsTodosPendientes = includeAllPendientes ? trabajadoresPendientes.map((t) => Number(t.id)) : []
+      const targetTrabajadorIds = Array.from(new Set([...idsPorGrupo, ...idsPorTrabajador, ...idsTodosPendientes]))
+
+      return {
+        matchedPlanificacion,
+        mentionedGroupNames,
+        matchedTrabajadores,
+        targetTrabajadorIds,
+        desde,
+        hasta,
+      }
+    },
+    [planificaciones, grupos, trabajadores, trabajadoresPendientes, getGrupoNombreByTrabajador],
+  )
+
+  const getAssignedWorkerIdsFromList = useCallback((asignacionesList) => {
+    const ids = new Set()
+    ;(asignacionesList || []).forEach((asig) => {
+      if (asig?.planificacionId && asig?.desde && asig?.hasta) {
+        ids.add(Number(asig.trabajadorId))
+      }
+    })
+    return ids
+  }, [])
+
+  const handleAgentSubmit = useCallback(
+    async (event) => {
+      event.preventDefault()
+      const prompt = agentInput.trim()
+      if (!prompt || agentIsThinking) return
+
+      setAgentInput("")
+      addAgentMessage("user", prompt)
+      setAgentIsThinking(true)
+
+      try {
+        const planificacionesContext = planificaciones.map((plan) => {
+          const dias = DIAS.reduce((acc, dayLabel, dayIndex) => {
+            const turnoId = plan?.diasTurnos?.[dayIndex]
+            const turno = turnos.find((item) => Number(item.id) === Number(turnoId))
+            acc[normalizeAgentText(dayLabel)] = turno?.nombre || ""
+            return acc
+          }, {} as Record<string, string>)
+
+          return {
+            nombre: plan?.nombre || "",
+            dias,
+          }
+        })
+
+        const requestPayload = {
+          prompt,
+          history: agentMessages.slice(-8).map((message) => ({
+            role: message.role,
+            text: message.text,
+          })),
+          context: {
+            turnos: turnosResumidos,
+            planificaciones: planificacionesContext,
+            grupos: gruposConTrabajadores,
+            trabajadores: trabajadores.map((worker) => ({
+              id: worker.id,
+              nombre: worker.nombre || "",
+              grupo: getGrupoNombreByTrabajador(worker),
+            })),
+            todayISO,
+          },
+        }
+
+        const llmResponse = await fetch("/api/agent-scheduling", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload),
+        })
+
+        const llmResult = await llmResponse.json()
+        if (!llmResponse.ok || !llmResult?.success) {
+          throw new Error(llmResult?.error || "No fue posible consultar el modelo LLM.")
+        }
+
+        const actions = Array.isArray(llmResult.actions) ? llmResult.actions : []
+
+        let nextTurnos = [...turnos]
+        let nextPlanificaciones = [...planificaciones]
+        let nextAsignaciones = [...asignaciones]
+
+        const executionNotes: string[] = []
+        const executionMissingFields: string[] = []
+        const idSeed = Date.now()
+
+        const findTurnoInList = (nombre: string, list: any[]) => {
+          const normalized = normalizeAgentText(nombre || "")
+          if (!normalized) return null
+          return list.find((item) => normalizeAgentText(item?.nombre || "") === normalized) || null
+        }
+
+        const findPlanInList = (nombre: string, list: any[]) => {
+          const normalized = normalizeAgentText(nombre || "")
+          if (!normalized) return null
+          return list.find((item) => normalizeAgentText(item?.nombre || "") === normalized) || null
+        }
+
+        for (let idx = 0; idx < actions.length; idx += 1) {
+          const action = actions[idx] || {}
+          const actionType = String(action?.type || "")
+          const actionData = action?.data || {}
+
+          if (actionType === "create_turno") {
+            const turnoDraft = {
+              nombre: cleanAgentValue(actionData?.nombre),
+              horaInicio: normalizeTimeValue(actionData?.horaInicio),
+              horaFin: normalizeTimeValue(actionData?.horaFin),
+              tipoColacion: cleanAgentValue(actionData?.tipoColacion || "sin").toLowerCase() || "sin",
+              colacionMinutos: Number(actionData?.colacionMinutos || 0),
+              colacionInicio: normalizeTimeValue(actionData?.colacionInicio),
+              colacionFin: normalizeTimeValue(actionData?.colacionFin),
+              tooltip: cleanAgentValue(actionData?.tooltip || ""),
+            }
+
+            if (!turnoDraft.nombre) {
+              executionMissingFields.push("Nombre del turno")
+              continue
+            }
+
+            const exists = findTurnoInList(turnoDraft.nombre, nextTurnos)
+            if (exists) {
+              executionNotes.push(`Turno "${exists.nombre}" ya existia.`)
+              continue
+            }
+
+            const turnoValidation = validateTurnoDataForAgent(turnoDraft)
+            if (!turnoValidation.isValid) {
+              executionMissingFields.push(turnoValidation.message)
+              continue
+            }
+
+            nextTurnos = [...nextTurnos, { id: idSeed + idx + 1, ...turnoDraft }]
+            executionNotes.push(`Turno creado: "${turnoDraft.nombre}".`)
+            continue
+          }
+
+          if (actionType === "create_planificacion") {
+            const planNombre = cleanAgentValue(actionData?.nombre)
+            const diasData = actionData?.dias && typeof actionData.dias === "object" ? actionData.dias : {}
+
+            if (!planNombre) {
+              executionMissingFields.push("Nombre de la planificacion")
+              continue
+            }
+
+            const existsPlan = findPlanInList(planNombre, nextPlanificaciones)
+            if (existsPlan) {
+              executionNotes.push(`Planificacion "${existsPlan.nombre}" ya existia.`)
+              continue
+            }
+
+            const dayAliases = [
+              ["lunes", "lun", "monday"],
+              ["martes", "mar", "tuesday"],
+              ["miercoles", "miércoles", "mie", "wednesday"],
+              ["jueves", "jue", "thursday"],
+              ["viernes", "vie", "friday"],
+              ["sabado", "sábado", "sab", "saturday"],
+              ["domingo", "dom", "sunday"],
+            ]
+
+            const diasTurnoNombres = dayAliases.map((aliases) => {
+              const entry = aliases
+                .map((alias) => cleanAgentValue((diasData as any)?.[alias]))
+                .find((value) => !!value)
+              return entry || ""
+            })
+
+            const missingDays = DIAS.filter((_, dayIndex) => !diasTurnoNombres[dayIndex])
+            if (missingDays.length > 0) {
+              executionMissingFields.push(`Dias faltantes en planificacion "${planNombre}": ${missingDays.join(", ")}`)
+              continue
+            }
+
+            const unknownTurnNames: string[] = []
+            const diasTurnos = diasTurnoNombres.map((turnoNombre) => {
+              const turno = findTurnoInList(turnoNombre, nextTurnos)
+              if (!turno) {
+                unknownTurnNames.push(turnoNombre)
+                return null
+              }
+              return Number(turno.id)
+            })
+
+            if (unknownTurnNames.length > 0) {
+              executionMissingFields.push(
+                `Turnos no encontrados para "${planNombre}": ${Array.from(new Set(unknownTurnNames)).join(", ")}`,
+              )
+              continue
+            }
+
+            for (const turnoId of diasTurnos) {
+              const turno = nextTurnos.find((item) => Number(item.id) === Number(turnoId))
+              const turnoValidation = validateTurnoDataForAgent(turno)
+              if (!turnoValidation.isValid) {
+                executionMissingFields.push(turnoValidation.message)
+                break
+              }
+            }
+
+            if (executionMissingFields.length > 0) {
+              continue
+            }
+
+            nextPlanificaciones = [
+              ...nextPlanificaciones,
+              { id: idSeed + 1000 + idx + 1, nombre: planNombre, diasTurnos },
+            ]
+            executionNotes.push(`Planificacion creada: "${planNombre}".`)
+            continue
+          }
+
+          if (actionType === "create_asignacion") {
+            const planificacionNombre = cleanAgentValue(actionData?.planificacionNombre)
+            const targetType = cleanAgentValue(actionData?.targetType).toLowerCase()
+            const targetNames = Array.isArray(actionData?.targetNames)
+              ? actionData.targetNames.map((name) => cleanAgentValue(name)).filter(Boolean)
+              : []
+            const desde = cleanAgentValue(actionData?.desde)
+            const hasta = cleanAgentValue(actionData?.hasta).toLowerCase() === "permanente" ? "permanente" : cleanAgentValue(actionData?.hasta)
+
+            if (!planificacionNombre) {
+              executionMissingFields.push("Planificacion para asignar")
+              continue
+            }
+
+            if (!desde) {
+              executionMissingFields.push("Fecha desde (YYYY-MM-DD)")
+              continue
+            }
+
+            if (!hasta) {
+              executionMissingFields.push("Fecha hasta (YYYY-MM-DD) o permanente")
+              continue
+            }
+
+            if (hasta !== "permanente" && hasta < desde) {
+              executionMissingFields.push("La fecha hasta debe ser mayor o igual que la fecha desde")
+              continue
+            }
+
+            const plan = findPlanInList(planificacionNombre, nextPlanificaciones)
+            if (!plan) {
+              executionMissingFields.push(`No existe la planificacion "${planificacionNombre}".`)
+              continue
+            }
+
+            const planValidation = validatePlanificacionForAgent(plan.id, nextPlanificaciones, nextTurnos)
+            if (!planValidation.isValid) {
+              executionMissingFields.push(planValidation.message)
+              continue
+            }
+
+            let targetTrabajadorIds: number[] = []
+            if (["grupo", "grupos"].includes(targetType)) {
+              const normalizedGroups = targetNames.map((name) => normalizeGroupName(name))
+              targetTrabajadorIds = trabajadores
+                .filter((worker) => normalizedGroups.includes(normalizeGroupName(getGrupoNombreByTrabajador(worker) || "")))
+                .map((worker) => Number(worker.id))
+            } else if (["trabajador", "trabajadores", "persona", "personas"].includes(targetType)) {
+              const normalizedWorkers = targetNames.map((name) => normalizeAgentText(name))
+              targetTrabajadorIds = trabajadores
+                .filter((worker) => normalizedWorkers.includes(normalizeAgentText(worker.nombre || "")))
+                .map((worker) => Number(worker.id))
+            } else {
+              const assignedSet = getAssignedWorkerIdsFromList(nextAsignaciones)
+              targetTrabajadorIds = trabajadores
+                .filter((worker) => !assignedSet.has(Number(worker.id)))
+                .map((worker) => Number(worker.id))
+            }
+
+            targetTrabajadorIds = Array.from(new Set(targetTrabajadorIds))
+            if (targetTrabajadorIds.length === 0) {
+              executionMissingFields.push("No se encontraron trabajadores para la asignacion solicitada.")
+              continue
+            }
+
+            const assignedSet = getAssignedWorkerIdsFromList(nextAsignaciones)
+            const idsDisponibles = targetTrabajadorIds.filter((id) => !assignedSet.has(Number(id)))
+            if (idsDisponibles.length === 0) {
+              executionNotes.push(`Los trabajadores indicados para "${planificacionNombre}" ya estaban planificados.`)
+              continue
+            }
+
+            const nuevasAsignaciones = idsDisponibles.map((trabajadorId, index) => ({
+              id: idSeed + 2000 + idx * 100 + index + 1,
+              trabajadorId,
+              planificacionId: plan.id,
+              desde,
+              hasta,
+            }))
+            nextAsignaciones = [...nextAsignaciones, ...nuevasAsignaciones]
+            executionNotes.push(`Asignacion aplicada de "${plan.nombre}" a ${idsDisponibles.length} trabajador(es).`)
+          }
+        }
+
+        if (nextTurnos.length !== turnos.length) setTurnos(nextTurnos)
+        if (nextPlanificaciones.length !== planificaciones.length) setPlanificaciones(nextPlanificaciones)
+        if (nextAsignaciones.length !== asignaciones.length) setAsignaciones(nextAsignaciones)
+
+        const pendingAfter = Math.max(0, trabajadores.length - getAssignedWorkerIdsFromList(nextAsignaciones).size)
+        let assistantText = String(llmResult.assistantMessage || "Listo, revise tu solicitud en el modelo.")
+
+        if (llmResult.needsMoreInfo && Array.isArray(llmResult.missingFields) && llmResult.missingFields.length > 0) {
+          assistantText += `\n\nDatos faltantes detectados por el modelo:\n- ${llmResult.missingFields.join("\n- ")}`
+        }
+
+        if (executionMissingFields.length > 0) {
+          assistantText += `\n\nNo pude ejecutar todo por validaciones:\n- ${Array.from(new Set(executionMissingFields)).join("\n- ")}`
+        }
+
+        if (executionNotes.length > 0) {
+          assistantText += `\n\nResultado:\n- ${executionNotes.join("\n- ")}`
+        }
+
+        assistantText += `\n\nQuedan ${pendingAfter} trabajador(es) pendientes por planificar.`
+        addAgentMessage("assistant", assistantText)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Error desconocido."
+        addAgentMessage(
+          "assistant",
+          `No pude completar la operacion con el modelo LLM.\nDetalle: ${message}\n\nVerifica OPENAI_API_KEY en el servidor e intenta nuevamente.`,
+        )
+      } finally {
+        setAgentIsThinking(false)
+      }
+    },
+    [
+      agentInput,
+      agentIsThinking,
+      addAgentMessage,
+      agentMessages,
+      asignaciones,
+      cleanAgentValue,
+      getAssignedWorkerIdsFromList,
+      getGrupoNombreByTrabajador,
+      gruposConTrabajadores,
+      normalizeTimeValue,
+      planificaciones,
+      setAsignaciones,
+      setPlanificaciones,
+      setTurnos,
+      todayISO,
+      turnos,
+      turnosResumidos,
+      trabajadores,
+      validatePlanificacionForAgent,
+      validateTurnoDataForAgent,
+    ],
+  )
 
   return (
     <section className="space-y-4">
@@ -3009,6 +3857,168 @@ const AsignacionStep = ({ asignaciones, setAsignaciones, trabajadores, planifica
       {errorGlobal && (
         <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-[11px] text-red-800">{errorGlobal}</div>
       )}
+
+      <div className="space-y-3 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-slate-900">Agente de turnos y planificaciones (prototipo)</h3>
+          <p className="text-xs text-slate-600">
+            Puedes crear turnos, crear planificaciones semanales y asignarlas por chat. El agente valida los datos
+            obligatorios antes de aprobar cada asignacion.
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <p className="text-[11px] text-slate-500">Trabajadores planificados</p>
+            <p className="text-base font-semibold text-emerald-700">{trabajadoresPlanificados.length}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <p className="text-[11px] text-slate-500">Trabajadores pendientes</p>
+            <p className="text-base font-semibold text-amber-700">{trabajadoresPendientes.length}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <p className="text-[11px] text-slate-500">Grupos con pendientes</p>
+            <p className="text-base font-semibold text-slate-800">{gruposPendientes.length}</p>
+          </div>
+        </div>
+
+        {gruposPendientes.length > 0 && (
+          <p className="text-[11px] text-slate-600">
+            Pendientes por grupo: {gruposPendientes.slice(0, 6).join(", ")}
+            {gruposPendientes.length > 6 ? "..." : ""}
+          </p>
+        )}
+
+        <div className="grid gap-3 xl:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-slate-800">Turnos disponibles</p>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{turnosResumidos.length}</span>
+            </div>
+            {turnosResumidos.length === 0 ? (
+              <p className="text-[11px] text-slate-500">Aun no hay turnos creados.</p>
+            ) : (
+              <div className="space-y-2">
+                {turnosResumidos.slice(0, 5).map((turno) => (
+                  <div key={turno.id} className="rounded-md border border-slate-100 bg-slate-50 p-2">
+                    <p className="text-[11px] font-medium text-slate-800">{turno.nombre}</p>
+                    <p className="text-[10px] text-slate-600">{turno.horario}</p>
+                    <p className="text-[10px] text-slate-500">{turno.colacion}</p>
+                    <button
+                      type="button"
+                      className="mt-1 text-[10px] font-medium text-sky-700 hover:underline"
+                      onClick={() => preloadAgentPrompt(buildPromptFromTurno(turno.nombre))}
+                    >
+                      Usar como base de prompt
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-slate-800">Planificaciones creadas</p>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{planificacionesResumidas.length}</span>
+            </div>
+            {planificacionesResumidas.length === 0 ? (
+              <p className="text-[11px] text-slate-500">Aun no hay planificaciones.</p>
+            ) : (
+              <div className="space-y-2">
+                {planificacionesResumidas.slice(0, 5).map((plan) => (
+                  <div key={plan.id} className="rounded-md border border-slate-100 bg-slate-50 p-2">
+                    <p className="text-[11px] font-medium text-slate-800">{plan.nombre}</p>
+                    <p className="text-[10px] text-slate-600">
+                      {plan.diasCompletos ? "7 dias completos" : "Faltan dias por definir"}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Turnos: {plan.uniqueTurnos.length > 0 ? plan.uniqueTurnos.join(", ") : "Sin turnos"}
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-1 text-[10px] font-medium text-sky-700 hover:underline"
+                      onClick={() => preloadAgentPrompt(buildPromptFromPlanificacion(plan.nombre))}
+                    >
+                      Usar para asignar por prompt
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-slate-800">Grupos y empleados</p>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{gruposConTrabajadores.length}</span>
+            </div>
+            {gruposConTrabajadores.length === 0 ? (
+              <p className="text-[11px] text-slate-500">Aun no hay grupos definidos.</p>
+            ) : (
+              <div className="space-y-2">
+                {gruposConTrabajadores.slice(0, 5).map((group) => (
+                  <div key={group.nombre} className="rounded-md border border-slate-100 bg-slate-50 p-2">
+                    <p className="text-[11px] font-medium text-slate-800">
+                      {group.nombre} ({group.trabajadores.length})
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {group.trabajadores.slice(0, 4).join(", ")}
+                      {group.trabajadores.length > 4 ? "..." : ""}
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-1 text-[10px] font-medium text-sky-700 hover:underline"
+                      onClick={() => preloadAgentPrompt(buildPromptFromGrupo(group.nombre))}
+                    >
+                      Usar grupo en prompt
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          ref={agentScrollRef}
+          className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-sky-100 bg-white p-3"
+        >
+          {agentMessages.map((message) => (
+            <div
+              key={message.id}
+              className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${
+                message.role === "user"
+                  ? "ml-8 bg-sky-600 text-white"
+                  : "mr-8 border border-slate-200 bg-slate-50 text-slate-700"
+              }`}
+            >
+              <p className={`mb-1 text-[10px] font-semibold uppercase ${message.role === "user" ? "text-sky-100" : "text-slate-500"}`}>
+                {message.role === "user" ? "Tu mensaje" : "Agente"}
+              </p>
+              <p className="whitespace-pre-line">{message.text}</p>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={handleAgentSubmit} className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            placeholder="Ej: Crear planificacion nombre: Oficina 5x2; lunes=Turno Manana, martes=Turno Manana..."
+            value={agentInput}
+            disabled={agentIsThinking}
+            onChange={(e) => setAgentInput(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={agentIsThinking}
+            className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            {agentIsThinking ? "Consultando modelo..." : "Enviar al agente"}
+          </button>
+        </form>
+      </div>
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
         <div className="flex items-center justify-between">
@@ -3726,7 +4736,19 @@ const BienvenidaMarketingStep = ({
   )
 }
 
-const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; onBack: () => void }) => {
+const AntesDeComenzarStep = ({
+  onContinue,
+  onBack,
+  complianceState,
+  complianceErrors,
+  onComplianceChange,
+}: {
+  onContinue: () => void
+  onBack: () => void
+  complianceState: BeforeStartComplianceState
+  complianceErrors: Partial<Record<keyof BeforeStartComplianceState, string>>
+  onComplianceChange: (field: keyof BeforeStartComplianceState, value: boolean) => void
+}) => {
   return (
     <section className="space-y-6 max-w-[1700px] mx-auto">
       {/* Header */}
@@ -3812,6 +4834,99 @@ const AntesDeComenzarStep = ({ onContinue, onBack }: { onContinue: () => void; o
               Si vas a configurar turnos ahora: horarios y períodos de descanso.
             </li>
           </ul>
+        </div>
+      </div>
+
+      <div id="before-start-compliance" className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <div className="space-y-2">
+          <h3 className="font-semibold text-slate-900">Resumen legal y privacidad</h3>
+          <p className="text-sm text-slate-600">
+            Tratamos los datos para habilitar tu onboarding, configurar tu empresa y coordinar la implementacion.
+            Compartimos datos con sistemas operativos como Zoho CRM/Flow y proveedores tecnologicos bajo medidas de
+            seguridad. Puedes ejercer derechos de acceso, rectificacion, supresion, oposicion, portabilidad y bloqueo.
+          </p>
+          <p className="text-sm text-slate-600">
+            Responsable: GeoVictoria. Base principal: ejecucion contractual o medidas precontractuales. Comunicaciones
+            comerciales solo con aceptacion separada.
+          </p>
+          <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-sky-700">
+              Ver politica de privacidad resumida
+            </summary>
+            <div className="mt-3 space-y-2 text-xs text-slate-600">
+              <p>
+                Finalidades: crear empresa, configurar usuarios/turnos, enviar avances y completar la implementacion.
+              </p>
+              <p>
+                Destinatarios: equipos internos de implementacion y plataformas de soporte e integracion (ej. CRM,
+                automatizacion y almacenamiento).
+              </p>
+              <p>
+                Conservacion: durante la operacion y por el plazo definido en la politica interna; luego se elimina o
+                anonimiza.
+              </p>
+              <p>
+                Derechos: puedes solicitar acceso, rectificacion, supresion, oposicion, portabilidad o bloqueo por los
+                canales oficiales de privacidad.
+              </p>
+              <p className="text-[11px] text-slate-500">Version de referencia: {PRIVACY_POLICY_VERSION}</p>
+              <p className="text-[11px] text-slate-500">
+                Politica completa:{" "}
+                <a
+                  href={PRIVACY_POLICY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-700 hover:underline font-medium"
+                >
+                  {PRIVACY_POLICY_URL}
+                </a>
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-slate-200 p-4">
+          <label className="flex items-start gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={complianceState.privacyNoticeAccepted}
+              onChange={(event) => onComplianceChange("privacyNoticeAccepted", event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            <span>
+              He leido la informacion de privacidad y el tratamiento de datos para este onboarding.{" "}
+              <span className="text-rose-600">*</span>
+            </span>
+          </label>
+          {complianceErrors.privacyNoticeAccepted ? (
+            <p className="text-xs text-rose-600 ml-7">{complianceErrors.privacyNoticeAccepted}</p>
+          ) : null}
+
+          <label className="flex items-start gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={complianceState.representativeDeclarationAccepted}
+              onChange={(event) => onComplianceChange("representativeDeclarationAccepted", event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            <span>
+              Declaro que estoy autorizado por la empresa para cargar datos de trabajadores y administradores.{" "}
+              <span className="text-rose-600">*</span>
+            </span>
+          </label>
+          {complianceErrors.representativeDeclarationAccepted ? (
+            <p className="text-xs text-rose-600 ml-7">{complianceErrors.representativeDeclarationAccepted}</p>
+          ) : null}
+
+          <label className="flex items-start gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={complianceState.marketingOptIn}
+              onChange={(event) => onComplianceChange("marketingOptIn", event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            <span>Deseo recibir novedades comerciales y recomendaciones de modulos adicionales.</span>
+          </label>
         </div>
       </div>
 
@@ -4169,6 +5284,20 @@ function OnboardingTurnosCliente() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set())
   const [editedFields, setEditedFields] = useState<EditedFields>({})
+  const [beforeStartCompliance, setBeforeStartCompliance] = useState<BeforeStartComplianceState>({
+    privacyNoticeAccepted: false,
+    representativeDeclarationAccepted: false,
+    marketingOptIn: false,
+  })
+  const [beforeStartComplianceErrors, setBeforeStartComplianceErrors] = useState<
+    Partial<Record<keyof BeforeStartComplianceState, string>>
+  >({})
+  const complianceTrackingRef = useRef({
+    shown: false,
+    accepted: false,
+    representative: false,
+    marketingChoice: null as boolean | null,
+  })
 
   useEffect(() => {
     telefonoCallDeferredRef.current = Boolean(formData.telefonoCallDeferred)
@@ -4196,6 +5325,69 @@ function OnboardingTurnosCliente() {
       window.localStorage.setItem("gv_desktop_notice_dismissed", "1")
     }
   }
+
+  const trackConsentEvent = useCallback(
+    async (
+      eventType:
+        | "privacy_notice_shown"
+        | "privacy_notice_accepted"
+        | "representative_declaration_accepted"
+        | "marketing_opt_in"
+        | "marketing_opt_out",
+      extraMetadata: Record<string, unknown> = {},
+    ) => {
+      if (!onboardingId) return
+      try {
+        const payload = {
+          formData: {
+            ...formData,
+            empresa: normalizeEmpresaModulos(formData.empresa),
+          },
+          currentStep,
+          navigationHistory,
+          estado: getEstadoByStep(currentStep),
+          consentEvent: {
+            subjectType: "empresa_representante",
+            eventType,
+            policyVersion: PRIVACY_POLICY_VERSION,
+            source: "web",
+            metadata: {
+              step: currentStep,
+              policyUrl: PRIVACY_POLICY_URL,
+              policyVersion: PRIVACY_POLICY_VERSION,
+              ...extraMetadata,
+            },
+          },
+        }
+
+        const response = await fetch(`/api/onboarding/${onboardingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: stringifyPayload(payload),
+        })
+
+        if (!response.ok) {
+          console.warn("[v0] trackConsentEvent: No se pudo registrar evento de consentimiento", eventType)
+        }
+      } catch (error) {
+        console.warn("[v0] trackConsentEvent: Error no bloqueante", eventType, error)
+      }
+    },
+    [onboardingId, formData, currentStep, navigationHistory],
+  )
+
+  const handleBeforeStartComplianceChange = useCallback(
+    (field: keyof BeforeStartComplianceState, value: boolean) => {
+      setBeforeStartCompliance((prev) => ({ ...prev, [field]: value }))
+      setBeforeStartComplianceErrors((prev) => {
+        if (!prev[field]) return prev
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    },
+    [],
+  )
 
   // --- Helper functions for state management and UI ---
 
@@ -4341,6 +5533,25 @@ function OnboardingTurnosCliente() {
               setFormData(loadedFormData)
             }
 
+            if (result.compliance) {
+              const privacyAccepted = Boolean(result.compliance.privacyNoticeAcceptedAt)
+              const representativeAccepted = Boolean(result.compliance.representativeDeclarationAccepted)
+              setBeforeStartCompliance((prev) => ({
+                ...prev,
+                privacyNoticeAccepted: privacyAccepted,
+                representativeDeclarationAccepted: representativeAccepted,
+              }))
+              if (result.compliance.privacyNoticeShownAt) {
+                complianceTrackingRef.current.shown = true
+              }
+              if (privacyAccepted) {
+                complianceTrackingRef.current.accepted = true
+              }
+              if (representativeAccepted) {
+                complianceTrackingRef.current.representative = true
+              }
+            }
+
             // Load last step
             const lastStep = Math.max(result.lastStep ?? 0, result.currentStep ?? 0)
             console.log("[v0] lastStep:", lastStep)
@@ -4463,6 +5674,15 @@ function OnboardingTurnosCliente() {
     setIsInitialized(true)
     console.log("[v0] isInitialized set to true")
   }
+
+  useEffect(() => {
+    if (currentStep !== 1) return
+    if (!onboardingId) return
+    if (complianceTrackingRef.current.shown) return
+
+    complianceTrackingRef.current.shown = true
+    void trackConsentEvent("privacy_notice_shown", { trigger: "step_view" })
+  }, [currentStep, onboardingId, trackConsentEvent])
 
   const handleFinalizar = useCallback(async () => {
     setIsSubmitting(true)
@@ -4615,7 +5835,19 @@ function OnboardingTurnosCliente() {
     switch (currentStep) {
       case 0: // Bienvenida - No validation needed
         break
-      case 1: // Antes de comenzar - No validation needed
+      case 1: // Antes de comenzar
+        setBeforeStartComplianceErrors({})
+        if (!beforeStartCompliance.privacyNoticeAccepted) {
+          isValid = false
+          errors.push("Debes aceptar la informacion de privacidad para continuar.")
+          stepErrors["beforeStart.privacyNoticeAccepted"] = "Debes leer y aceptar la informacion de privacidad."
+        }
+        if (!beforeStartCompliance.representativeDeclarationAccepted) {
+          isValid = false
+          errors.push("Debes declarar que estas autorizado para cargar datos de terceros.")
+          stepErrors["beforeStart.representativeDeclarationAccepted"] =
+            "Confirma que tienes autorizacion para cargar datos."
+        }
         break
       case 2: // Empresa
         const empresaValidation = validateEmpresaFields(formData.empresa)
@@ -4760,6 +5992,18 @@ function OnboardingTurnosCliente() {
     if (!isValid) {
       setValidationErrors(errors)
       setFieldErrors(stepErrors)
+      if (currentStep === 1) {
+        setBeforeStartComplianceErrors({
+          privacyNoticeAccepted: stepErrors["beforeStart.privacyNoticeAccepted"],
+          representativeDeclarationAccepted: stepErrors["beforeStart.representativeDeclarationAccepted"],
+        })
+        setTimeout(() => {
+          const section = document.getElementById("before-start-compliance")
+          if (section) {
+            section.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
+        }, 80)
+      }
       toast({
         title: "Campos inválidos",
         description: "Por favor, corrige los errores en los campos marcados.",
@@ -4769,6 +6013,39 @@ function OnboardingTurnosCliente() {
     }
     setValidationErrors([])
     setFieldErrors({})
+    if (currentStep === 1) {
+      setBeforeStartComplianceErrors({})
+      const consentTasks: Promise<void>[] = []
+
+      if (!complianceTrackingRef.current.accepted) {
+        consentTasks.push(
+          trackConsentEvent("privacy_notice_accepted", { trigger: "before_start_continue" }).then(() => {
+            complianceTrackingRef.current.accepted = true
+          }),
+        )
+      }
+
+      if (!complianceTrackingRef.current.representative) {
+        consentTasks.push(
+          trackConsentEvent("representative_declaration_accepted", { trigger: "before_start_continue" }).then(() => {
+            complianceTrackingRef.current.representative = true
+          }),
+        )
+      }
+
+      if (complianceTrackingRef.current.marketingChoice !== beforeStartCompliance.marketingOptIn) {
+        const marketingEvent = beforeStartCompliance.marketingOptIn ? "marketing_opt_in" : "marketing_opt_out"
+        consentTasks.push(
+          trackConsentEvent(marketingEvent, { trigger: "before_start_continue" }).then(() => {
+            complianceTrackingRef.current.marketingChoice = beforeStartCompliance.marketingOptIn
+          }),
+        )
+      }
+
+      if (consentTasks.length > 0) {
+        await Promise.all(consentTasks)
+      }
+    }
     setNoAdminsError(false)
 
     const hasSelectedModulos =
@@ -4925,6 +6202,9 @@ function OnboardingTurnosCliente() {
     setShowTelefonoCallModal,
     setTelefonoCallMissingCount,
     setTelefonoCallConfirmChecked,
+    beforeStartCompliance,
+    setBeforeStartComplianceErrors,
+    trackConsentEvent,
     DEFAULT_TURNOS, // Added to dependencies
   ])
 
@@ -5002,7 +6282,13 @@ function OnboardingTurnosCliente() {
         // CHANGE: Corrected step numbering and component for case 1
         return (
           <>
-            <AntesDeComenzarStep onContinue={goNext} onBack={goBack} />
+            <AntesDeComenzarStep
+              onContinue={goNext}
+              onBack={goBack}
+              complianceState={beforeStartCompliance}
+              complianceErrors={beforeStartComplianceErrors}
+              onComplianceChange={handleBeforeStartComplianceChange}
+            />
           </>
         )
 
@@ -5179,8 +6465,21 @@ function OnboardingTurnosCliente() {
                   asignaciones: typeof updater === "function" ? updater(prev.asignaciones) : updater,
                 }))
               }
-              trabajadores={trabajadores}
+              turnos={formData.turnos}
+              setTurnos={(updater) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  turnos: typeof updater === "function" ? updater(prev.turnos) : updater,
+                }))
+              }
               planificaciones={formData.planificaciones}
+              setPlanificaciones={(updater) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  planificaciones: typeof updater === "function" ? updater(prev.planificaciones) : updater,
+                }))
+              }
+              trabajadores={trabajadores}
               grupos={grupos}
               errorGlobal={validationErrors.join(" ")}
             />
