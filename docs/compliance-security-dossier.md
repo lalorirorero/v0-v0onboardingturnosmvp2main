@@ -48,6 +48,7 @@ Nota: este documento es técnico-operativo y no reemplaza revisión jurídica fo
 | Integridad del flujo a Zoho Flow | Estructura de payload estable y envío validado | `app/api/submit-to-zoho/route.ts`, pruebas webhook | Implementado |
 | Manejo robusto de respuesta Zoho 200 sin body | Fix para no falsos negativos de envío | `lib/backend.ts` | Implementado |
 | Evidencia fuerte del texto legal aceptado | Hash del texto legal (`legalTextHash`) enviado en cada consentimiento y almacenado en BD | `components/onboarding-turnos.tsx`, `onboarding_consents.legal_text_hash` | Implementado |
+| Consulta auditable de consentimientos | Endpoint protegido para listar eventos y hash legal por onboarding | `app/api/compliance/consents/route.ts`, `lib/compliance.ts` | Implementado |
 
 ---
 
@@ -74,6 +75,7 @@ Checklist de evidencias recomendadas para presentar a Seguridad TI:
 - Evidencia de recepción de payloads en Zoho Flow History.
 - Configuración de secretos en Vercel (`CRON_SECRET` activo).
 - Evidencia en BD de `onboarding_consents.legal_text_hash` distinto de `null` para eventos de aceptación.
+- Export de auditoría desde `GET /api/compliance/consents` autenticado por secreto.
 
 ---
 

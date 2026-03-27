@@ -72,6 +72,17 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
     - `acceso`, `rectificacion`, `supresion`, `oposicion`, `portabilidad`, `bloqueo`
 - `GET /api/compliance/data-subject-requests`
   - Lista solicitudes con filtros opcionales por `status`, `requestType`, `idZoho` y `limit`.
+- `GET /api/compliance/consents`
+  - Lista evidencias de consentimiento (`onboarding_consents`) para auditoria.
+  - Filtros opcionales:
+    - `onboardingId`
+    - `idZoho`
+    - `eventType`
+    - `subjectType`
+    - `hasLegalHash=true|false`
+    - `from` / `to` (fecha ISO)
+    - `includeOnboarding=true` (agrega resumen de `onboardings` por evento)
+    - `limit` (default `100`, max `500`)
 
 ### Seguridad de endpoints
 
