@@ -49,6 +49,7 @@ Nota: este documento es técnico-operativo y no reemplaza revisión jurídica fo
 | Manejo robusto de respuesta Zoho 200 sin body | Fix para no falsos negativos de envío | `lib/backend.ts` | Implementado |
 | Evidencia fuerte del texto legal aceptado | Hash del texto legal (`legalTextHash`) enviado en cada consentimiento y almacenado en BD | `components/onboarding-turnos.tsx`, `onboarding_consents.legal_text_hash` | Implementado |
 | Consulta auditable de consentimientos | Endpoint protegido para listar eventos y hash legal por onboarding | `app/api/compliance/consents/route.ts`, `lib/compliance.ts` | Implementado |
+| Fail-closed de endpoints de compliance en producción | Si faltan secretos, la API rechaza acceso en `NODE_ENV=production` | `lib/compliance.ts` (`COMPLIANCE_REQUIRE_SECRET`) | Implementado |
 
 ---
 

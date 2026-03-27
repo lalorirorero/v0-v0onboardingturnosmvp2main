@@ -12,6 +12,19 @@ export const DATA_SUBJECT_REQUEST_TYPES = [
 
 export type DataSubjectRequestType = (typeof DATA_SUBJECT_REQUEST_TYPES)[number]
 
+const parseBooleanEnv = (value: string | undefined, fallback: boolean) => {
+  if (!value) return fallback
+  const normalized = value.trim().toLowerCase()
+  if (["1", "true", "yes", "y", "on"].includes(normalized)) return true
+  if (["0", "false", "no", "n", "off"].includes(normalized)) return false
+  return fallback
+}
+
+const isSecretRequiredByDefault = () => process.env.NODE_ENV === "production"
+
+const mustRequireComplianceSecret = () =>
+  parseBooleanEnv(process.env.COMPLIANCE_REQUIRE_SECRET, isSecretRequiredByDefault())
+
 const parseBearerToken = (value: string | null) => {
   if (!value) return ""
   const [scheme, token] = value.trim().split(/\s+/, 2)
@@ -22,7 +35,9 @@ const parseBearerToken = (value: string | null) => {
 
 export const isAuthorizedComplianceRequest = (request: NextRequest) => {
   const secret = process.env.COMPLIANCE_API_SECRET || process.env.CRON_SECRET || ""
-  if (!secret) return true
+  if (!secret) {
+    return !mustRequireComplianceSecret()
+  }
 
   const headerSecret = request.headers.get("x-compliance-secret") || request.headers.get("x-cron-secret") || ""
   const bearerSecret = parseBearerToken(request.headers.get("authorization"))
@@ -54,4 +69,3 @@ export const toNullableString = (value: unknown) => {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
 }
-

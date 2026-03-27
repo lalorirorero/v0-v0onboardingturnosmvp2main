@@ -90,7 +90,12 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
   - `x-compliance-secret: <secret>`
   - `x-cron-secret: <secret>`
   - `Authorization: Bearer <secret>`
-- Si no defines secreto, los endpoints quedan abiertos (solo recomendado para desarrollo local).
+- Si no defines secreto:
+  - En `production`, los endpoints quedan bloqueados por defecto (fail-closed).
+  - En `development`, quedan abiertos para pruebas locales.
+- Puedes forzar el comportamiento con `COMPLIANCE_REQUIRE_SECRET`:
+  - `true`: exige secreto siempre.
+  - `false`: permite acceso sin secreto (solo recomendado local).
 
 ### Automatizacion (Vercel Cron)
 
