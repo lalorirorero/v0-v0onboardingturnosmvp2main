@@ -7,6 +7,7 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
 - `scripts/002-compliance-core.sql`
 - `scripts/003-compliance-retention.sql`
 - `scripts/004-security-rls-and-search-path.sql`
+- `scripts/005-compliance-personal-email-90d.sql`
 
 ## Orden de ejecucion
 
@@ -14,6 +15,7 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
 2. Ejecutar `002-compliance-core.sql`.
 3. Ejecutar `003-compliance-retention.sql`.
 4. Ejecutar `004-security-rls-and-search-path.sql`.
+5. Ejecutar `005-compliance-personal-email-90d.sql`.
 
 ## Que agrega cada migracion
 
@@ -46,10 +48,19 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
 - Crea politicas operativas para `service_role`.
 - Corrige warnings de `function_search_path_mutable` fijando `search_path` en funciones de retencion.
 
+### 005-compliance-personal-email-90d.sql
+
+- Crea indice `idx_onboardings_fecha_creacion` para barridos por antiguedad.
+- Crea funcion `purge_onboarding_personal_emails(p_limit, p_days)`.
+- Depura correos de `admins[]` (`email`/`correo`) y `trabajadores[]` (`correo`/`email`) en `datos_actuales`.
+- Criterio de ejecucion: registros con `fecha_creacion <= now() - p_days` (default 90 dias).
+- Registra traza en `compliance_metadata` con `personal_email_purged_at` y `personal_email_retention_days`.
+
 ## Como operarlo
 
 - Job diario recomendado:
   - `select * from run_onboarding_retention(500);`
+  - `select * from purge_onboarding_personal_emails(500, 90);`
   - `select prune_onboarding_history(180);`
 
 ### Endpoints operativos agregados
@@ -57,14 +68,19 @@ Este documento resume como aplicar las migraciones de cumplimiento sin romper el
 - `POST /api/compliance/retention`
   - Ejecuta:
     - `run_onboarding_retention(p_limit)`
+    - `purge_onboarding_personal_emails(p_limit, p_days)`
     - `prune_onboarding_history(p_keep_days)`
   - Body opcional:
     - `retentionLimit` (default `500`)
+    - `emailRetentionLimit` (default `500`)
+    - `emailRetentionDays` (default `90`)
     - `historyKeepDays` (default `180`)
 - `GET /api/compliance/retention`
   - Health check del endpoint (requiere el mismo secreto cuando esta configurado).
   - Si se invoca con `?run=true`, ejecuta retencion con defaults o con query params:
     - `retentionLimit` (default `500`)
+    - `emailRetentionLimit` (default `500`)
+    - `emailRetentionDays` (default `90`)
     - `historyKeepDays` (default `180`)
 - `POST /api/compliance/data-subject-requests`
   - Registra una solicitud de derechos del titular.
