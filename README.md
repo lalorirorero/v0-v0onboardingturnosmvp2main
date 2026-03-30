@@ -1,30 +1,86 @@
-# v0onboardingturnosmvp2main
+# GeoVictoria Auto-Onboarding
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Repositorio oficial de la app de auto-onboarding administrada por GeoVictoria.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/egomez-4641s-projects/v0-v0onboardingturnosmvp2main)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/vAXLVToJL6M)
+## Alcance
 
-## Overview
+- Producto: onboarding para clientes GeoVictoria.
+- Integraciones principales: Zoho CRM, Zoho Flow y Supabase.
+- Frontend y backend: Next.js (App Router).
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Separacion de apps
 
-## Deployment
+Este repositorio es solo para GeoVictoria.
 
-Your project is live at:
+- Repo Geo: `https://github.com/lalorirorero/v0-v0onboardingturnosmvp2main`
+- Repo Nubox (separado): `https://github.com/lalorirorero/onboarding-nubox`
 
-**[https://vercel.com/egomez-4641s-projects/v0-v0onboardingturnosmvp2main](https://vercel.com/egomez-4641s-projects/v0-v0onboardingturnosmvp2main)**
+Regla operativa: no mezclar cambios entre repositorios.
 
-## Build your app
+## Flujo funcional resumido
 
-Continue building your app on:
+1. Zoho CRM solicita generar link de onboarding (`/api/generate-link`).
+2. El cliente completa pasos del onboarding en la app.
+3. La app envia progreso/finalizacion a Zoho Flow.
+4. Se persisten datos y trazas de cumplimiento en Supabase.
 
-**[https://v0.app/chat/vAXLVToJL6M](https://v0.app/chat/vAXLVToJL6M)**
+## Requisitos locales
 
-## How It Works
+- Node.js 20+
+- pnpm 9+
+- Variables de entorno configuradas en `.env.local`
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Variables minimas:
+
+- `NEXT_PUBLIC_BASE_URL`
+- `ZOHO_FLOW_TEST_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `CRON_SECRET` (o `COMPLIANCE_API_SECRET`)
+
+## Ejecucion local
+
+```bash
+pnpm install
+pnpm dev
+```
+
+App local: `http://localhost:3000`
+
+## Validaciones recomendadas antes de push
+
+```bash
+pnpm build
+git status -sb
+```
+
+## Despliegue
+
+- Plataforma: Vercel
+- Proyecto Geo: `v0-v0onboardingturnosmvp2main`
+- Dominio productivo: `https://onboarding.geovictoria.com`
+
+## Controles de cumplimiento implementados
+
+- Registro auditable de consentimientos.
+- Endpoint para solicitudes de titulares (acceso/rectificacion/supresion/etc.).
+- Retencion automatizada y purga de datos.
+- RLS habilitado en tablas sensibles.
+- Funciones SQL con `search_path` fijo.
+- Endpoints de cumplimiento protegidos por secreto (`CRON_SECRET`/`COMPLIANCE_API_SECRET`).
+
+## Documentacion util
+
+- `PROTECCION_DATOS.md`
+- `docs/compliance-rollout-supabase.md`
+- `docs/compliance-security-dossier.md`
+- `ZOHO_INTEGRATION.md`
+- `ZOHO_CRM_SETUP.md`
+
+## Convenciones de ramas
+
+- Rama estable: `main`
+- Cambios: rama feature -> PR -> merge a `main`
+- Nunca commitear secretos ni `.env.local`
