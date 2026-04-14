@@ -5283,8 +5283,6 @@ function OnboardingTurnosCliente() {
   const [telefonoCallConfirmChecked, setTelefonoCallConfirmChecked] = useState(false)
   const skipCallPhoneCheckRef = useRef(false)
   const telefonoCallDeferredRef = useRef(false)
-  const [showModulosUpsellModal, setShowModulosUpsellModal] = useState(false)
-  const skipModulosUpsellRef = useRef(false)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -6101,13 +6099,6 @@ function OnboardingTurnosCliente() {
     }
     setNoAdminsError(false)
 
-    const hasSelectedModulos =
-      Array.isArray(formData.empresa.modulosAdicionales) && formData.empresa.modulosAdicionales.length > 0
-    if (currentStep === 2 && !hasSelectedModulos && !skipModulosUpsellRef.current) {
-      setShowModulosUpsellModal(true)
-      return
-    }
-    skipModulosUpsellRef.current = false
     // </CHANGE>
 
     setIsSubmitting(true)
@@ -6251,7 +6242,6 @@ function OnboardingTurnosCliente() {
     isFieldEdited, // Added to dependencies
     setEmpresa, // Added to dependencies
     setFormData,
-    setShowModulosUpsellModal,
     setShowTelefonoCallModal,
     setTelefonoCallMissingCount,
     setTelefonoCallConfirmChecked,
@@ -7011,83 +7001,6 @@ function OnboardingTurnosCliente() {
               }}
             >
               Continuar sin teléfonos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showModulosUpsellModal} onOpenChange={setShowModulosUpsellModal}>
-        <DialogContent className="sm:max-w-xl overflow-hidden">
-          <DialogHeader className="-mx-6 -mt-6 border-b border-sky-100 bg-gradient-to-r from-sky-50 via-cyan-50 to-emerald-50 px-6 py-5">
-            <div className="grid gap-3 sm:grid-cols-[1fr_180px] sm:items-start">
-              <div>
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-medium text-sky-700">
-                  <Rocket className="h-3.5 w-3.5" />
-                  Recomendado para potenciar resultados
-                </div>
-                <DialogTitle className="mt-3 text-2xl leading-tight text-slate-900 sm:whitespace-nowrap">
-                  Dale mas valor a tu gestion
-                </DialogTitle>
-                <DialogDescription className="mt-1 text-sm text-slate-700">
-                  Activa modulos adicionales y construye una solucion mas completa para tu operacion.
-                </DialogDescription>
-              </div>
-              <div
-                className="mx-auto h-32 w-32 rounded-full bg-contain bg-center bg-no-repeat sm:mx-0 sm:justify-self-end"
-                style={{ backgroundImage: "url('/images/upsell-agent.png')" }}
-                aria-hidden="true"
-              />
-            </div>
-          </DialogHeader>
-          <div className="space-y-3 pt-3 text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">Que ganas al seleccionarlos ahora:</p>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                <p>Visualiza indicadores clave con Dashboard BI y toma decisiones mas rapidas.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                <p>Digitaliza procesos con Gestor Documental, Alertas y Permisos y Vacaciones.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                <p>Planifica mejor la dotacion con Planificador Inteligente.</p>
-              </div>
-            </div>
-            <p className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-slate-700">
-              Puedes seleccionarlos ahora y ajustarlos despues con el equipo comercial, sin friccion.
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-3">
-            <Button
-              type="button"
-              className="bg-sky-600 text-white hover:bg-sky-700"
-              onClick={() => {
-                setShowModulosUpsellModal(false)
-                if (typeof window !== "undefined") {
-                  window.setTimeout(() => {
-                    document.getElementById("modulos-adicionales-section")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    })
-                  }, 100)
-                }
-              }}
-            >
-              Si, quiero potenciarlo
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="border-slate-300"
-              onClick={() => {
-                skipModulosUpsellRef.current = true
-                setShowModulosUpsellModal(false)
-                goNext()
-              }}
-            >
-              Continuar sin modulos
             </Button>
           </DialogFooter>
         </DialogContent>
