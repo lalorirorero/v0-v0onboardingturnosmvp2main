@@ -32,6 +32,11 @@ export interface EmpresaData {
   ejecutivoTelefono?: string
   ejecutivoNombre?: string
   sistema?: string[]
+  // Compatibilidad con mapeos legacy en Zoho Flow/CRM
+  M_doto_Marcaje?: string[] | string
+  M_todo_de_Marcaje?: string[] | string
+  M_todo_Marcaje?: string[] | string
+  metodosMarcajeTexto?: string
   modulosAdicionales?: string[]
   modulosAdicionalesOtro?: string
   rubro?: string
@@ -217,6 +222,10 @@ export interface ZohoPayload {
       ejecutivoTelefono?: string
       ejecutivoNombre?: string
       sistema: string[]
+      M_doto_Marcaje?: string[] | string
+      M_todo_de_Marcaje?: string[] | string
+      M_todo_Marcaje?: string[] | string
+      metodosMarcajeTexto?: string
       modulosAdicionales: string[]
       modulosAdicionalesOtro: string
       rubro: string
