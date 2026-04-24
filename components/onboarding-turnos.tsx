@@ -43,7 +43,7 @@ const steps = [
   { id: 1, label: "Antes de comenzar", description: "Información del proceso" },
   { id: 2, label: "Empresa", description: "Datos base de la empresa" },
   { id: 3, label: "Administrador principal", description: "Quién administrará la plataforma" },
-  { id: 4, label: "Carga de trabajadores", description: "Elige cómo agregar a tu equipo" }, // Actualizar array de steps
+  { id: 4, label: "Carga de trabajadores", description: "Recomendaciones para cargar tu equipo" },
   { id: 5, label: "Trabajadores", description: "Listado inicial" },
   { id: 6, label: "Configuración de Turnos", description: "Decidir qué configurar" },
   { id: 7, label: "Turnos", description: "Definición de turnos" },
@@ -4799,9 +4799,9 @@ const AntesDeComenzarStep = ({
             <p className="text-sm font-semibold text-slate-800">Opcional por ahora</p>
             <ul className="space-y-2 text-xs text-slate-600">
               <li>
-                <span className="font-medium text-slate-700">Trabajadores:</span> nombre, RUT, correo y grupo (puedes
-                cargarlos ahora o durante la capacitación). Si eliges Marcaje por Llamada, necesitarás el Teléfono 1 para
-                que puedan marcar.
+                <span className="font-medium text-slate-700">Trabajadores:</span> nombre, RUT, correo y grupo (se
+                cargan en el paso Trabajadores). Si eliges Marcaje por Llamada, necesitarás el Teléfono 1 para que
+                puedan marcar.
               </li>
               <li>
                 <span className="font-medium text-slate-700">Turnos y planificaciones:</span> solo si decides
@@ -4834,12 +4834,12 @@ const AntesDeComenzarStep = ({
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
           <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-amber-600" />
-            Checklist según tu elección
+            Checklist para avanzar
           </h2>
           <ul className="space-y-2 text-sm text-amber-700">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Si vas a cargar trabajadores ahora: lista básica con nombre, RUT y correo.
+              Prepara tu lista de trabajadores: nombre, RUT, correo y grupo.
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
@@ -5943,15 +5943,16 @@ function OnboardingTurnosCliente() {
         }
         break
       case 4:
-        // This step handles its own navigation via onDecision.
+        // Paso informativo previo a la carga de trabajadores.
         break
       case 5: // Trabajadores
-        if (trabajadores.length === 0) {
+        const trabajadoresNoAdmin = trabajadores.filter((t) => t.tipo !== "administrador")
+        if (trabajadoresNoAdmin.length === 0) {
           isValid = false
-          errors.push("Debes agregar al menos un trabajador.")
+          errors.push("Debes agregar al menos un trabajador (distinto del administrador).")
         }
 
-        const trabajadoresInvalidos = trabajadores.filter((t) => {
+        const trabajadoresInvalidos = trabajadoresNoAdmin.filter((t) => {
           if (t.tipo !== "administrador") {
             const nombre = t.nombre?.trim() || ""
             const rut = t.rut?.trim() || ""
@@ -6276,7 +6277,7 @@ function OnboardingTurnosCliente() {
       </button>
       {showNext &&
         currentStep < steps.length - 1 && // Don't show "Next" on the last step before completion
-        !(currentStep === 1 || currentStep === 4 || currentStep === 6) && ( // Hide Next for decision steps
+        !(currentStep === 1 || currentStep === 6) && ( // Hide Next for decision steps
           <button
             type="button"
             onClick={goNext}
@@ -6413,7 +6414,22 @@ function OnboardingTurnosCliente() {
       case 4:
         return (
           <div className="space-y-6">
-            <WorkersDecisionStep onDecision={handleWorkersDecision} />
+            <section className="space-y-6">
+              <header className="text-center">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Carga de trabajadores</h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  En el siguiente paso debes cargar al menos un trabajador adicional al administrador principal.
+                </p>
+              </header>
+              <div className="mx-auto max-w-3xl rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                <h3 className="mb-2 text-base font-semibold text-slate-900">Antes de continuar</h3>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li>Debes cargar mínimo 1 trabajador no administrador.</li>
+                  <li>Si usas Marcaje por Llamada, ese trabajador debe tener Teléfono 1.</li>
+                  <li>Los datos mínimos son: nombre, RUT, correo y grupo.</li>
+                </ul>
+              </div>
+            </section>
             <NavigationButtons />
           </div>
         )
